@@ -29,6 +29,8 @@ type RouterParams struct {
 	SintomaHandler       *SintomaHandler
 	FirmaPeruHandler     *FirmaPeruHandler
 	DiagnosticoHandler   *DiagnosticoHandler
+	ListaEsperaQxHandler *ListaEsperaQxHandler
+	MedicoListaEsperaHandler *MedicoListaEsperaHandler
 	AuthService          input.AuthService
 	AllowedOrigins       []string
 }
@@ -195,6 +197,14 @@ func NewRouter(p RouterParams) *gin.Engine {
 		{
 			diagnosticos.GET("/search", p.DiagnosticoHandler.SearchDiagnosticos)
 		}
+
+		listaEsperaQx := protected.Group("/lista-espera-qx")
+		{
+			listaEsperaQx.GET("", p.ListaEsperaQxHandler.HandleListar)
+			listaEsperaQx.POST("", p.ListaEsperaQxHandler.HandleCrear)
+		}
+
+		v1.GET("/medicos-lista-espera", p.MedicoListaEsperaHandler.HandleListar)
 	}
 
 	router.GET("/health", func(c *gin.Context) {
