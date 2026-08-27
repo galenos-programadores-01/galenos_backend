@@ -70,6 +70,8 @@ func run() error {
 	interconsultaRepo := sqlserver.NewInterconsultaRepository(db)
 	sintomaRepo := sqlserver.NewSintomaRepository(db)
 	diagnosticoRepo := sqlserver.NewSqlServerDiagnosticoRepository(db)
+	listaEsperaQxRepo := sqlserver.NewListaEsperaQxRepository(db)
+	medicoListaEsperaRepo := sqlserver.NewMedicoListaEsperaRepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
 	reniecClient := reniec.New(reniec.Config{
@@ -114,6 +116,8 @@ func run() error {
 	interconsultaService := usecase.NewInterconsultaService(interconsultaRepo)
 	sintomaService := usecase.NewSintomaService(sintomaRepo)
 	diagnosticoUseCase := usecase.NewDiagnosticoUseCase(diagnosticoRepo)
+	listaEsperaQxService := usecase.NewListaEsperaQxService(listaEsperaQxRepo)
+	medicoListaEsperaService := usecase.NewMedicoListaEsperaService(medicoListaEsperaRepo)
 
 	authRepo := sqlserver.NewAuthRepository(db)
 	authService := usecase.NewAuthUseCase(authRepo, cfg.AuthSecret, cfg.AuthTTL)
@@ -139,6 +143,8 @@ func run() error {
 	interconsultaHandler := httpadapter.NewInterconsultaHandler(interconsultaService)
 	sintomaHandler := httpadapter.NewSintomaHandler(sintomaService)
 	diagnosticoHandler := httpadapter.NewDiagnosticoHandler(diagnosticoUseCase)
+	listaEsperaQxHandler := httpadapter.NewListaEsperaQxHandler(listaEsperaQxService)
+	medicoListaEsperaHandler := httpadapter.NewMedicoListaEsperaHandler(medicoListaEsperaService)
 
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
 		AppointmentHandler:   appointmentHandler,
@@ -156,6 +162,8 @@ func run() error {
 		InterconsultaHandler: interconsultaHandler,
 		SintomaHandler:       sintomaHandler,
 		DiagnosticoHandler:   diagnosticoHandler,
+		ListaEsperaQxHandler: listaEsperaQxHandler,
+		MedicoListaEsperaHandler: medicoListaEsperaHandler,
 		AuthService:          authService,
 		AllowedOrigins:       cfg.AllowedOrigins,
 	})
