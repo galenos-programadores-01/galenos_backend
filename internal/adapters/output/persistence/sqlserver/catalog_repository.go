@@ -456,6 +456,47 @@ func (r *catalogRepository) ListEspecialidades(ctx context.Context) ([]domain.Es
 	return items, nil
 }
 
+func (r *catalogRepository) ListarEspecialidadesPorDepartamento(ctx context.Context, idDepartamento int) ([]domain.EspecialidadSimple, error) {
+	const query = `EXEC usp_go_ListarEspecialidadXDepartamento @IdDepartamento = @p1`
+
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idDepartamento))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarEspecialidadXDepartamento: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.EspecialidadSimple
+	for rows.Next() {
+		var e domain.EspecialidadSimple
+		if err := rows.Scan(&e.IdEspecialidad, &e.Nombre); err != nil {
+			return nil, fmt.Errorf("scanning especialidad simple: %w", err)
+		}
+		items = append(items, e)
+	}
+	return items, rows.Err()
+}
+
+func (r *catalogRepository) ListarEspecialidadesQx(ctx context.Context) ([]domain.EspecialidadSimple, error) {
+	const query = `EXEC usp_go_ListarEspecialidadesQx`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarEspecialidadesQx: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.EspecialidadSimple
+	for rows.Next() {
+		var e domain.EspecialidadSimple
+		var descLarga sql.NullString
+		if err := rows.Scan(&e.IdEspecialidad, &descLarga, &e.Nombre); err != nil {
+			return nil, fmt.Errorf("scanning especialidad qx: %w", err)
+		}
+		items = append(items, e)
+	}
+	return items, rows.Err()
+}
+
 // GetParametro invoca el SP usp_go_webParametroSeleccionarPorId, que
 // devuelve en una única fila los valores (Tipo, Codigo, ValorTexto,
 // ValorInt, ValorFloat) del parámetro solicitado. Devuelve nil si el SP

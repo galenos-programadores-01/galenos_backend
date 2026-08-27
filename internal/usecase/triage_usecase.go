@@ -82,8 +82,8 @@ func (uc *triageUseCase) GetFichaAdmision(ctx context.Context, params shared.Fic
 // ListarMedicosPorEspecialidad delega en el repositorio (SP
 // usp_go_MedicosFiltrarPorIdEspecialidad) y devuelve los médicos de la
 // especialidad.
-func (uc *triageUseCase) ListarMedicosPorEspecialidad(ctx context.Context, idEspecialidad int) ([]domain.MedicoFila, error) {
-	items, err := uc.repo.ListarMedicosPorEspecialidad(ctx, idEspecialidad)
+func (uc *triageUseCase) ListarMedicosPorEspecialidad(ctx context.Context, IdEspecialidad int) ([]domain.MedicoFila, error) {
+	items, err := uc.repo.ListarMedicosPorEspecialidad(ctx, IdEspecialidad)
 	if err != nil {
 		return nil, fmt.Errorf("listing doctors by specialty: %w", err)
 	}

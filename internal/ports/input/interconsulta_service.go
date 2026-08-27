@@ -13,5 +13,5 @@ type InterconsultaService interface {
 	ActualizarEstado(ctx context.Context, id int, estado string) error
 	GuardarFirma(ctx context.Context, firma domain.FirmaInterconsulta) error
 	ListarEspecialidades(ctx context.Context) ([]domain.EspecialidadInterconsulta, error)
-	ListarMedicosPorEspecialidad(ctx context.Context, idEspecialidad int) ([]domain.MedicoInterconsulta, error)
+	ListarMedicosPorEspecialidad(ctx context.Context, IdEspecialidad int) ([]domain.MedicoInterconsulta, error)
 }

@@ -24,6 +24,23 @@ func NewSisHandler(service input.SisService) *SisHandler {
 	return &SisHandler{service: service}
 }
 
+// ConsultarAfiliado maneja GET /api/v1/sis/afiliado/:nrodoc.
+//
+// @Summary Consulta un afiliado en SIS por número de documento
+// @Description Invoca el servicio SOAP de SIS para consultar la afiliación de una persona.
+// @Tags SIS
+// @Produce json
+// @Param nrodoc path string true "Número de documento (DNI)"
+// @Param strDisa query string false "Código DISA"
+// @Param strTipoFormato query string false "Tipo de formato"
+// @Param strNroContrato query string false "Número de contrato"
+// @Param strCorrelativo query string false "Correlativo"
+// @Param strTipoDocumento query int false "Tipo de documento (1=DNI, 3=CE)"
+// @Param intOpcion query int false "Opción de consulta"
+// @Success 200 {object} apiResponse{data=object} "Afiliado encontrado"
+// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
+// @Failure 502 {object} apiResponse{error=apiError} "Servicio SIS no disponible"
+// @Router /sis/afiliado/{nrodoc} [get]
 func (h *SisHandler) ConsultarAfiliado(c *gin.Context) {
 	params, err := parseSisAfiliadoParams(c)
 	if err != nil {
@@ -46,6 +63,18 @@ func (h *SisHandler) ConsultarAfiliado(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, toSisAfiliadoResponse(result))
 }
 
+// GestionarAfiliacion maneja POST /api/v1/sis/filiaciones.
+//
+// @Summary Registra o actualiza una afiliación SIS
+// @Description Invoca el SP webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.
+// @Tags SIS
+// @Accept json
+// @Produce json
+// @Param request body sisAfiliacionRequest true "Datos de afiliación SIS"
+// @Success 200 {object} apiResponse{data=object} "Afiliación registrada"
+// @Failure 400 {object} apiResponse{error=apiError} "Cuerpo inválido"
+// @Failure 500 {object} apiResponse{error=apiError} "Error al guardar la afiliación"
+// @Router /sis/filiaciones [post]
 func (h *SisHandler) GestionarAfiliacion(c *gin.Context) {
 	var req sisAfiliacionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -64,6 +93,62 @@ func (h *SisHandler) GestionarAfiliacion(c *gin.Context) {
 	}
 
 	respondSuccess(c, http.StatusOK, map[string]string{"estado": "ok"})
+}
+
+// BuscarAfiliacion maneja GET /api/v1/sis/filiaciones.
+//
+// @Summary Busca una afiliación SIS por DISA, TipoFormato, NroContrato, Correlativo y CodigoTabla
+// @Description Consulta el servicio SIS (ConsultarAfiliadoFuaE) usando los parámetros de afiliación. El nrodoc no es obligatorio.
+// @Tags SIS
+// @Produce json
+// @Param strDisa query string true "Código DISA (ej. 035)"
+// @Param strTipoFormato query string true "Tipo formato / Lote (ej. E)"
+// @Param strNroContrato query string true "Número de contrato (ej. 11427904)"
+// @Param strCorrelativo query string false "Correlativo"
+// @Param strCodigoTabla query string false "Código de tabla"
+// @Success 200 {object} apiResponse{data=object} "Afiliado encontrado"
+// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
+// @Failure 502 {object} apiResponse{error=apiError} "Servicio SIS no disponible"
+// @Router /sis/filiaciones [get]
+func (h *SisHandler) BuscarAfiliacion(c *gin.Context) {
+	dis := c.Query("strDisa")
+	tipoFormato := c.Query("strTipoFormato")
+	nroContrato := c.Query("strNroContrato")
+	codigo := c.Query("strCodTabla")
+	if codigo == "" {
+		codigo = c.Query("strCodigoTabla")
+	}
+
+	if dis == "" || tipoFormato == "" || nroContrato == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "strDisa, strTipoFormato y strNroContrato son requeridos")
+		return
+	}
+
+	params := shared.SISAfiliadoParams{
+		TipoDocumento: 1,
+		Opcion:        1,
+		Disa:          dis,
+		TipoFormato:   tipoFormato,
+		NroContrato:   nroContrato,
+		Correlativo:   c.Query("strCorrelativo"),
+		CodTabla:      codigo,
+		Lote:          tipoFormato,
+		Tabla:         codigo,
+	}
+
+	result, err := h.service.BuscarPorAfiliacion(c.Request.Context(), params)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrInvalidDocumentNumber),
+			errors.Is(err, domain.ErrInvalidDocumentType):
+			respondError(c, http.StatusBadRequest, "INVALID_SIS_REQUEST", err.Error())
+		default:
+			respondError(c, http.StatusBadGateway, "SIS_UNAVAILABLE", err.Error())
+		}
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, toSisAfiliadoResponse(result))
 }
 
 // ForzarGuardadoFua maneja POST /api/v1/sis/fua.

@@ -21,18 +21,7 @@ func NewTriageHandler(service input.TriageService) *TriageHandler {
 	return &TriageHandler{service: service}
 }
 
-// Create maneja POST /api/v1/triaje.
-//
-// @Summary Registra un triaje de paciente
-// @Description Persiste el triaje del paciente invocando el SP webTab_PacienteTriajeAgregar. Devuelve el @Resultado informado por el procedimiento.
-// @Tags Triaje
-// @Accept json
-// @Produce json
-// @Param request body createTriajeRequest true "Datos del triaje a registrar"
-// @Success 200 {object} apiResponse{data=object} "Resultado informado por el SP"
-// @Failure 400 {object} apiResponse{error=apiError} "Cuerpo inválido"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al registrar el triaje"
-// @Router /triaje [post]
+
 func (h *TriageHandler) Create(c *gin.Context) {
 	var req createTriajeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -49,21 +38,7 @@ func (h *TriageHandler) Create(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
 
-// List maneja GET /api/v1/triaje.
-//
-// @Summary Lista los triajes registrados
-// @Description Devuelve los triajes del período filtrado (SP ListarTriaje_Emergencia). El filtro de texto se aplica en el SP; si no se envía, se pasa vacío.
-// @Tags Triaje
-// @Produce json
-// @Param fini query string true "Fecha inicial (YYYY-MM-DD)"
-// @Param ffin query string true "Fecha final (YYYY-MM-DD)"
-// @Param filtro query string false "Texto de búsqueda"
-// @Param derivadoAServicio query int false "Servicio de derivación (-100 para todos)"
-// @Param idEstado query int false "Estado del triaje"
-// @Success 200 {object} apiResponse{data=[]object}
-// @Failure 400 {object} apiResponse{error=apiError} "Parâmetros inválidos"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al listar los triajes"
-// @Router /triaje [get]
+
 func (h *TriageHandler) List(c *gin.Context) {
 	params := shared.TriageListParams{
 		FechaInicio:       c.Query("fini"),
@@ -105,23 +80,7 @@ func (h *TriageHandler) List(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-// ListPendingAdmission maneja GET /api/v1/triaje/pendientes-admision.
-//
-// @Summary Lista pacientes con triaje sin admisión
-// @Description Devuelve los pacientes con triaje que aún no han sido admisionados para una fecha (SP webGestionAtencion_E_H_BusquedaFiltrar). Los filtros opcionales se envían como 0 para no aplicarlos.
-// @Tags Triaje
-// @Produce json
-// @Param fecha query string true "Fecha (YYYY-MM-DD)"
-// @Param filtro query string false "Texto de búsqueda (documento o nombre)"
-// @Param nroCta query int false "Número de cuenta de atención (0 = todos)"
-// @Param idDepartamento query int false "Id departamento (0 = todos)"
-// @Param idEspecialidad query int false "Id especialidad (0 = todas)"
-// @Param idServicio query int false "Id servicio (0 = todos)"
-// @Param idTipoServicio query int false "Id tipo de servicio"
-// @Success 200 {object} apiResponse{data=[]object}
-// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al listar los triajes sin admisión"
-// @Router /triaje/pendientes-admision [get]
+
 func (h *TriageHandler) ListPendingAdmission(c *gin.Context) {
 	params := shared.TriageAdmisionParams{
 		Fecha:  c.Query("fecha"),
@@ -140,7 +99,7 @@ func (h *TriageHandler) ListPendingAdmission(c *gin.Context) {
 	}{
 		{c.Query("nroCta"), &params.NroCta, "nroCta"},
 		{c.Query("idDepartamento"), &params.IdDepartamento, "idDepartamento"},
-		{c.Query("idEspecialidad"), &params.IdEspecialidad, "idEspecialidad"},
+		{c.Query("IdEspecialidad"), &params.IdEspecialidad, "IdEspecialidad"},
 		{c.Query("idServicio"), &params.IdServicio, "idServicio"},
 		{c.Query("idTipoServicio"), &params.IdTipoServicio, "idTipoServicio"},
 	}
@@ -165,18 +124,7 @@ func (h *TriageHandler) ListPendingAdmission(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-// CreateAdmission maneja POST /api/v1/triaje/admision.
-//
-// @Summary Admisiona un paciente con triaje
-// @Description Crea la atención (admisión) de un paciente desde su triaje invocando el SP WebCrearAtencionDesdeTriaje. Devuelve el @Resultado informado por el procedimiento.
-// @Tags Triaje
-// @Accept json
-// @Produce json
-// @Param request body createAdmissionFromTriageRequest true "Datos de la admisión a partir del triaje"
-// @Success 200 {object} apiResponse{data=object} "Resultado informado por el SP"
-// @Failure 400 {object} apiResponse{error=apiError} "Cuerpo inválido"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al admisionar al paciente"
-// @Router /triaje/admision [post]
+
 func (h *TriageHandler) CreateAdmission(c *gin.Context) {
 	var req createAdmissionFromTriageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -199,18 +147,7 @@ func (h *TriageHandler) CreateAdmission(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
 
-// GetReporte maneja GET /api/v1/triaje/reporte.
-//
-// @Summary Genera el reporte de triaje
-// @Description Devuelve el reporte de triaje (SP WebSelectReporteTriaje). Si el filtro no se aplica, enviar -100.
-// @Tags Triaje
-// @Produce json
-// @Param id query int false "Id del triaje (-100 para todos)"
-// @Param idPaciente query int false "Id del paciente (-100 para todos)"
-// @Success 200 {object} apiResponse{data=[]object}
-// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al generar el reporte"
-// @Router /triaje/reporte [get]
+
 func (h *TriageHandler) GetReporte(c *gin.Context) {
 	params := shared.TriageReporteParams{
 		IDTriaje:   -100,
@@ -244,17 +181,7 @@ func (h *TriageHandler) GetReporte(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-// GetFichaAdmision maneja GET /api/v1/triaje/ficha-admision.
-//
-// @Summary Obtiene la ficha de admisión de un paciente
-// @Description Devuelve los datos del paciente y datos adicionales para generar la ficha de admisión (SP webFichaEmergencia).
-// @Tags Triaje
-// @Produce json
-// @Param idCuentaAtencion query int true "Id de la cuenta de atención"
-// @Success 200 {object} apiResponse{data=object}
-// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al obtener la ficha"
-// @Router /triaje/ficha-admision [get]
+
 func (h *TriageHandler) GetFichaAdmision(c *gin.Context) {
 	raw := c.Query("idCuentaAtencion")
 	if raw == "" {
@@ -276,26 +203,16 @@ func (h *TriageHandler) GetFichaAdmision(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, item)
 }
 
-// ListMedicosPorEspecialidad maneja GET /api/v1/triaje/medicos/:idEspecialidad.
-//
-// @Summary Lista los médicos de una especialidad
-// @Description Devuelve los médicos de la especialidad indicada (SP usp_go_MedicosFiltrarPorIdEspecialidad).
-// @Tags Triaje
-// @Produce json
-// @Param idEspecialidad path int true "Id de la especialidad"
-// @Success 200 {object} apiResponse{data=[]domain.MedicoFila}
-// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al listar los médicos"
-// @Router /triaje/medicos/{idEspecialidad} [get]
+
 func (h *TriageHandler) ListMedicosPorEspecialidad(c *gin.Context) {
-	raw := c.Param("idEspecialidad")
+	raw := c.Param("IdEspecialidad")
 	if raw == "" {
-		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idEspecialidad es obligatorio")
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "IdEspecialidad es obligatorio")
 		return
 	}
 	id, err := strconv.ParseInt(raw, 10, 64)
 	if err != nil || id < 0 {
-		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idEspecialidad debe ser un entero positivo o 0")
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "IdEspecialidad debe ser un entero positivo o 0")
 		return
 	}
 
@@ -308,20 +225,7 @@ func (h *TriageHandler) ListMedicosPorEspecialidad(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-// ListTriajeConsulta maneja GET /api/v1/triaje/consulta.
-//
-// @Summary Lista la bandeja de triaje de consulta externa
-// @Description Devuelve las atenciones de consulta externa con indicador de si tienen triaje (SP AtencionesTriajeFiltro).
-// @Tags Triaje
-// @Produce json
-// @Param fini query string true "Fecha inicial (YYYY-MM-DD)"
-// @Param ffin query string true "Fecha final (YYYY-MM-DD)"
-// @Param filtro query string false "Texto de búsqueda (documento o nombre)"
-// @Param idServicio query int false "Id del consultorio/servicio (0 = todos)"
-// @Success 200 {object} apiResponse{data=[]object}
-// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al listar la bandeja"
-// @Router /triaje/consulta [get]
+
 func (h *TriageHandler) ListTriajeConsulta(c *gin.Context) {
 	params := shared.TriajeConsultaParams{
 		FechaInicio: c.Query("fini"),
@@ -362,18 +266,7 @@ func (h *TriageHandler) ListTriajeConsulta(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-// CreateTriajeConsulta maneja POST /api/v1/triaje/consulta.
-//
-// @Summary Registra o actualiza el triaje de consulta externa
-// @Description Persiste el triaje de la atención invocando el SP AtencionesTriajeAgregar (inserta si no existe o actualiza el vigente). Devuelve el @Resultado informado por el procedimiento.
-// @Tags Triaje
-// @Accept json
-// @Produce json
-// @Param request body createTriajeConsultaRequest true "Datos del triaje de consulta externa"
-// @Success 200 {object} apiResponse{data=object} "Resultado informado por el SP"
-// @Failure 400 {object} apiResponse{error=apiError} "Cuerpo inválido"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al registrar el triaje"
-// @Router /triaje/consulta [post]
+
 func (h *TriageHandler) CreateTriajeConsulta(c *gin.Context) {
 	var req createTriajeConsultaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -395,17 +288,7 @@ func (h *TriageHandler) CreateTriajeConsulta(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
 
-// GetTriajeConsultaPorAtencion maneja GET /api/v1/triaje/consulta/atencion/:idAtencion.
-//
-// @Summary Obtiene el triaje de consulta externa de una atención
-// @Description Devuelve el triaje vigente (UltimoTriaje = 1) de la atención indicada, o null si no existe.
-// @Tags Triaje
-// @Produce json
-// @Param idAtencion path int true "Id de la atención"
-// @Success 200 {object} apiResponse{data=object}
-// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al obtener el triaje"
-// @Router /triaje/consulta/atencion/{idAtencion} [get]
+
 func (h *TriageHandler) GetTriajeConsultaPorAtencion(c *gin.Context) {
 	raw := c.Param("idAtencion")
 	if raw == "" {
@@ -427,19 +310,7 @@ func (h *TriageHandler) GetTriajeConsultaPorAtencion(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, item)
 }
 
-// UpdateEstadoTriajeConsulta maneja PUT /api/v1/triaje/consulta/:id/estado.
-//
-// @Summary Actualiza el estado de un triaje de consulta externa
-// @Description Actualiza el estado del triaje invocando el SP AtencionesTriajeEstado.
-// @Tags Triaje
-// @Accept json
-// @Produce json
-// @Param id path int true "Id del triaje"
-// @Param request body triajeConsultaEstadoRequest true "Nuevo estado"
-// @Success 200 {object} apiResponse{data=object} "Operación exitosa"
-// @Failure 400 {object} apiResponse{error=apiError} "Cuerpo inválido"
-// @Failure 500 {object} apiResponse{error=apiError} "Error al actualizar el estado"
-// @Router /triaje/consulta/{id}/estado [put]
+
 func (h *TriageHandler) UpdateEstadoTriajeConsulta(c *gin.Context) {
 	raw := c.Param("id")
 	if raw == "" {

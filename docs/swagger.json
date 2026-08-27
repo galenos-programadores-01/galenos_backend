@@ -9,668 +9,6 @@
     "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
-        "/api/v1/evoluciones": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Saves a new medical evolution",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Evoluciones"
-                ],
-                "summary": "Save an evolution",
-                "parameters": [
-                    {
-                        "description": "Evolution data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.SaveEvolucionRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/evoluciones/paciente/{pacienteId}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the saved medical evolutions for a given registration ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Evoluciones"
-                ],
-                "summary": "Get evolutions for a patient",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID of the Registration / Encounter",
-                        "name": "pacienteId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/evoluciones/pacientes": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns a list of patients with an attention within the date range (Atenciones.FechaIngreso). If fini/ffin are omitted, returns the most recent 50.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Evoluciones"
-                ],
-                "summary": "List patients for the medical evolution tray",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Fecha inicial (YYYY-MM-DD)",
-                        "name": "fini",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Fecha final (YYYY-MM-DD)",
-                        "name": "ffin",
-                        "in": "query"
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/evoluciones/{idRegAtencion}/motivos": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the saved reasons for attention for a given registration ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Evoluciones"
-                ],
-                "summary": "Get motivos de atencion for a patient evolution",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID of the Registration / Encounter",
-                        "name": "idRegAtencion",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Saves a new reason for attention in a patient's evolution",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Evoluciones"
-                ],
-                "summary": "Save a motivo de atencion",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID of the Registration / Encounter",
-                        "name": "idRegAtencion",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Motivo data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.SaveMotivoRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/evoluciones/{idRegAtencion}/sintomas": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Reemplaza los síntomas seleccionados de la evolución (sp_go_InsertarEvolucionSintomas)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Evoluciones"
-                ],
-                "summary": "Guardar síntomas seleccionados de la evolución",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID of the Registration / Encounter",
-                        "name": "idRegAtencion",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Síntomas seleccionados",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.GuardarSintomasRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/interconsultas": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a new interconsulta request",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Interconsultas"
-                ],
-                "summary": "Create an interconsulta",
-                "parameters": [
-                    {
-                        "description": "Interconsulta data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.CreateInterconsultaRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/interconsultas/atencion/{idAtencion}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the interconsultas associated with a specific attention/encounter",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Interconsultas"
-                ],
-                "summary": "List interconsultas by attention ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de la Atención",
-                        "name": "idAtencion",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/interconsultas/especialidades": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the specialties available for interconsulta requests",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Interconsultas"
-                ],
-                "summary": "List interconsulta specialties",
-                "responses": {}
-            }
-        },
-        "/api/v1/interconsultas/medicos/{idEspecialidad}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the doctors available for a given interconsulta specialty",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Interconsultas"
-                ],
-                "summary": "List doctors by specialty",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de la Especialidad",
-                        "name": "idEspecialidad",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/interconsultas/servicio/{tipoServicio}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the interconsultas for a given service type",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Interconsultas"
-                ],
-                "summary": "List interconsultas by service",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Tipo de Servicio",
-                        "name": "tipoServicio",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/interconsultas/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the interconsulta details for a given ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Interconsultas"
-                ],
-                "summary": "Get interconsulta by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de la Interconsulta",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/interconsultas/{id}/estado": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Updates the state of an existing interconsulta",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Interconsultas"
-                ],
-                "summary": "Update interconsulta state",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de la Interconsulta",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Estado data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.UpdateEstadoRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/interconsultas/{id}/firma": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Saves the signature for an interconsulta",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Interconsultas"
-                ],
-                "summary": "Sign an interconsulta",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de la Interconsulta",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Firma data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.SignInterconsultaRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/ordenes": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a new medical order in a patient's evolution",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Ordenes"
-                ],
-                "summary": "Create an orden medica",
-                "parameters": [
-                    {
-                        "description": "Orden data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.CreateOrdenRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/ordenes/cuenta/{idRegAtencion}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the medical orders for a given account ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Ordenes"
-                ],
-                "summary": "Get ordenes for a patient account",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de la Atencion",
-                        "name": "idRegAtencion",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/ordenes/productos": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Busca productos/medicamentos en el catálogo de bienes e insumos con su precio de venta vigente",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Ordenes"
-                ],
-                "summary": "Buscar productos del catálogo",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filtro por nombre, código o nombre comercial",
-                        "name": "q",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Máximo de resultados (default 50)",
-                        "name": "limite",
-                        "in": "query"
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/resultados/imagenes/paciente/{idPaciente}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns imaging results history for a given patient ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Resultados"
-                ],
-                "summary": "Get imaging results for a patient",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID of the Patient",
-                        "name": "idPaciente",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/resultados/laboratorio/paciente/{idPaciente}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns laboratory results history for a given patient ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Resultados"
-                ],
-                "summary": "Get laboratory results for a patient",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID of the Patient",
-                        "name": "idPaciente",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api/v1/sintomas/catalogo": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Devuelve el catálogo de síntomas agrupado por sistema (Tab_Sintomas_Catalogo)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Evoluciones"
-                ],
-                "summary": "Listar catálogo de síntomas",
-                "responses": {}
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Inserta un síntoma nuevo en el catálogo si no existe",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Evoluciones"
-                ],
-                "summary": "Agregar síntoma al catálogo",
-                "parameters": [
-                    {
-                        "description": "Síntoma a agregar",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.AgregarSintomaRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
         "/appointments": {
             "post": {
                 "description": "Valida los datos del paciente, médico y horario, y agenda la cita si el médico está disponible.",
@@ -995,6 +333,152 @@
                 }
             }
         },
+        "/diagnosticos/listar": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Busca diagnosticos por filtro (codigo o descripcion)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Diagnosticos"
+                ],
+                "summary": "Listar diagnosticos CIE10",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filtro de busqueda",
+                        "name": "filtro",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.DiagnosticoSimple"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/diagnosticos/search": {
+            "get": {
+                "description": "Busca diagnósticos en base a un texto (filtro), idAtencion e idPaciente usando el SP usp_go_SelectDiagnosticos",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Diagnosticos"
+                ],
+                "summary": "Buscar diagnósticos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Texto a buscar",
+                        "name": "filtro",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de Atención",
+                        "name": "idAtencion",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de Paciente",
+                        "name": "idPaciente",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.DiagnosticoBusqueda"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/distritos/{idProvincia}": {
             "get": {
                 "description": "Devuelve los distritos de una provincia (SP usp_go_ListarDistritos).",
@@ -1109,6 +593,139 @@
                     },
                     "500": {
                         "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/especialidades-departamento/{idDepartamento}": {
+            "get": {
+                "description": "Devuelve las especialidades de un departamento (SP usp_go_ListarEspecialidadXDepartamento).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Lista especialidades por departamento",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del departamento",
+                        "name": "idDepartamento",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.EspecialidadSimple"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/especialidades-qx": {
+            "get": {
+                "description": "Devuelve las especialidades del departamento 4 (SP usp_go_ListarEspecialidadesQx).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Lista especialidades quirurgicas",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.EspecialidadSimple"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "allOf": [
                                 {
@@ -1285,6 +902,209 @@
                         }
                     }
                 }
+            }
+        },
+        "/evoluciones": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Saves a new medical evolution",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Save an evolution",
+                "parameters": [
+                    {
+                        "description": "Evolution data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.SaveEvolucionRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/evoluciones/paciente/{pacienteId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the saved medical evolutions for a given registration ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Get evolutions for a patient",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the Registration / Encounter",
+                        "name": "pacienteId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/evoluciones/pacientes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a list of patients with an attention within the date range (Atenciones.FechaIngreso). If fini/ffin are omitted, returns the most recent 50.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "List patients for the medical evolution tray",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha inicial (YYYY-MM-DD)",
+                        "name": "fini",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha final (YYYY-MM-DD)",
+                        "name": "ffin",
+                        "in": "query"
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/evoluciones/{idRegAtencion}/motivos": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the saved reasons for attention for a given registration ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Get motivos de atencion for a patient evolution",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the Registration / Encounter",
+                        "name": "idRegAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Saves a new reason for attention in a patient's evolution",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Save a motivo de atencion",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the Registration / Encounter",
+                        "name": "idRegAtencion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Motivo data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.SaveMotivoRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/evoluciones/{idRegAtencion}/sintomas": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reemplaza los síntomas seleccionados de la evolución (sp_go_InsertarEvolucionSintomas)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Guardar síntomas seleccionados de la evolución",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the Registration / Encounter",
+                        "name": "idRegAtencion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Síntomas seleccionados",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.GuardarSintomasRequest"
+                        }
+                    }
+                ],
+                "responses": {}
             }
         },
         "/firmaperu/documentos/{uuid}": {
@@ -2247,6 +2067,555 @@
                 }
             }
         },
+        "/interconsultas": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new interconsulta request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interconsultas"
+                ],
+                "summary": "Create an interconsulta",
+                "parameters": [
+                    {
+                        "description": "Interconsulta data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.CreateInterconsultaRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/interconsultas/atencion/{idAtencion}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the interconsultas associated with a specific attention/encounter",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interconsultas"
+                ],
+                "summary": "List interconsultas by attention ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la Atención",
+                        "name": "idAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/interconsultas/especialidades": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the specialties available for interconsulta requests",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interconsultas"
+                ],
+                "summary": "List interconsulta specialties",
+                "responses": {}
+            }
+        },
+        "/interconsultas/medicos/{IdEspecialidad}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the doctors available for a given interconsulta specialty",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interconsultas"
+                ],
+                "summary": "List doctors by specialty",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la Especialidad",
+                        "name": "IdEspecialidad",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/interconsultas/servicio/{tipoServicio}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the interconsultas for a given service type",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interconsultas"
+                ],
+                "summary": "List interconsultas by service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tipo de Servicio",
+                        "name": "tipoServicio",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/interconsultas/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the interconsulta details for a given ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interconsultas"
+                ],
+                "summary": "Get interconsulta by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la Interconsulta",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/interconsultas/{id}/estado": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates the state of an existing interconsulta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interconsultas"
+                ],
+                "summary": "Update interconsulta state",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la Interconsulta",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Estado data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.UpdateEstadoRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/interconsultas/{id}/firma": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Saves the signature for an interconsulta",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interconsultas"
+                ],
+                "summary": "Sign an interconsulta",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la Interconsulta",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Firma data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.SignInterconsultaRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/lista-espera-qx": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna la lista de espera de cirugias filtrando por rango de fechas, nombre del paciente y especialidad",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ListaEsperaQx"
+                ],
+                "summary": "Listar lista de espera quirurgica",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha inicio del filtro (YYYY-MM-DD)",
+                        "name": "fecha",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha fin del filtro (YYYY-MM-DD)",
+                        "name": "fechaFin",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nombre del paciente",
+                        "name": "paciente",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de especialidad",
+                        "name": "idEspecialidad",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.ListaEsperaQx"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra un nuevo paciente en la lista de espera quirurgica",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ListaEsperaQx"
+                ],
+                "summary": "Crear lista de espera quirurgica",
+                "parameters": [
+                    {
+                        "description": "Datos del paciente",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.crearListaEsperaQxRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.apiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/lista-espera-qx/reporte": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna el reporte de lista de espera quirurgica filtrando por rango de fechas y especialidad",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ListaEsperaQx"
+                ],
+                "summary": "Reporte lista de espera quirurgica",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha inicio del filtro (YYYY-MM-DD)",
+                        "name": "fecha",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha fin del filtro (YYYY-MM-DD)",
+                        "name": "fechaFin",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de especialidad",
+                        "name": "idEspecialidad",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.ListaEsperaQxReporte"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/lista-espera-qx/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna los datos de un paciente en lista de espera quirurgica",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ListaEsperaQx"
+                ],
+                "summary": "Obtener lista de espera quirurgica por ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del registro",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.ListaEsperaQxPaciente"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Actualiza los datos de un paciente en lista de espera quirurgica",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ListaEsperaQx"
+                ],
+                "summary": "Modificar lista de espera quirurgica",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del registro",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos a actualizar",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.modificarListaEsperaQxRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.apiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medicos-lista-espera": {
+            "get": {
+                "description": "Retorna la lista de medicos activos para la lista de espera quirurgica",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MedicosListaEspera"
+                ],
+                "summary": "Listar medicos para lista de espera",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/ocupaciones": {
             "get": {
                 "description": "Devuelve el catálogo de ocupaciones (SP usp_go_ListarOcupaciones).",
@@ -2298,6 +2667,103 @@
                         }
                     }
                 }
+            }
+        },
+        "/ordenes": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new medical order in a patient's evolution",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ordenes"
+                ],
+                "summary": "Create an orden medica",
+                "parameters": [
+                    {
+                        "description": "Orden data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.CreateOrdenRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/ordenes/cuenta/{idRegAtencion}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the medical orders for a given account ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ordenes"
+                ],
+                "summary": "Get ordenes for a patient account",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la Atencion",
+                        "name": "idRegAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/ordenes/productos": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Busca productos/medicamentos en el catálogo de bienes e insumos con su precio de venta vigente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ordenes"
+                ],
+                "summary": "Buscar productos del catálogo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filtro por nombre, código o nombre comercial",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Máximo de resultados (default 50)",
+                        "name": "limite",
+                        "in": "query"
+                    }
+                ],
+                "responses": {}
             }
         },
         "/pacientes": {
@@ -3174,6 +3640,66 @@
                 }
             }
         },
+        "/resultados/imagenes/paciente/{idPaciente}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns imaging results history for a given patient ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resultados"
+                ],
+                "summary": "Get imaging results for a patient",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the Patient",
+                        "name": "idPaciente",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/resultados/laboratorio/paciente/{idPaciente}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns laboratory results history for a given patient ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resultados"
+                ],
+                "summary": "Get laboratory results for a patient",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the Patient",
+                        "name": "idPaciente",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/servicios/{idTipoServicio}": {
             "get": {
                 "description": "Devuelve los servicios de un tipo (SP usp_go_ListarServicios).",
@@ -3235,6 +3761,170 @@
                     },
                     "500": {
                         "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/sintomas/catalogo": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve el catálogo de síntomas agrupado por sistema (Tab_Sintomas_Catalogo)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Listar catálogo de síntomas",
+                "responses": {}
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Inserta un síntoma nuevo en el catálogo si no existe",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Agregar síntoma al catálogo",
+                "parameters": [
+                    {
+                        "description": "Síntoma a agregar",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.AgregarSintomaRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/sis/afiliado/{nrodoc}": {
+            "get": {
+                "description": "Invoca el servicio SOAP de SIS para consultar la afiliación de una persona.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SIS"
+                ],
+                "summary": "Consulta un afiliado en SIS por número de documento",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Número de documento (DNI)",
+                        "name": "nrodoc",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Código DISA",
+                        "name": "strDisa",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tipo de formato",
+                        "name": "strTipoFormato",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Número de contrato",
+                        "name": "strNroContrato",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Correlativo",
+                        "name": "strCorrelativo",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tipo de documento (1=DNI, 3=CE)",
+                        "name": "strTipoDocumento",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Opción de consulta",
+                        "name": "intOpcion",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Afiliado encontrado",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "502": {
+                        "description": "Servicio SIS no disponible",
                         "schema": {
                             "allOf": [
                                 {
@@ -3398,6 +4088,189 @@
                     },
                     "500": {
                         "description": "Error al consultar los diagnósticos",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/sis/filiaciones": {
+            "get": {
+                "description": "Consulta el servicio SIS (ConsultarAfiliadoFuaE) usando los parámetros de afiliación. El nrodoc no es obligatorio.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SIS"
+                ],
+                "summary": "Busca una afiliación SIS por DISA, TipoFormato, NroContrato, Correlativo y CodigoTabla",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código DISA (ej. 035)",
+                        "name": "strDisa",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tipo formato / Lote (ej. E)",
+                        "name": "strTipoFormato",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Número de contrato (ej. 11427904)",
+                        "name": "strNroContrato",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Correlativo",
+                        "name": "strCorrelativo",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Código de tabla",
+                        "name": "strCodigoTabla",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Afiliado encontrado",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "502": {
+                        "description": "Servicio SIS no disponible",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Invoca el SP webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SIS"
+                ],
+                "summary": "Registra o actualiza una afiliación SIS",
+                "parameters": [
+                    {
+                        "description": "Datos de afiliación SIS",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.sisAfiliacionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Afiliación registrada",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error al guardar la afiliación",
                         "schema": {
                             "allOf": [
                                 {
@@ -3923,976 +4796,6 @@
                     }
                 }
             }
-        },
-        "/triaje": {
-            "get": {
-                "description": "Devuelve los triajes del período filtrado (SP ListarTriaje_Emergencia). El filtro de texto se aplica en el SP; si no se envía, se pasa vacío.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Lista los triajes registrados",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Fecha inicial (YYYY-MM-DD)",
-                        "name": "fini",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Fecha final (YYYY-MM-DD)",
-                        "name": "ffin",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Texto de búsqueda",
-                        "name": "filtro",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Servicio de derivación (-100 para todos)",
-                        "name": "derivadoAServicio",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Estado del triaje",
-                        "name": "idEstado",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Parâmetros inválidos",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al listar los triajes",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Persiste el triaje del paciente invocando el SP webTab_PacienteTriajeAgregar. Devuelve el @Resultado informado por el procedimiento.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Registra un triaje de paciente",
-                "parameters": [
-                    {
-                        "description": "Datos del triaje a registrar",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.createTriajeRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Resultado informado por el SP",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Cuerpo inválido",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al registrar el triaje",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/admision": {
-            "post": {
-                "description": "Crea la atención (admisión) de un paciente desde su triaje invocando el SP WebCrearAtencionDesdeTriaje. Devuelve el @Resultado informado por el procedimiento.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Admisiona un paciente con triaje",
-                "parameters": [
-                    {
-                        "description": "Datos de la admisión a partir del triaje",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.createAdmissionFromTriageRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Resultado informado por el SP",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Cuerpo inválido",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al admisionar al paciente",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/consulta": {
-            "get": {
-                "description": "Devuelve las atenciones de consulta externa con indicador de si tienen triaje (SP AtencionesTriajeFiltro).",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Lista la bandeja de triaje de consulta externa",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Fecha inicial (YYYY-MM-DD)",
-                        "name": "fini",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Fecha final (YYYY-MM-DD)",
-                        "name": "ffin",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Texto de búsqueda (documento o nombre)",
-                        "name": "filtro",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Id del consultorio/servicio (0 = todos)",
-                        "name": "idServicio",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Parámetros inválidos",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al listar la bandeja",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Persiste el triaje de la atención invocando el SP AtencionesTriajeAgregar (inserta si no existe o actualiza el vigente). Devuelve el @Resultado informado por el procedimiento.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Registra o actualiza el triaje de consulta externa",
-                "parameters": [
-                    {
-                        "description": "Datos del triaje de consulta externa",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.createTriajeConsultaRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Resultado informado por el SP",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Cuerpo inválido",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al registrar el triaje",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/consulta/atencion/{idAtencion}": {
-            "get": {
-                "description": "Devuelve el triaje vigente (UltimoTriaje = 1) de la atención indicada, o null si no existe.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Obtiene el triaje de consulta externa de una atención",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Id de la atención",
-                        "name": "idAtencion",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Parámetros inválidos",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al obtener el triaje",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/consulta/{id}/estado": {
-            "put": {
-                "description": "Actualiza el estado del triaje invocando el SP AtencionesTriajeEstado.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Actualiza el estado de un triaje de consulta externa",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Id del triaje",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Nuevo estado",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.triajeConsultaEstadoRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Operación exitosa",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Cuerpo inválido",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al actualizar el estado",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/ficha-admision": {
-            "get": {
-                "description": "Devuelve los datos del paciente y datos adicionales para generar la ficha de admisión (SP webFichaEmergencia).",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Obtiene la ficha de admisión de un paciente",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Id de la cuenta de atención",
-                        "name": "idCuentaAtencion",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Parámetros inválidos",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al obtener la ficha",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/medicos/{idEspecialidad}": {
-            "get": {
-                "description": "Devuelve los médicos de la especialidad indicada (SP usp_go_MedicosFiltrarPorIdEspecialidad).",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Lista los médicos de una especialidad",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Id de la especialidad",
-                        "name": "idEspecialidad",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/domain.MedicoFila"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Parámetros inválidos",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al listar los médicos",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/pendientes-admision": {
-            "get": {
-                "description": "Devuelve los pacientes con triaje que aún no han sido admisionados para una fecha (SP webGestionAtencion_E_H_BusquedaFiltrar). Los filtros opcionales se envían como 0 para no aplicarlos.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Lista pacientes con triaje sin admisión",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Fecha (YYYY-MM-DD)",
-                        "name": "fecha",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Texto de búsqueda (documento o nombre)",
-                        "name": "filtro",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Número de cuenta de atención (0 = todos)",
-                        "name": "nroCta",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Id departamento (0 = todos)",
-                        "name": "idDepartamento",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Id especialidad (0 = todas)",
-                        "name": "idEspecialidad",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Id servicio (0 = todos)",
-                        "name": "idServicio",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Id tipo de servicio",
-                        "name": "idTipoServicio",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Parámetros inválidos",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al listar los triajes sin admisión",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/reporte": {
-            "get": {
-                "description": "Devuelve el reporte de triaje (SP WebSelectReporteTriaje). Si el filtro no se aplica, enviar -100.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Triaje"
-                ],
-                "summary": "Genera el reporte de triaje",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Id del triaje (-100 para todos)",
-                        "name": "id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Id del paciente (-100 para todos)",
-                        "name": "idPaciente",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Parámetros inválidos",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Error al generar el reporte",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -5020,6 +4923,58 @@
                 }
             }
         },
+        "domain.DiagnosticoBusqueda": {
+            "type": "object",
+            "properties": {
+                "cancer": {
+                    "type": "integer"
+                },
+                "codigoCIE10": {
+                    "type": "string"
+                },
+                "descripcion": {
+                    "type": "string"
+                },
+                "descripcionLarga": {
+                    "type": "string"
+                },
+                "edadMaxDias": {
+                    "type": "integer"
+                },
+                "edadMinDias": {
+                    "type": "integer"
+                },
+                "esActivo": {
+                    "type": "integer"
+                },
+                "idDiagnostico": {
+                    "type": "integer"
+                },
+                "idTipoSexo": {
+                    "type": "integer"
+                },
+                "intrahospitalario": {
+                    "type": "integer"
+                },
+                "yaRegistrado": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.DiagnosticoSimple": {
+            "type": "object",
+            "properties": {
+                "codigoCIE10": {
+                    "type": "string"
+                },
+                "descripcion": {
+                    "type": "string"
+                },
+                "idDiagnostico": {
+                    "type": "integer"
+                }
+            }
+        },
         "domain.Distrito": {
             "type": "object",
             "properties": {
@@ -5035,6 +4990,17 @@
             "type": "object",
             "properties": {
                 "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.EspecialidadSimple": {
+            "type": "object",
+            "properties": {
+                "idEspecialidad": {
                     "type": "integer"
                 },
                 "nombre": {
@@ -5089,7 +5055,39 @@
                 }
             }
         },
-        "domain.MedicoFila": {
+        "domain.ListaEsperaQx": {
+            "type": "object",
+            "properties": {
+                "diasTranscurridos": {
+                    "type": "integer"
+                },
+                "edad": {
+                    "type": "integer"
+                },
+                "especialidad": {
+                    "type": "string"
+                },
+                "fechaOrden": {
+                    "type": "string"
+                },
+                "idListaEspera": {
+                    "type": "integer"
+                },
+                "nroDocumento": {
+                    "type": "string"
+                },
+                "nroHistoriaClinica": {
+                    "type": "integer"
+                },
+                "observacion": {
+                    "type": "string"
+                },
+                "paciente": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ListaEsperaQxPaciente": {
             "type": "object",
             "properties": {
                 "apellidoMaterno": {
@@ -5098,25 +5096,111 @@
                 "apellidoPaterno": {
                     "type": "string"
                 },
-                "codigoPlanilla": {
+                "diagnostico": {
                     "type": "string"
                 },
-                "colegiatura": {
+                "direccion": {
                     "type": "string"
                 },
-                "especialidad": {
+                "fechaICAnestesio": {
                     "type": "string"
+                },
+                "fechaICCardio": {
+                    "type": "string"
+                },
+                "fechaICNeumo": {
+                    "type": "string"
+                },
+                "fechaLab": {
+                    "type": "string"
+                },
+                "fechaNacimiento": {
+                    "type": "string"
+                },
+                "fechaOrden": {
+                    "type": "string"
+                },
+                "idDiagnostico": {
+                    "type": "integer"
+                },
+                "idDocIdentidad": {
+                    "type": "integer"
+                },
+                "idEspecialidad": {
+                    "type": "integer"
                 },
                 "idMedico": {
                     "type": "integer"
                 },
-                "nombre": {
+                "idTipoSexo": {
+                    "type": "integer"
+                },
+                "medico": {
                     "type": "string"
                 },
-                "nombreCompleto": {
+                "nroDocumento": {
                     "type": "string"
                 },
-                "rne": {
+                "observacion": {
+                    "type": "string"
+                },
+                "primerNombre": {
+                    "type": "string"
+                },
+                "telefono": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ListaEsperaQxReporte": {
+            "type": "object",
+            "properties": {
+                "diagnostico": {
+                    "type": "string"
+                },
+                "diasTranscurridos": {
+                    "type": "integer"
+                },
+                "edad": {
+                    "type": "integer"
+                },
+                "especialidad": {
+                    "type": "string"
+                },
+                "fechaICAnestesio": {
+                    "type": "string"
+                },
+                "fechaICCardio": {
+                    "type": "string"
+                },
+                "fechaICNeumo": {
+                    "type": "string"
+                },
+                "fechaLab": {
+                    "type": "string"
+                },
+                "fechaOrden": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "medico": {
+                    "type": "string"
+                },
+                "nroDocumento": {
+                    "type": "string"
+                },
+                "nroHistoriaClinica": {
+                    "type": "integer"
+                },
+                "observacion": {
+                    "type": "string"
+                },
+                "paciente": {
+                    "type": "string"
+                },
+                "telefono": {
                     "type": "string"
                 }
             }
@@ -5592,16 +5676,16 @@
         "httpadapter.CreateInterconsultaRequest": {
             "type": "object",
             "required": [
+                "IdEspecialidad",
                 "idAtencionOrigen",
-                "idEspecialidad",
                 "idMedicoDestino",
                 "motivo"
             ],
             "properties": {
-                "idAtencionOrigen": {
+                "IdEspecialidad": {
                     "type": "integer"
                 },
-                "idEspecialidad": {
+                "idAtencionOrigen": {
                     "type": "integer"
                 },
                 "idMedicoDestino": {
@@ -5718,32 +5802,42 @@
                 }
             }
         },
-        "httpadapter.createAdmissionFromTriageRequest": {
+        "httpadapter.crearListaEsperaQxRequest": {
             "type": "object",
             "required": [
-                "idPacienteTriaje",
-                "idTriaje"
+                "fechaOrden",
+                "idMedico",
+                "idPaciente"
             ],
             "properties": {
-                "direccionPaciente": {
+                "diagnostico": {
+                    "type": "integer"
+                },
+                "fechaICAnestesio": {
                     "type": "string"
+                },
+                "fechaICCardio": {
+                    "type": "string"
+                },
+                "fechaICNeumo": {
+                    "type": "string"
+                },
+                "fechaLaboratorio": {
+                    "type": "string"
+                },
+                "fechaOrden": {
+                    "type": "string"
+                },
+                "idEspecialidad": {
+                    "type": "integer"
                 },
                 "idMedico": {
                     "type": "integer"
                 },
-                "idPacienteTriaje": {
+                "idPaciente": {
                     "type": "integer"
-                },
-                "idTriaje": {
-                    "type": "integer"
-                },
-                "nombreAcompanante": {
-                    "type": "string"
                 },
                 "observacion": {
-                    "type": "string"
-                },
-                "telefonoAcompanante": {
                     "type": "string"
                 }
             }
@@ -5838,201 +5932,6 @@
                 }
             }
         },
-        "httpadapter.createTriajeConsultaRequest": {
-            "type": "object",
-            "required": [
-                "idAtencion",
-                "idEmpleado",
-                "idPaciente"
-            ],
-            "properties": {
-                "fi02": {
-                    "type": "string"
-                },
-                "frecCardiaca": {
-                    "type": "string"
-                },
-                "frecCardiacaFetal": {
-                    "type": "string"
-                },
-                "frecRespiratoria": {
-                    "type": "string"
-                },
-                "gestante": {
-                    "type": "string"
-                },
-                "hemoglobina": {
-                    "type": "string"
-                },
-                "idAtencion": {
-                    "type": "integer"
-                },
-                "idEmpleado": {
-                    "type": "integer"
-                },
-                "idPaciente": {
-                    "type": "integer"
-                },
-                "imc": {
-                    "type": "string"
-                },
-                "observacion": {
-                    "type": "string"
-                },
-                "origen": {
-                    "type": "string"
-                },
-                "perimAbdominal": {
-                    "type": "string"
-                },
-                "perimCefalico": {
-                    "type": "string"
-                },
-                "peso": {
-                    "type": "string"
-                },
-                "presionArterial": {
-                    "type": "string"
-                },
-                "pulso": {
-                    "type": "string"
-                },
-                "sat02": {
-                    "type": "string"
-                },
-                "talla": {
-                    "type": "string"
-                },
-                "temperatura": {
-                    "type": "string"
-                }
-            }
-        },
-        "httpadapter.createTriajeRequest": {
-            "type": "object",
-            "properties": {
-                "apellidoMaterno": {
-                    "type": "string"
-                },
-                "apellidoPaterno": {
-                    "type": "string"
-                },
-                "direccion": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "escalaDolor": {
-                    "type": "integer"
-                },
-                "escalaGlasgow": {
-                    "type": "integer"
-                },
-                "fechaNacimiento": {
-                    "type": "string"
-                },
-                "fiO2": {
-                    "type": "integer"
-                },
-                "foto": {
-                    "type": "string"
-                },
-                "frecCardiaca": {
-                    "type": "integer"
-                },
-                "frecRespiratoria": {
-                    "type": "integer"
-                },
-                "gestante": {
-                    "type": "integer"
-                },
-                "idComunidadDomicilio": {
-                    "type": "integer"
-                },
-                "idDepartamentoDomicilio": {
-                    "type": "integer"
-                },
-                "idDistritoDomicilio": {
-                    "type": "integer"
-                },
-                "idDocIdentidad": {
-                    "type": "integer"
-                },
-                "idEmpleado": {
-                    "type": "integer"
-                },
-                "idEsAccidenteTransito": {
-                    "type": "integer"
-                },
-                "idEstadoCivil": {
-                    "type": "integer"
-                },
-                "idEstadollego": {
-                    "type": "integer"
-                },
-                "idFuenteFinanciamiento": {
-                    "type": "integer"
-                },
-                "idProvinciaDomicilio": {
-                    "type": "integer"
-                },
-                "idServicio": {
-                    "type": "integer"
-                },
-                "idSexo": {
-                    "type": "integer"
-                },
-                "idTipoPrioridad": {
-                    "type": "integer"
-                },
-                "idTriaje": {
-                    "type": "integer"
-                },
-                "imc": {
-                    "type": "number"
-                },
-                "motivo": {
-                    "type": "string"
-                },
-                "nroDocumento": {
-                    "type": "string"
-                },
-                "peso": {
-                    "type": "number"
-                },
-                "presionArterial": {
-                    "type": "string"
-                },
-                "primerNombre": {
-                    "type": "string"
-                },
-                "saturacion": {
-                    "type": "integer"
-                },
-                "segundoNombre": {
-                    "type": "string"
-                },
-                "talla": {
-                    "type": "number"
-                },
-                "telefono": {
-                    "type": "string"
-                },
-                "temperatura": {
-                    "type": "number"
-                },
-                "tercerNombre": {
-                    "type": "string"
-                },
-                "tiempoEvolucionCantidad": {
-                    "type": "integer"
-                },
-                "tiempoEvolucionCantidadUnidad": {
-                    "type": "string"
-                }
-            }
-        },
         "httpadapter.firmaPeruInitResponse": {
             "type": "object",
             "properties": {
@@ -6040,6 +5939,35 @@
                     "type": "string"
                 },
                 "paramBase64": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpadapter.modificarListaEsperaQxRequest": {
+            "type": "object",
+            "properties": {
+                "diagnostico": {
+                    "type": "integer"
+                },
+                "fechaICAnestesio": {
+                    "type": "string"
+                },
+                "fechaICCardio": {
+                    "type": "string"
+                },
+                "fechaICNeumo": {
+                    "type": "string"
+                },
+                "fechaLaboratorio": {
+                    "type": "string"
+                },
+                "fechaOrden": {
+                    "type": "string"
+                },
+                "idEspecialidad": {
+                    "type": "integer"
+                },
+                "observacion": {
                     "type": "string"
                 }
             }
@@ -6282,6 +6210,104 @@
                 }
             }
         },
+        "httpadapter.sisAfiliacionRequest": {
+            "type": "object",
+            "properties": {
+                "afiliacionDisa": {
+                    "type": "string"
+                },
+                "afiliacionFecha": {
+                    "type": "string"
+                },
+                "afiliacionNroFormato": {
+                    "type": "string"
+                },
+                "afiliacionNroIntegrante": {
+                    "type": "string"
+                },
+                "afiliacionTipoFormato": {
+                    "type": "string"
+                },
+                "codigo": {
+                    "type": "string"
+                },
+                "codigoEstablAdscripcion": {
+                    "type": "string"
+                },
+                "contrato": {
+                    "type": "string"
+                },
+                "descEESS": {
+                    "type": "string"
+                },
+                "descEessUbigeo": {
+                    "type": "string"
+                },
+                "descTipoSeguro": {
+                    "type": "string"
+                },
+                "documentoNumero": {
+                    "type": "string"
+                },
+                "documentoTipo": {
+                    "type": "string"
+                },
+                "estado": {
+                    "type": "string"
+                },
+                "fBaja": {
+                    "type": "string"
+                },
+                "fBajaOk": {
+                    "type": "string"
+                },
+                "fNacimiento": {
+                    "type": "string"
+                },
+                "genero": {
+                    "type": "string"
+                },
+                "idDistritoDomicilio": {
+                    "type": "string"
+                },
+                "idGrupoPoblacional": {
+                    "type": "string"
+                },
+                "idPlan": {
+                    "type": "string"
+                },
+                "idSiasis": {
+                    "type": "integer"
+                },
+                "idUsuarioAuditoria": {
+                    "type": "integer"
+                },
+                "materno": {
+                    "type": "string"
+                },
+                "motivoBaja": {
+                    "type": "string"
+                },
+                "msgConfidencial": {
+                    "type": "string"
+                },
+                "oNombres": {
+                    "type": "string"
+                },
+                "pNombre": {
+                    "type": "string"
+                },
+                "paterno": {
+                    "type": "string"
+                },
+                "regimen": {
+                    "type": "string"
+                },
+                "tipoSeguro": {
+                    "type": "string"
+                }
+            }
+        },
         "httpadapter.sisFuaAgregarRequest": {
             "type": "object",
             "required": [
@@ -6308,17 +6334,6 @@
             "properties": {
                 "idCuentaAtencion": {
                     "type": "integer"
-                }
-            }
-        },
-        "httpadapter.triajeConsultaEstadoRequest": {
-            "type": "object",
-            "required": [
-                "estado"
-            ],
-            "properties": {
-                "estado": {
-                    "type": "string"
                 }
             }
         },

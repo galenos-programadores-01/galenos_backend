@@ -37,7 +37,7 @@ type TriageService interface {
 
 	// ListarMedicosPorEspecialidad lista los médicos de una especialidad
 	// invocando el SP usp_go_MedicosFiltrarPorIdEspecialidad.
-	ListarMedicosPorEspecialidad(ctx context.Context, idEspecialidad int) ([]domain.MedicoFila, error)
+	ListarMedicosPorEspecialidad(ctx context.Context, IdEspecialidad int) ([]domain.MedicoFila, error)
 
 	// ListTriajeConsulta lista la bandeja de triaje de consulta externa
 	// invocando el SP AtencionesTriajeFiltro.

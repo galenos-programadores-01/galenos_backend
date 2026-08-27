@@ -11,6 +11,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -46,6 +47,13 @@ const (
 const operacionConsulta = "ConsultarAfiliadoFuaE"
 const elementoResultado = "ConsultarAfiliadoFuaEResult"
 
+// operacionBuscarPorAfiliacion es la operación SOAP para buscar afiliados
+// por DISA/Lote/NroContrato/Correlativo/CodTabla. El SOAPAction usa
+// http://www.sis.gob.pe/ (con www) como lo indica el frontend VB.
+const operacionBuscarPorAfiliacion = "BuscarAsegurados"
+const soapActionBuscarPorAfiliacion = "http://www.sis.gob.pe/BuscarAsegurados"
+const elementoResultadoBuscar = "BuscarAseguradosResult"
+
 type client struct {
 	cfg  Config
 	http *http.Client
@@ -74,6 +82,9 @@ func (c *client) ConsultarAfiliado(ctx context.Context, params shared.SISAfiliad
 	}
 
 	body := c.construirConsulta(token, params)
+	log.Printf("[SIS] ConsultarAfiliado params: Opcion=%d, DocumentNumber=%q, Disa=%q, TipoFormato=%q, NroContrato=%q, Correlativo=%q, TipoDocumento=%d",
+		params.Opcion, params.DocumentNumber, params.Disa, params.TipoFormato, params.NroContrato, params.Correlativo, params.TipoDocumento)
+	log.Printf("[SIS] SOAP body:\n%s", string(body))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.URL, bytes.NewBuffer(body))
 	if err != nil {
@@ -210,6 +221,99 @@ func (c *client) construirConsulta(token string, params shared.SISAfiliadoParams
 		escapeXML(params.TipoFormato),
 		escapeXML(params.NroContrato),
 		escapeXML(params.Correlativo),
+	))
+}
+
+// BuscarPorAfiliacion consulta el paciente afiliado por los parámetros de
+// afiliación (DISA, Lote, Contrato, Correlativo, CodTabla) usando la
+// operación BuscarAsegurados del SIS.
+// NOTA: el VB original NO llama GetSession para esta operación; el token
+// de sisWSAFI no aplica para RecepcionTrama.asmx.
+func (c *client) BuscarPorAfiliacion(ctx context.Context, params shared.SISAfiliadoParams) (domain.SisAfiliado, error) {
+	body := c.construirBuscarPorAfiliacion(params)
+	log.Printf("[SIS] BuscarPorAfiliacion params: Disa=%q, Lote=%q, Contrato=%q, Correlativo=%q, CodTabla=%q",
+		params.Disa, params.Lote, params.NroContrato, params.Correlativo, params.CodTabla)
+	log.Printf("[SIS] SOAP body:\n%s", string(body))
+
+	buscarURL := "http://app.sis.gob.pe/edi/RecepcionTrama.asmx"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, buscarURL, bytes.NewBuffer(body))
+	if err != nil {
+		return domain.SisAfiliado{}, fmt.Errorf("building sis request: %w", err)
+	}
+	req.Header.Set("Content-Type", `text/xml; charset="utf-8"`)
+	req.Header.Set("SOAPAction", soapActionBuscarPorAfiliacion)
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", "text/xml, application/xml, */*")
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return domain.SisAfiliado{}, fmt.Errorf("calling sis service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	contenido, readErr := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	if readErr != nil {
+		return domain.SisAfiliado{}, fmt.Errorf("reading sis response: %w", readErr)
+	}
+
+	if resp.StatusCode >= 400 {
+		return domain.SisAfiliado{}, fmt.Errorf("sis service responded %d: %s", resp.StatusCode, truncate(contenido, 800))
+	}
+
+	log.Printf("[SIS] BuscarPorAfiliacion response (%d bytes):\n%s", len(contenido), truncate(contenido, 3000))
+
+	var rawResult struct {
+		XMLName  xml.Name `xml:"BuscarAseguradosResult"`
+		InnerXML string   `xml:",innerxml"`
+	}
+	if err := decodeElementByLocalName(contenido, elementoResultadoBuscar, &rawResult); err != nil {
+		return domain.SisAfiliado{}, fmt.Errorf("parsing sis response: %w: %s", err, truncate(contenido, 400))
+	}
+
+	log.Printf("[SIS] BuscarAseguradosResult innerXML:\n%s", rawResult.InnerXML)
+
+	var raw struct {
+		XMLName xml.Name   `xml:"result"`
+		Fields  []rawField `xml:",any"`
+	}
+	if err := xml.Unmarshal([]byte("<result>"+rawResult.InnerXML+"</result>"), &raw); err != nil {
+		log.Printf("[SIS] BuscarPorAfiliacion: raw innerXML is not XML, treating as delimited text")
+		return domain.SisAfiliado{
+			Resultado: rawResult.InnerXML,
+		}, nil
+	}
+
+	log.Printf("[SIS] BuscarPorAfiliacion parsed fields: %d", len(raw.Fields))
+	for _, f := range raw.Fields {
+		log.Printf("[SIS]   %s = %q", f.XMLName.Local, f.Value)
+	}
+
+	return mapAfiliado(raw.Fields), nil
+}
+
+// construirBuscarPorAfiliacion arma el sobre SOAP de BuscarAsegurados.
+// Replica la lógica del frontend VB: usa Disa, TipoFormato (=Lote),
+// Contrato, Correlativo y CodTabla. No usa namespace en el body porque
+// el template VB original (SIS_Buscar_AfiliadoxNroAfiliado) no lo incluye.
+func (c *client) construirBuscarPorAfiliacion(params shared.SISAfiliadoParams) []byte {
+	return []byte(fmt.Sprintf(`<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="%s">
+  <soap:Body>
+    <BuscarAsegurados>
+      <Disa>%s</Disa>
+      <TipoFormato>%s</TipoFormato>
+      <Contrato>%s</Contrato>
+      <Correlativo>%s</Correlativo>
+      <CodTabla>%s</CodTabla>
+    </BuscarAsegurados>
+  </soap:Body>
+</soap:Envelope>`,
+		soapNS,
+		escapeXML(params.Disa),
+		escapeXML(params.Lote),
+		escapeXML(params.NroContrato),
+		escapeXML(params.Correlativo),
+		escapeXML(params.CodTabla),
 	))
 }
 

@@ -3,7 +3,7 @@ package domain
 type Interconsulta struct {
 	IdInterconsulta  int    `json:"idInterconsulta"`
 	IdAtencionOrigen int    `json:"idAtencionOrigen"`
-	IdEspecialidad   int    `json:"idEspecialidad"`
+	IdEspecialidad   int    `json:"IdEspecialidad"`
 	IdMedicoDestino  int    `json:"idMedicoDestino"`
 	Motivo           string `json:"motivo"`
 	FechaSolicitud   string `json:"fechaSolicitud"`
@@ -17,7 +17,7 @@ type FirmaInterconsulta struct {
 }
 
 type EspecialidadInterconsulta struct {
-	IdEspecialidad   int     `json:"idEspecialidad"`
+	IdEspecialidad   int     `json:"IdEspecialidad"`
 	Nombre           *string `json:"nombre"`
 	DescripcionLarga *string `json:"descripcionLarga"`
 }

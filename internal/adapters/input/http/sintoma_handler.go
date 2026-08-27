@@ -27,7 +27,7 @@ func idUsuarioDesdeContexto(c *gin.Context) int {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Router /api/v1/sintomas/catalogo [get]
+// @Router /sintomas/catalogo [get]
 func (h *SintomaHandler) HandleListarCatalogo(c *gin.Context) {
 	sintomas, err := h.service.ListarCatalogo(c.Request.Context())
 	if err != nil {
@@ -49,7 +49,7 @@ type AgregarSintomaRequest struct {
 // @Produce json
 // @Security BearerAuth
 // @Param request body AgregarSintomaRequest true "Síntoma a agregar"
-// @Router /api/v1/sintomas/catalogo [post]
+// @Router /sintomas/catalogo [post]
 func (h *SintomaHandler) HandleAgregarCatalogo(c *gin.Context) {
 	var req AgregarSintomaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -79,7 +79,7 @@ type GuardarSintomasRequest struct {
 // @Security BearerAuth
 // @Param idRegAtencion path int true "ID of the Registration / Encounter"
 // @Param request body GuardarSintomasRequest true "Síntomas seleccionados"
-// @Router /api/v1/evoluciones/{idRegAtencion}/sintomas [post]
+// @Router /evoluciones/{idRegAtencion}/sintomas [post]
 func (h *SintomaHandler) HandleGuardarSintomas(c *gin.Context) {
 	idStr := c.Param("idRegAtencion")
 	idRegAtencion, err := strconv.Atoi(idStr)

@@ -27,6 +27,8 @@ type CatalogRepository interface {
 	ListFuentesFinanciamiento(ctx context.Context) ([]domain.FuenteFinanciamiento, error)
 	ListServicios(ctx context.Context, idTipoServicio int64) ([]domain.Servicio, error)
 	ListEspecialidades(ctx context.Context) ([]domain.Especialidad, error)
+	ListarEspecialidadesPorDepartamento(ctx context.Context, idDepartamento int) ([]domain.EspecialidadSimple, error)
+	ListarEspecialidadesQx(ctx context.Context) ([]domain.EspecialidadSimple, error)
 	GetDatosInstitucion(ctx context.Context) (*domain.DatosInstitucion, error)
 	GetParametro(ctx context.Context, idParametro int64) (*domain.Parametro, error)
 	ListRecetaFrecuencias(ctx context.Context) ([]domain.CatalogItem, error)
