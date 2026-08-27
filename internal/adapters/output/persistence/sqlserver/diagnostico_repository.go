@@ -102,3 +102,22 @@ func (r *sqlServerDiagnosticoRepository) SearchDiagnosticos(ctx context.Context,
 	log.Printf("Repository: Returning %d rows for filtro=%q, idAtencion=%d, idPaciente=%d", len(results), filtro, idAtencion, idPaciente)
 	return results, nil
 }
+
+func (r *sqlServerDiagnosticoRepository) ListarDiagnosticos(ctx context.Context, filtro string) ([]domain.DiagnosticoSimple, error) {
+	query := "EXEC usp_go_ListarDiagnosticos @Filtro = @p1"
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", filtro))
+	if err != nil {
+		return nil, fmt.Errorf("error listing diagnosticos: %w", err)
+	}
+	defer rows.Close()
+
+	var results []domain.DiagnosticoSimple
+	for rows.Next() {
+		var d domain.DiagnosticoSimple
+		if err := rows.Scan(&d.IdDiagnostico, &d.CodigoCIE10, &d.Descripcion); err != nil {
+			return nil, fmt.Errorf("error scanning diagnostico simple: %w", err)
+		}
+		results = append(results, d)
+	}
+	return results, rows.Err()
+}

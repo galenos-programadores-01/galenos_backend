@@ -120,9 +120,9 @@ func (r *InterconsultaRepository) ListarEspecialidades(ctx context.Context) ([]d
 	return lista, rows.Err()
 }
 
-func (r *InterconsultaRepository) ListarMedicosPorEspecialidad(ctx context.Context, idEspecialidad int) ([]domain.MedicoInterconsulta, error) {
+func (r *InterconsultaRepository) ListarMedicosPorEspecialidad(ctx context.Context, IdEspecialidad int) ([]domain.MedicoInterconsulta, error) {
 	query := "EXEC InterconsultaFiltrrMedicoXIdEspecialidad @IdEspecialidad = @p1"
-	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idEspecialidad))
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", IdEspecialidad))
 	if err != nil {
 		return nil, err
 	}

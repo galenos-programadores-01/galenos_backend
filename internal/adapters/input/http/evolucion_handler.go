@@ -25,7 +25,7 @@ func NewEvolucionHandler(service input.EvolucionService) *EvolucionHandler {
 // @Security BearerAuth
 // @Param fini query string false "Fecha inicial (YYYY-MM-DD)"
 // @Param ffin query string false "Fecha final (YYYY-MM-DD)"
-// @Router /api/v1/evoluciones/pacientes [get]
+// @Router /evoluciones/pacientes [get]
 func (h *EvolucionHandler) HandleListPatients(c *gin.Context) {
 	fini := c.Query("fini")
 	if _, err := time.Parse("2006-01-02", fini); err != nil {
@@ -98,7 +98,7 @@ func (h *EvolucionHandler) HandleListPatients(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param pacienteId path int true "ID of the Registration / Encounter"
-// @Router /api/v1/evoluciones/paciente/{pacienteId} [get]
+// @Router /evoluciones/paciente/{pacienteId} [get]
 func (h *EvolucionHandler) HandleListEvoluciones(c *gin.Context) {
 	idRegAtencionStr := c.Param("pacienteId")
 	idRegAtencion, err := strconv.Atoi(idRegAtencionStr)
@@ -128,7 +128,7 @@ type SaveEvolucionRequest struct {
 // @Produce json
 // @Security BearerAuth
 // @Param request body SaveEvolucionRequest true "Evolution data"
-// @Router /api/v1/evoluciones [post]
+// @Router /evoluciones [post]
 func (h *EvolucionHandler) HandleCreateEvolucion(c *gin.Context) {
 	var req SaveEvolucionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -123,6 +123,13 @@ type Especialidad struct {
 	Nombre *string
 }
 
+// EspecialidadSimple contiene el id y nombre de una especialidad
+// (SP usp_go_ListarEspecialidadXDepartamento).
+type EspecialidadSimple struct {
+	IdEspecialidad int    `json:"idEspecialidad"`
+	Nombre         string `json:"nombre"`
+}
+
 // Parametro contiene los valores de un parámetro configurable
 // (SP usp_go_webParametroSeleccionarPorId @IdParametro).
 type Parametro struct {

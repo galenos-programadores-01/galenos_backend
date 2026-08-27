@@ -415,6 +415,56 @@ func (h *CatalogHandler) ListEspecialidades(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, dtoItems)
 }
 
+// HandleListarEspecialidadesPorDepartamento maneja GET /api/v1/especialidades-departamento/:idDepartamento.
+//
+// @Summary Lista especialidades por departamento
+// @Description Devuelve las especialidades de un departamento (SP usp_go_ListarEspecialidadXDepartamento).
+// @Tags Catalogos
+// @Produce json
+// @Param idDepartamento path int true "Id del departamento"
+// @Success 200 {object} apiResponse{data=[]domain.EspecialidadSimple}
+// @Failure 400 {object} apiResponse{error=apiError}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /especialidades-departamento/{idDepartamento} [get]
+func (h *CatalogHandler) HandleListarEspecialidadesPorDepartamento(c *gin.Context) {
+	idStr := c.Param("idDepartamento")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_ID", "idDepartamento inválido")
+		return
+	}
+	items, err := h.service.ListarEspecialidadesPorDepartamento(c.Request.Context(), int(id))
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.EspecialidadSimple, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
+// HandleListarEspecialidadesQx maneja GET /api/v1/especialidades-qx.
+//
+// @Summary Lista especialidades quirurgicas
+// @Description Devuelve las especialidades del departamento 4 (SP usp_go_ListarEspecialidadesQx).
+// @Tags Catalogos
+// @Produce json
+// @Success 200 {object} apiResponse{data=[]domain.EspecialidadSimple}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /especialidades-qx [get]
+func (h *CatalogHandler) HandleListarEspecialidadesQx(c *gin.Context) {
+	items, err := h.service.ListarEspecialidadesQx(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.EspecialidadSimple, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
 // GetParametro maneja GET /api/v1/parametros/:idParametro.
 //
 // @Summary Obtiene un parámetro por id

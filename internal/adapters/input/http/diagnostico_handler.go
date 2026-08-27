@@ -27,9 +27,9 @@ func NewDiagnosticoHandler(useCase input.DiagnosticoUseCase) *DiagnosticoHandler
 // @Param filtro query string false "Texto a buscar"
 // @Param idAtencion query int false "ID de Atención"
 // @Param idPaciente query int false "ID de Paciente"
-// @Success 200 {object} Response{data=[]domain.DiagnosticoBusqueda}
-// @Failure 400 {object} Response
-// @Failure 500 {object} Response
+// @Success 200 {object} apiResponse{data=[]domain.DiagnosticoBusqueda}
+// @Failure 400 {object} apiResponse{error=apiError}
+// @Failure 500 {object} apiResponse{error=apiError}
 // @Router /diagnosticos/search [get]
 func (h *DiagnosticoHandler) SearchDiagnosticos(c *gin.Context) {
 	filtro := c.Query("filtro")
@@ -49,7 +49,32 @@ func (h *DiagnosticoHandler) SearchDiagnosticos(c *gin.Context) {
 	}
 
 	if results == nil {
-		results = make([]domain.DiagnosticoBusqueda, 0) // Para devolver [] en vez de null en JSON
+		results = make([]domain.DiagnosticoBusqueda, 0)
+	}
+
+	respondSuccess(c, http.StatusOK, results)
+}
+
+// @Summary Listar diagnosticos CIE10
+// @Description Busca diagnosticos por filtro (codigo o descripcion)
+// @Tags Diagnosticos
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param filtro query string true "Filtro de busqueda"
+// @Success 200 {object} httpadapter.apiResponse{data=[]domain.DiagnosticoSimple}
+// @Router /diagnosticos/listar [get]
+func (h *DiagnosticoHandler) HandleListarDiagnosticos(c *gin.Context) {
+	filtro := c.Query("filtro")
+
+	results, err := h.useCase.ListarDiagnosticos(c.Request.Context(), filtro)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "ERR_LIST_DIAG", "Error listando diagnósticos")
+		return
+	}
+
+	if results == nil {
+		results = make([]domain.DiagnosticoSimple, 0)
 	}
 
 	respondSuccess(c, http.StatusOK, results)

@@ -29,7 +29,7 @@ func NewInterconsultaHandler(service input.InterconsultaService) *InterconsultaH
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID de la Interconsulta"
-// @Router /api/v1/interconsultas/{id} [get]
+// @Router /interconsultas/{id} [get]
 func (h *InterconsultaHandler) HandleObtenerPorId(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -54,7 +54,7 @@ func (h *InterconsultaHandler) HandleObtenerPorId(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param tipoServicio path string true "Tipo de Servicio"
-// @Router /api/v1/interconsultas/servicio/{tipoServicio} [get]
+// @Router /interconsultas/servicio/{tipoServicio} [get]
 func (h *InterconsultaHandler) HandleListarPorServicio(c *gin.Context) {
 	tipoServicio := c.Param("tipoServicio")
 	lista, err := h.service.ListarPorServicio(c.Request.Context(), tipoServicio)
@@ -72,7 +72,7 @@ func (h *InterconsultaHandler) HandleListarPorServicio(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param idAtencion path int true "ID de la Atención"
-// @Router /api/v1/interconsultas/atencion/{idAtencion} [get]
+// @Router /interconsultas/atencion/{idAtencion} [get]
 func (h *InterconsultaHandler) HandleListarPorAtencion(c *gin.Context) {
 	idStr := c.Param("idAtencion")
 	idAtencion, err := strconv.Atoi(idStr)
@@ -95,7 +95,7 @@ func (h *InterconsultaHandler) HandleListarPorAtencion(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Router /api/v1/interconsultas/especialidades [get]
+// @Router /interconsultas/especialidades [get]
 func (h *InterconsultaHandler) HandleListarEspecialidades(c *gin.Context) {
 	lista, err := h.service.ListarEspecialidades(c.Request.Context())
 	if err != nil {
@@ -111,10 +111,10 @@ func (h *InterconsultaHandler) HandleListarEspecialidades(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param idEspecialidad path int true "ID de la Especialidad"
-// @Router /api/v1/interconsultas/medicos/{idEspecialidad} [get]
+// @Param IdEspecialidad path int true "ID de la Especialidad"
+// @Router /interconsultas/medicos/{IdEspecialidad} [get]
 func (h *InterconsultaHandler) HandleListarMedicosPorEspecialidad(c *gin.Context) {
-	idStr := c.Param("idEspecialidad")
+	idStr := c.Param("IdEspecialidad")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		respondError(c, http.StatusBadRequest, "INVALID_ID", msgInvalidID)
@@ -131,7 +131,7 @@ func (h *InterconsultaHandler) HandleListarMedicosPorEspecialidad(c *gin.Context
 
 type CreateInterconsultaRequest struct {
 	IdAtencionOrigen int    `json:"idAtencionOrigen" binding:"required"`
-	IdEspecialidad   int    `json:"idEspecialidad" binding:"required"`
+	IdEspecialidad   int    `json:"IdEspecialidad" binding:"required"`
 	IdMedicoDestino  int    `json:"idMedicoDestino" binding:"required"`
 	Motivo           string `json:"motivo" binding:"required"`
 }
@@ -143,7 +143,7 @@ type CreateInterconsultaRequest struct {
 // @Produce json
 // @Security BearerAuth
 // @Param request body CreateInterconsultaRequest true "Interconsulta data"
-// @Router /api/v1/interconsultas [post]
+// @Router /interconsultas [post]
 func (h *InterconsultaHandler) HandleCrear(c *gin.Context) {
 	var req CreateInterconsultaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -179,7 +179,7 @@ type UpdateEstadoRequest struct {
 // @Security BearerAuth
 // @Param id path int true "ID de la Interconsulta"
 // @Param request body UpdateEstadoRequest true "Estado data"
-// @Router /api/v1/interconsultas/{id}/estado [put]
+// @Router /interconsultas/{id}/estado [put]
 func (h *InterconsultaHandler) HandleActualizarEstado(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -215,7 +215,7 @@ type SignInterconsultaRequest struct {
 // @Security BearerAuth
 // @Param id path int true "ID de la Interconsulta"
 // @Param request body SignInterconsultaRequest true "Firma data"
-// @Router /api/v1/interconsultas/{id}/firma [post]
+// @Router /interconsultas/{id}/firma [post]
 func (h *InterconsultaHandler) HandleGuardarFirma(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)

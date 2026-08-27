@@ -102,6 +102,8 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/servicios/:idTipoServicio", p.CatalogHandler.ListServicios)
 		v1.GET("/datos-institucion", p.CatalogHandler.GetDatosInstitucion)
 		v1.GET("/especialidades", p.CatalogHandler.ListEspecialidades)
+		v1.GET("/especialidades-qx", p.CatalogHandler.HandleListarEspecialidadesQx)
+		v1.GET("/especialidades-departamento/:idDepartamento", p.CatalogHandler.HandleListarEspecialidadesPorDepartamento)
 		v1.GET("/parametros/:idParametro", p.CatalogHandler.GetParametro)
 
 		reniec := v1.Group("/reniec")
@@ -112,6 +114,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 		sis := v1.Group("/sis")
 		{
 			sis.GET("/afiliado/:nrodoc", p.SisHandler.ConsultarAfiliado)
+			sis.GET("/filiaciones", p.SisHandler.BuscarAfiliacion)
 			sis.POST("/filiaciones", p.SisHandler.GestionarAfiliacion)
 			sis.POST("/fua", p.SisHandler.ForzarGuardadoFua)
 			sis.POST("/fua/agregar", p.SisHandler.AgregarFua)
@@ -143,7 +146,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			triaje.GET("/pendientes-admision", p.TriageHandler.ListPendingAdmission)
 			triaje.GET("/reporte", p.TriageHandler.GetReporte)
 			triaje.GET("/ficha-admision", p.TriageHandler.GetFichaAdmision)
-			triaje.GET("/medicos/:idEspecialidad", p.TriageHandler.ListMedicosPorEspecialidad)
+			triaje.GET("/medicos/:IdEspecialidad", p.TriageHandler.ListMedicosPorEspecialidad)
 			triaje.GET("/consulta", p.TriageHandler.ListTriajeConsulta)
 			triaje.GET("/consulta/atencion/:idAtencion", p.TriageHandler.GetTriajeConsultaPorAtencion)
 			triaje.PUT("/consulta/:id/estado", p.TriageHandler.UpdateEstadoTriajeConsulta)
@@ -178,7 +181,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 		interconsultas := protected.Group("/interconsultas")
 		{
 			interconsultas.GET("/especialidades", p.InterconsultaHandler.HandleListarEspecialidades)
-			interconsultas.GET("/medicos/:idEspecialidad", p.InterconsultaHandler.HandleListarMedicosPorEspecialidad)
+			interconsultas.GET("/medicos/:IdEspecialidad", p.InterconsultaHandler.HandleListarMedicosPorEspecialidad)
 			interconsultas.GET("/:id", p.InterconsultaHandler.HandleObtenerPorId)
 			interconsultas.GET("/servicio/:tipoServicio", p.InterconsultaHandler.HandleListarPorServicio)
 			interconsultas.GET("/atencion/:idAtencion", p.InterconsultaHandler.HandleListarPorAtencion)
@@ -196,12 +199,16 @@ func NewRouter(p RouterParams) *gin.Engine {
 		diagnosticos := protected.Group("/diagnosticos")
 		{
 			diagnosticos.GET("/search", p.DiagnosticoHandler.SearchDiagnosticos)
+			diagnosticos.GET("/listar", p.DiagnosticoHandler.HandleListarDiagnosticos)
 		}
 
 		listaEsperaQx := protected.Group("/lista-espera-qx")
 		{
 			listaEsperaQx.GET("", p.ListaEsperaQxHandler.HandleListar)
+			listaEsperaQx.GET("/reporte", p.ListaEsperaQxHandler.HandleReporte)
+			listaEsperaQx.GET("/:id", p.ListaEsperaQxHandler.HandleObtenerPorId)
 			listaEsperaQx.POST("", p.ListaEsperaQxHandler.HandleCrear)
+			listaEsperaQx.PUT("/:id", p.ListaEsperaQxHandler.HandleModificar)
 		}
 
 		v1.GET("/medicos-lista-espera", p.MedicoListaEsperaHandler.HandleListar)

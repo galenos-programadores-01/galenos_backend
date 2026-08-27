@@ -23,7 +23,7 @@ func NewResultadoHandler(service input.ResultadoService) *ResultadoHandler {
 // @Produce json
 // @Security BearerAuth
 // @Param idPaciente path int true "ID of the Patient"
-// @Router /api/v1/resultados/laboratorio/paciente/{idPaciente} [get]
+// @Router /resultados/laboratorio/paciente/{idPaciente} [get]
 func (h *ResultadoHandler) HandleListResultadosLaboratorio(c *gin.Context) {
 	idStr := c.Param("idPaciente")
 	idPaciente, err := strconv.Atoi(idStr)
@@ -48,7 +48,7 @@ func (h *ResultadoHandler) HandleListResultadosLaboratorio(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param idPaciente path int true "ID of the Patient"
-// @Router /api/v1/resultados/imagenes/paciente/{idPaciente} [get]
+// @Router /resultados/imagenes/paciente/{idPaciente} [get]
 func (h *ResultadoHandler) HandleListResultadosImagenes(c *gin.Context) {
 	idStr := c.Param("idPaciente")
 	idPaciente, err := strconv.Atoi(idStr)

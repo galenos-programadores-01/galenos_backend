@@ -13,3 +13,9 @@ type DiagnosticoBusqueda struct {
 	Cancer            int    `json:"cancer"`
 	YaRegistrado      int    `json:"yaRegistrado"`
 }
+
+type DiagnosticoSimple struct {
+	IdDiagnostico int    `json:"idDiagnostico"`
+	CodigoCIE10   string `json:"codigoCIE10"`
+	Descripcion   string `json:"descripcion"`
+}

@@ -154,6 +154,22 @@ func (uc *catalogUseCase) ListEspecialidades(ctx context.Context) ([]domain.Espe
 	return items, nil
 }
 
+func (uc *catalogUseCase) ListarEspecialidadesPorDepartamento(ctx context.Context, idDepartamento int) ([]domain.EspecialidadSimple, error) {
+	items, err := uc.repo.ListarEspecialidadesPorDepartamento(ctx, idDepartamento)
+	if err != nil {
+		return nil, fmt.Errorf("listing especialidades por departamento: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListarEspecialidadesQx(ctx context.Context) ([]domain.EspecialidadSimple, error) {
+	items, err := uc.repo.ListarEspecialidadesQx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("listing especialidades qx: %w", err)
+	}
+	return items, nil
+}
+
 func (uc *catalogUseCase) GetParametro(ctx context.Context, idParametro int64) (*domain.Parametro, error) {
 	item, err := uc.repo.GetParametro(ctx, idParametro)
 	if err != nil {
