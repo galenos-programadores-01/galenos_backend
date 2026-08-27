@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/input"
 	"github.com/gin-gonic/gin"
 )
@@ -38,6 +39,10 @@ func (h *ResultadoHandler) HandleListResultadosLaboratorio(c *gin.Context) {
 		return
 	}
 
+	if resultados == nil {
+		resultados = make([]domain.Resultado, 0)
+	}
+
 	respondSuccess(c, http.StatusOK, resultados)
 }
 
@@ -63,5 +68,59 @@ func (h *ResultadoHandler) HandleListResultadosImagenes(c *gin.Context) {
 		return
 	}
 
+	if resultados == nil {
+		resultados = make([]domain.Resultado, 0)
+	}
+
 	respondSuccess(c, http.StatusOK, resultados)
+}
+
+// @Summary Get laboratory detailed results by order and product CPT
+// @Tags Resultados
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param idOrden query int true "ID de Orden"
+// @Param idProducto query int true "ID de Producto CPT"
+// @Router /api/v1/resultados/laboratorio/detalle [get]
+func (h *ResultadoHandler) HandleObtenerDetalleLaboratorio(c *gin.Context) {
+	idOrden, _ := strconv.Atoi(c.Query("idOrden"))
+	idProducto, _ := strconv.Atoi(c.Query("idProducto"))
+
+	detalles, err := h.service.ObtenerDetalleLaboratorio(c.Request.Context(), idOrden, idProducto)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "RES_LAB_DET_ERR", "Error obteniendo detalle de laboratorio")
+		return
+	}
+
+	if detalles == nil {
+		detalles = make([]domain.DetalleResultadoLab, 0)
+	}
+
+	respondSuccess(c, http.StatusOK, detalles)
+}
+
+// @Summary Get imaging detailed results by order and product ID
+// @Tags Resultados
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param idOrden query int true "ID de Orden"
+// @Param idProducto query int true "ID de Producto"
+// @Router /api/v1/resultados/imagenes/detalle [get]
+func (h *ResultadoHandler) HandleObtenerDetalleImagen(c *gin.Context) {
+	idOrden, _ := strconv.Atoi(c.Query("idOrden"))
+	idProducto, _ := strconv.Atoi(c.Query("idProducto"))
+
+	detalle, err := h.service.ObtenerDetalleImagen(c.Request.Context(), idOrden, idProducto)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "RES_IMG_DET_ERR", "Error obteniendo detalle de imágenes")
+		return
+	}
+
+	if detalle == nil {
+		detalle = &domain.DetalleResultadoImagen{}
+	}
+
+	respondSuccess(c, http.StatusOK, detalle)
 }

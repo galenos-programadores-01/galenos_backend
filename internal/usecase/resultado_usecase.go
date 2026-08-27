@@ -22,3 +22,11 @@ func (s *resultadoService) ListarResultadosLaboratorio(ctx context.Context, idPa
 func (s *resultadoService) ListarResultadosImagenes(ctx context.Context, idPaciente int) ([]domain.Resultado, error) {
 	return s.repo.ListarImagenesPorPaciente(ctx, idPaciente)
 }
+
+func (s *resultadoService) ObtenerDetalleLaboratorio(ctx context.Context, idOrden, idProducto int) ([]domain.DetalleResultadoLab, error) {
+	return s.repo.ObtenerDetalleLaboratorio(ctx, idOrden, idProducto)
+}
+
+func (s *resultadoService) ObtenerDetalleImagen(ctx context.Context, idOrden, idProducto int) (*domain.DetalleResultadoImagen, error) {
+	return s.repo.ObtenerDetalleImagen(ctx, idOrden, idProducto)
+}

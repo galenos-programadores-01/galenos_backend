@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
@@ -110,6 +111,7 @@ func (r *OrdenRepository) completarCabeceras(ctx context.Context, idCuentaAtenci
 		var idReceta int
 		var fecha, medico string
 		if err := rows.Scan(&idReceta, &fecha, &medico); err != nil {
+			log.Printf("escaneando cabecera de receta: %v", err)
 			continue
 		}
 		for i := range ordenes {
@@ -133,33 +135,99 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 	defer tx.Rollback()
 
 	// 1. Resolver la atención real (el frontend envía IdAtencion como idRegAtencion)
-	var idCuentaAtencion, idPaciente, idServicioIngreso, idFormaPago, idFuenteFinanciamiento int
-	err = tx.QueryRowContext(ctx, `
-		SELECT IdCuentaAtencion, IdPaciente, IdServicioIngreso, IdFormaPago, ISNULL(idFuenteFinanciamiento,0)
-		FROM Atenciones WHERE IdAtencion = @p1`,
+	var idCuentaAtencion, idPaciente, idServicioIngreso int
+	var (
+		apellidoPaterno, apellidoMaterno, primerNombre, segundoNombre sql.NullString
+		nroHistoriaClinica, idAtencionScan, idPacienteScan, edad      sql.NullInt64
+		fechaIngreso                                                  sql.NullTime
+		horaIngreso, idDestinoAtencion, idDestinoServicio             sql.NullString
+		idTipoCondicionAlServicio, idTipoCondicionALEstab             sql.NullInt64
+		idServicioIngresoScan, idMedicoIngreso, idEspecialidadMedico  sql.NullInt64
+		idMedicoEgreso                                                sql.NullInt64
+		fechaEgreso                                                   sql.NullTime
+		horaEgreso, idOrigenAtencion                                  sql.NullString
+		fechaEgresoAdministrativo                                     sql.NullTime
+		horaEgresoAdministrativo, idCondicionAlta, idTipoAlta         sql.NullString
+		idServicioEgreso, idCamaIngreso, idCamaEgreso                 sql.NullInt64
+		idTipoGravedad, idTipoGravedadEgreso, idTipoEdad              sql.NullInt64
+		idTipoServicioScan, idFormaPago, idFuenteFinanciamiento       sql.NullInt64
+		idEstadoAtencion                                              sql.NullInt64
+		esPacienteExterno                                             sql.NullBool
+		idSunasaPacienteHistorico, idCartaGarantia                    sql.NullInt64
+		numCartaGarantia, cuentaAtencionRelacion, numIntegracion      sql.NullString
+		idMotivoAnulacion                                             sql.NullInt64
+		observacion, tieneSolicitudSOP, horaInicioAtencion            sql.NullString
+		rutaBase                                                      sql.NullString
+		fechaFirma                                                    sql.NullTime
+		estadoFirma                                                   sql.NullString
+		fechaRecuperacion                                             sql.NullTime
+		idUsuarioRecupera                                             sql.NullInt64
+		fechaRecepcion                                                sql.NullTime
+		idUsuarioRecepciona                                           sql.NullInt64
+		estadoFicha                                                   sql.NullString
+		idInterconsulta, cirugiaDeDia, idTriaje                       sql.NullInt64
+		numeradorReracion                                             sql.NullInt64
+		emailEnvioAtencion                                            sql.NullString
+		envioFua                                                      sql.NullInt64
+		idRecetaGeneraCita                                            sql.NullInt64
+		descripcion, nroDocumento                                     sql.NullString
+		idDocIdentidad                                                sql.NullInt64
+		email                                                         sql.NullString
+		fechaNacimiento                                               sql.NullTime
+		idTipoSexo                                                    sql.NullInt64
+		telefono, idDistritoDomicilio                                 sql.NullString
+	)
+	err = tx.QueryRowContext(ctx, "EXEC AtencionesSeleccionarPorIdAtencion @idAtencion = @p1",
 		sql.Named("p1", orden.IdRegAtencion),
-	).Scan(&idCuentaAtencion, &idPaciente, &idServicioIngreso, &idFormaPago, &idFuenteFinanciamiento)
+	).Scan(
+		&apellidoPaterno, &apellidoMaterno, &primerNombre, &segundoNombre,
+		&nroHistoriaClinica, &idAtencionScan, &idPacienteScan, &edad,
+		&fechaIngreso, &horaIngreso, &idDestinoAtencion, &idDestinoServicio,
+		&idTipoCondicionAlServicio, &idTipoCondicionALEstab,
+		&idServicioIngresoScan, &idMedicoIngreso, &idEspecialidadMedico,
+		&idMedicoEgreso, &fechaEgreso, &horaEgreso, &idOrigenAtencion,
+		&fechaEgresoAdministrativo, &horaEgresoAdministrativo,
+		&idCondicionAlta, &idTipoAlta, &idServicioEgreso,
+		&idCamaIngreso, &idCamaEgreso, &idTipoGravedad, &idTipoGravedadEgreso,
+		&idTipoEdad, &idCuentaAtencion, &idTipoServicioScan, &idFormaPago,
+		&idFuenteFinanciamiento, &idEstadoAtencion, &esPacienteExterno,
+		&idSunasaPacienteHistorico, &idCartaGarantia, &numCartaGarantia,
+		&cuentaAtencionRelacion, &numIntegracion, &idMotivoAnulacion,
+		&observacion, &tieneSolicitudSOP, &horaInicioAtencion,
+		&rutaBase, &fechaFirma, &estadoFirma, &fechaRecuperacion,
+		&idUsuarioRecupera, &fechaRecepcion, &idUsuarioRecepciona,
+		&estadoFicha, &idInterconsulta, &cirugiaDeDia, &idTriaje,
+		&numeradorReracion, &emailEnvioAtencion, &envioFua,
+		&idRecetaGeneraCita, &descripcion, &nroDocumento,
+		&idDocIdentidad, &email, &fechaNacimiento, &idTipoSexo,
+		&telefono, &idDistritoDomicilio,
+	)
 	if err != nil {
 		return fmt.Errorf("resolviendo atención %d: %w", orden.IdRegAtencion, err)
 	}
+	idPaciente = int(idPacienteScan.Int64)
+	idServicioIngreso = int(idServicioIngresoScan.Int64)
 
 	// 2. Resolver el médico real desde el empleado autenticado (JWT)
 	var idMedico int
-	err = tx.QueryRowContext(ctx, "SELECT TOP 1 IdMedico FROM Medicos WHERE IdEmpleado = @p1",
+	var idEmpOut int
+	var colegiatura, idColegioHIS sql.NullString
+	err = tx.QueryRowContext(ctx, "EXEC MedicosXidEmpleado @IdEmpleado = @p1",
 		sql.Named("p1", idEmpleado),
-	).Scan(&idMedico)
+	).Scan(&idEmpOut, &colegiatura, &idMedico, &idColegioHIS)
 	if err != nil {
 		return fmt.Errorf("el empleado %d no tiene médico asociado: %w", idEmpleado, err)
 	}
 
 	// 3. Crear cabecera de receta (SP real)
 	// Params: @Respuesta OUTPUT, @IdPuntoCarga, @idCuentaAtencion, @idServicioReceta,
-	//         @idMedicoReceta, @IdProducto, @Idpaciente, @IdUsuarioAuditoria
+	//         @idMedicoReceta, @IdProducto, @Idpaciente, @IdUsuarioAuditoria,
+	//         @IdEvolucion, @IdPrimeraAtencion
 	// Respuesta: "OK;<IdReceta>" o mensaje de error
 	const idPuntoCargaFarmacia = 5 // Punto de carga Farmacia (el más usado en recetas reales)
 	var respuesta string
 	err = tx.QueryRowContext(ctx, `
-		EXEC webRecetaCabeceraAgregar
+		EXEC usp_go_RecetaCabeceraAgregar
 			@Respuesta = @p1 OUTPUT,
 			@IdPuntoCarga = @p2,
 			@idCuentaAtencion = @p3,
@@ -167,7 +235,9 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 			@idMedicoReceta = @p5,
 			@IdProducto = @p6,
 			@Idpaciente = @p7,
-			@IdUsuarioAuditoria = @p8`,
+			@IdUsuarioAuditoria = @p8,
+			@IdEvolucion = @p9,
+			@IdPrimeraAtencion = @p10`,
 		sql.Named("p1", sql.Out{Dest: &respuesta}),
 		sql.Named("p2", idPuntoCargaFarmacia),
 		sql.Named("p3", idCuentaAtencion),
@@ -176,6 +246,8 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 		sql.Named("p6", detalles[0].IdProducto),
 		sql.Named("p7", idPaciente),
 		sql.Named("p8", idEmpleado),
+		sql.Named("p9", 0),
+		sql.Named("p10", 0),
 	).Scan(&respuesta)
 	if err != nil {
 		return fmt.Errorf("creando cabecera de receta: %w", err)
@@ -199,7 +271,7 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 
 		var mensaje string
 		err = tx.QueryRowContext(ctx, `
-			EXEC webRecetaDetalleAgregar
+			EXEC usp_go_RecetaDetalleAgregar
 				@Mensaje = @p1 OUTPUT,
 				@idReceta = @p2,
 				@IdProducto = @p3,
@@ -249,23 +321,11 @@ func (r *OrdenRepository) BuscarProductos(ctx context.Context, filtro string, li
 		limite = 50
 	}
 
-	query := `
-		SELECT TOP (@p3)
-			f.IdProducto, f.Codigo, f.Nombre,
-			ISNULL(f.Concentracion, ''), ISNULL(f.Presentacion, ''),
-			ISNULL(f.FormaFarmaceutica, ''),
-			ISNULL((SELECT TOP 1 h.PrecioUnitario FROM FactCatalogoBienesInsumosHosp h
-			         WHERE h.IdProducto = f.IdProducto AND h.Activo = 1
-			         ORDER BY CASE WHEN h.IdTipoFinanciamiento = @p2 THEN 0 ELSE 1 END, h.IdTipoFinanciamiento), 0)
-		FROM FactCatalogoBienesInsumos f
-		WHERE f.Estado = 1
-		  AND (f.Nombre LIKE @p1 OR ISNULL(f.NombreComercial, '') LIKE @p1 OR f.Codigo LIKE @p1)
-		ORDER BY f.Nombre`
+	query := "EXEC usp_go_SelectMedicamentosFiltro @Filtro = @p1, @IdPaciente = @p2"
 
 	rows, err := r.db.QueryContext(ctx, query,
-		sql.Named("p1", "%"+filtro+"%"),
-		sql.Named("p2", filtro),
-		sql.Named("p3", limite),
+		sql.Named("p1", filtro),
+		sql.Named("p2", 0),
 	)
 	if err != nil {
 		return nil, err
@@ -275,8 +335,24 @@ func (r *OrdenRepository) BuscarProductos(ctx context.Context, filtro string, li
 	var productos []domain.ProductoCatalogo
 	for rows.Next() {
 		var p domain.ProductoCatalogo
-		if err := rows.Scan(&p.IdProducto, &p.Codigo, &p.Nombre, &p.Concentracion, &p.Presentacion, &p.FormaFarmaceutica, &p.PrecioVenta); err != nil {
+		var (
+			nombreLargo, formaFarm                                               sql.NullString
+			stock, tipoProducto, ultimaCantidad, idDosisRecetada                 sql.NullInt64
+			idUNIDDosisReceta, idFrecuencia, idViaAdministracion, ultimaDuracion sql.NullInt64
+			tieneRecetaAnterior, cargaEnFUA                                      sql.NullInt64
+			ultimaFechaReceta                                                    sql.NullTime
+		)
+		if err := rows.Scan(
+			&p.IdProducto, &p.Codigo, &p.Nombre, &nombreLargo,
+			&formaFarm, &stock, &p.PrecioVenta, &tipoProducto,
+			&ultimaFechaReceta, &ultimaCantidad, &idDosisRecetada,
+			&idUNIDDosisReceta, &idFrecuencia, &idViaAdministracion,
+			&ultimaDuracion, &tieneRecetaAnterior, &cargaEnFUA,
+		); err != nil {
 			return nil, fmt.Errorf("error escaneando producto: %w", err)
+		}
+		if len(productos) >= limite {
+			break
 		}
 		productos = append(productos, p)
 	}
@@ -292,12 +368,75 @@ func (r *OrdenRepository) BuscarProductos(ctx context.Context, filtro string, li
 // por el frontend (idRegAtencion). Si el valor ya es una cuenta válida, lo usa directo.
 func (r *OrdenRepository) resolverCuentaAtencion(ctx context.Context, idRegAtencion int) (int, error) {
 	var idCuenta int
+	var (
+		apellidoPaterno, apellidoMaterno, primerNombre, segundoNombre sql.NullString
+		nroHistoriaClinica, idAtencion, idPaciente, edad              sql.NullInt64
+		fechaIngreso                                                  sql.NullTime
+		horaIngreso, idDestinoAtencion, idDestinoServicio             sql.NullString
+		idTipoCondicionAlServicio, idTipoCondicionALEstab             sql.NullInt64
+		idServicioIngreso, idMedicoIngreso, idEspecialidadMedico      sql.NullInt64
+		idMedicoEgreso                                                sql.NullInt64
+		fechaEgreso                                                   sql.NullTime
+		horaEgreso, idOrigenAtencion                                  sql.NullString
+		fechaEgresoAdministrativo                                     sql.NullTime
+		horaEgresoAdministrativo, idCondicionAlta, idTipoAlta         sql.NullString
+		idServicioEgreso, idCamaIngreso, idCamaEgreso                 sql.NullInt64
+		idTipoGravedad, idTipoGravedadEgreso, idTipoEdad              sql.NullInt64
+		idTipoServicio, idFormaPago                                   sql.NullInt64
+		idFuenteFinanciamiento, idEstadoAtencion                      sql.NullInt64
+		esPacienteExterno                                             sql.NullBool
+		idSunasaPacienteHistorico, idCartaGarantia                    sql.NullInt64
+		numCartaGarantia, cuentaAtencionRelacion, numIntegracion      sql.NullString
+		idMotivoAnulacion                                             sql.NullInt64
+		observacion, tieneSolicitudSOP, horaInicioAtencion            sql.NullString
+		rutaBase                                                      sql.NullString
+		fechaFirma                                                    sql.NullTime
+		estadoFirma                                                   sql.NullString
+		fechaRecuperacion                                             sql.NullTime
+		idUsuarioRecupera                                             sql.NullInt64
+		fechaRecepcion                                                sql.NullTime
+		idUsuarioRecepciona                                           sql.NullInt64
+		estadoFicha                                                   sql.NullString
+		idInterconsulta, cirugiaDeDia, idTriaje                       sql.NullInt64
+		numeradorReracion                                             sql.NullInt64
+		emailEnvioAtencion                                            sql.NullString
+		envioFua                                                      sql.NullInt64
+		idRecetaGeneraCita                                            sql.NullInt64
+		descripcion, nroDocumento                                     sql.NullString
+		idDocIdentidad                                                sql.NullInt64
+		email                                                         sql.NullString
+		fechaNacimiento                                               sql.NullTime
+		idTipoSexo                                                    sql.NullInt64
+		telefono, idDistritoDomicilio                                 sql.NullString
+	)
 	err := r.db.QueryRowContext(ctx,
-		"SELECT IdCuentaAtencion FROM Atenciones WHERE IdAtencion = @p1",
+		"EXEC AtencionesSeleccionarPorIdAtencion @idAtencion = @p1",
 		sql.Named("p1", idRegAtencion),
-	).Scan(&idCuenta)
+	).Scan(
+		&apellidoPaterno, &apellidoMaterno, &primerNombre, &segundoNombre,
+		&nroHistoriaClinica, &idAtencion, &idPaciente, &edad,
+		&fechaIngreso, &horaIngreso, &idDestinoAtencion, &idDestinoServicio,
+		&idTipoCondicionAlServicio, &idTipoCondicionALEstab,
+		&idServicioIngreso, &idMedicoIngreso, &idEspecialidadMedico,
+		&idMedicoEgreso, &fechaEgreso, &horaEgreso, &idOrigenAtencion,
+		&fechaEgresoAdministrativo, &horaEgresoAdministrativo,
+		&idCondicionAlta, &idTipoAlta, &idServicioEgreso,
+		&idCamaIngreso, &idCamaEgreso, &idTipoGravedad, &idTipoGravedadEgreso,
+		&idTipoEdad, &idCuenta, &idTipoServicio, &idFormaPago,
+		&idFuenteFinanciamiento, &idEstadoAtencion, &esPacienteExterno,
+		&idSunasaPacienteHistorico, &idCartaGarantia, &numCartaGarantia,
+		&cuentaAtencionRelacion, &numIntegracion, &idMotivoAnulacion,
+		&observacion, &tieneSolicitudSOP, &horaInicioAtencion,
+		&rutaBase, &fechaFirma, &estadoFirma, &fechaRecuperacion,
+		&idUsuarioRecupera, &fechaRecepcion, &idUsuarioRecepciona,
+		&estadoFicha, &idInterconsulta, &cirugiaDeDia, &idTriaje,
+		&numeradorReracion, &emailEnvioAtencion, &envioFua,
+		&idRecetaGeneraCita, &descripcion, &nroDocumento,
+		&idDocIdentidad, &email, &fechaNacimiento, &idTipoSexo,
+		&telefono, &idDistritoDomicilio,
+	)
 	if err == nil {
-		return idCuenta, nil
+		return int(idCuenta), nil
 	}
 	if err != sql.ErrNoRows {
 		return 0, err
@@ -308,17 +447,21 @@ func (r *OrdenRepository) resolverCuentaAtencion(ctx context.Context, idRegAtenc
 // precioProducto obtiene el precio unitario vigente del catálogo hospitalario
 // (por producto y tipo de financiamiento de la atención, con prioridad al tipo de la atención).
 func (r *OrdenRepository) precioProducto(ctx context.Context, tx *sql.Tx, idProducto int) (float64, error) {
+	var idPlanCatalogo, idTipoFinanciamiento int
 	var precio float64
+	var activo bool
 	err := tx.QueryRowContext(ctx, `
-		SELECT TOP 1 PrecioUnitario FROM FactCatalogoBienesInsumosHosp
-		WHERE IdProducto = @p1 AND Activo = 1 ORDER BY IdTipoFinanciamiento`,
+		EXEC CatalogoBienesInsumosHospSeleccionarXIdProducto @IdProducto = @p1`,
 		sql.Named("p1", idProducto),
-	).Scan(&precio)
+	).Scan(&idPlanCatalogo, &precio, &idProducto, &idTipoFinanciamiento, &activo)
 	if err == sql.ErrNoRows {
 		return 0, nil
 	}
 	if err != nil {
 		return 0, fmt.Errorf("obteniendo precio del producto %d: %w", idProducto, err)
+	}
+	if !activo {
+		return 0, nil
 	}
 	return precio, nil
 }

@@ -35,3 +35,11 @@ func (uc *evolucionUseCase) SaveEvolucion(ctx context.Context, idRegAtencion int
 	}
 	return uc.repo.SaveEvolucion(ctx, evolution)
 }
+
+func (uc *evolucionUseCase) GetBandeja(ctx context.Context, fechaInicio, fechaFin, filtro string) ([]domain.EvolucionBandejaItem, error) {
+	return uc.repo.ListBandeja(ctx, fechaInicio, fechaFin, filtro)
+}
+
+func (uc *evolucionUseCase) InsertEvolucionMedica(ctx context.Context, item domain.EvolucionMedicaInsert) (int, string, error) {
+	return uc.repo.InsertEvolucionMedica(ctx, item)
+}

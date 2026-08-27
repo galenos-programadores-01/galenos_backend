@@ -115,3 +115,62 @@ func (r *authRepository) GetMenuPermisos(ctx context.Context, idEmpleado int) ([
 
 	return permisos, nil
 }
+
+func (r *authRepository) GetUserProfile(ctx context.Context, idEmpleado int) (domain.UserProfile, error) {
+	var profile domain.UserProfile
+	profile.IdEmpleado = idEmpleado
+
+	var username, nombres, apePat, apeMat, foto, cargo sql.NullString
+	err := r.db.QueryRowContext(ctx, `
+		SELECT 
+			ISNULL(em.Usuario, ''),
+			ISNULL(em.Nombres, ''),
+			ISNULL(em.ApellidoPaterno, ''),
+			ISNULL(em.ApellidoMaterno, ''),
+			ISNULL(em.Foto, ''),
+			ISNULL((SELECT TOP 1 c.Nombre FROM dbo.Cargos c WHERE c.IdCargo = em.IdCargo), 'Médico Tratante')
+		FROM dbo.Empleados em
+		WHERE em.IdEmpleado = @p1`,
+		sql.Named("p1", idEmpleado),
+	).Scan(&username, &nombres, &apePat, &apeMat, &foto, &cargo)
+
+	if err != nil {
+		err = r.db.QueryRowContext(ctx, `
+			SELECT 
+				ISNULL(em.Usuario, ''),
+				ISNULL(em.Nombres, ''),
+				ISNULL(em.ApellidoPaterno, ''),
+				ISNULL(em.ApellidoMaterno, ''),
+				ISNULL(em.Foto, '')
+			FROM dbo.Empleados em
+			WHERE em.IdEmpleado = @p1`,
+			sql.Named("p1", idEmpleado),
+		).Scan(&username, &nombres, &apePat, &apeMat, &foto)
+
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return profile, nil
+			}
+			return profile, fmt.Errorf("error obteniendo perfil de empleado: %w", err)
+		}
+	}
+
+	profile.Username = username.String
+	profile.Nombres = nombres.String
+	profile.ApellidoPaterno = apePat.String
+	profile.ApellidoMaterno = apeMat.String
+
+	nombreComp := strings.TrimSpace(apePat.String + " " + apeMat.String + " " + nombres.String)
+	if nombreComp == "" {
+		nombreComp = username.String
+	}
+	profile.NombreCompleto = nombreComp
+	profile.Foto = foto.String
+	if cargo.Valid && cargo.String != "" {
+		profile.Rol = cargo.String
+	} else {
+		profile.Rol = "Médico Tratante"
+	}
+
+	return profile, nil
+}

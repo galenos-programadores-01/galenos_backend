@@ -14,23 +14,25 @@ import (
 )
 
 type RouterParams struct {
-	AppointmentHandler   *AppointmentHandler
-	PatientHandler       *PatientHandler
-	CatalogHandler       *CatalogHandler
-	ReniecHandler        *ReniecHandler
-	SisHandler           *SisHandler
-	TriageHandler        *TriageHandler
-	AuthHandler          *AuthHandler
-	EvolucionHandler     *EvolucionHandler
-	MotivoHandler        *MotivoHandler
-	OrdenHandler         *OrdenHandler
-	ResultadoHandler     *ResultadoHandler
-	InterconsultaHandler *InterconsultaHandler
-	SintomaHandler       *SintomaHandler
-	FirmaPeruHandler     *FirmaPeruHandler
-	DiagnosticoHandler   *DiagnosticoHandler
-	AuthService          input.AuthService
-	AllowedOrigins       []string
+	AppointmentHandler       *AppointmentHandler
+	PatientHandler           *PatientHandler
+	CatalogHandler           *CatalogHandler
+	ReniecHandler            *ReniecHandler
+	SisHandler               *SisHandler
+	TriageHandler            *TriageHandler
+	AuthHandler              *AuthHandler
+	EvolucionHandler         *EvolucionHandler
+	MotivoHandler            *MotivoHandler
+	OrdenHandler             *OrdenHandler
+	ResultadoHandler         *ResultadoHandler
+	InterconsultaHandler     *InterconsultaHandler
+	SintomaHandler           *SintomaHandler
+	FirmaPeruHandler         *FirmaPeruHandler
+	DiagnosticoHandler       *DiagnosticoHandler
+	ListaEsperaQxHandler     *ListaEsperaQxHandler
+	MedicoListaEsperaHandler *MedicoListaEsperaHandler
+	AuthService              input.AuthService
+	AllowedOrigins           []string
 }
 
 func NewRouter(p RouterParams) *gin.Engine {
@@ -40,7 +42,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     p.AllowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "Cache-Control", "X-Requested-With"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
@@ -57,6 +59,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 		{
 			authProtected := protected.Group("/auth")
 			authProtected.GET("/menus", p.AuthHandler.GetMenus)
+			authProtected.GET("/perfil", p.AuthHandler.GetPerfil)
 
 			pacientes := protected.Group("/pacientes")
 			pacientes.GET("", p.PatientHandler.List)
@@ -101,6 +104,11 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/datos-institucion", p.CatalogHandler.GetDatosInstitucion)
 		v1.GET("/especialidades", p.CatalogHandler.ListEspecialidades)
 		v1.GET("/parametros/:idParametro", p.CatalogHandler.GetParametro)
+
+		v1.GET("/receta/frecuencias", p.CatalogHandler.ListRecetaFrecuencias)
+		v1.GET("/receta/unidades-dosis", p.CatalogHandler.ListRecetaUnidadesDosis)
+		v1.GET("/receta/vias-administracion", p.CatalogHandler.ListRecetaViasAdministracion)
+		v1.GET("/receta/medicamentos", p.CatalogHandler.BuscarMedicamentosReceta)
 
 		reniec := v1.Group("/reniec")
 		{
@@ -155,6 +163,8 @@ func NewRouter(p RouterParams) *gin.Engine {
 			evoluciones.POST("", p.EvolucionHandler.HandleCreateEvolucion)
 			evoluciones.GET("/pacientes", p.EvolucionHandler.HandleListPatients)
 			evoluciones.GET("/paciente/:pacienteId", p.EvolucionHandler.HandleListEvoluciones)
+			evoluciones.GET("/bandeja", p.EvolucionHandler.HandleBandeja)
+			evoluciones.POST("/registro", p.EvolucionHandler.HandleInsertEvolucionMedica)
 			evoluciones.GET("/:idRegAtencion/motivos", p.MotivoHandler.HandleListMotivos)
 			evoluciones.POST("/:idRegAtencion/motivos", p.MotivoHandler.HandleCreateMotivo)
 			evoluciones.POST("/:idRegAtencion/sintomas", p.SintomaHandler.HandleGuardarSintomas)
@@ -170,7 +180,9 @@ func NewRouter(p RouterParams) *gin.Engine {
 		resultados := protected.Group("/resultados")
 		{
 			resultados.GET("/laboratorio/paciente/:idPaciente", p.ResultadoHandler.HandleListResultadosLaboratorio)
+			resultados.GET("/laboratorio/detalle", p.ResultadoHandler.HandleObtenerDetalleLaboratorio)
 			resultados.GET("/imagenes/paciente/:idPaciente", p.ResultadoHandler.HandleListResultadosImagenes)
+			resultados.GET("/imagenes/detalle", p.ResultadoHandler.HandleObtenerDetalleImagen)
 		}
 
 		interconsultas := protected.Group("/interconsultas")
@@ -195,6 +207,14 @@ func NewRouter(p RouterParams) *gin.Engine {
 		{
 			diagnosticos.GET("/search", p.DiagnosticoHandler.SearchDiagnosticos)
 		}
+
+		listaEsperaQx := protected.Group("/lista-espera-qx")
+		{
+			listaEsperaQx.GET("", p.ListaEsperaQxHandler.HandleListar)
+			listaEsperaQx.POST("", p.ListaEsperaQxHandler.HandleCrear)
+		}
+
+		v1.GET("/medicos-lista-espera", p.MedicoListaEsperaHandler.HandleListar)
 	}
 
 	router.GET("/health", func(c *gin.Context) {
