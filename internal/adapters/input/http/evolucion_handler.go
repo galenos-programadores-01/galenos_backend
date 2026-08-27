@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/input"
 	"github.com/gin-gonic/gin"
 )
@@ -153,5 +154,58 @@ func (h *EvolucionHandler) HandleCreateEvolucion(c *gin.Context) {
 		"ipCliente": c.ClientIP(),
 		"fecha":     time.Now().Format("2006-01-02"),
 		"hora":      time.Now().Format("15:04:05"),
+	})
+}
+
+// @Summary Get evolutions for the main tray using usp_go_EvolucionesMedicas_Bandeja
+// @Tags Evoluciones
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param fechaInicio query string false "Fecha inicial (YYYY-MM-DD)"
+// @Param fechaFin query string false "Fecha final (YYYY-MM-DD)"
+// @Param filtro query string false "Texto de búsqueda (DNI, Nombre, NroAtencion)"
+// @Router /api/v1/evoluciones/bandeja [get]
+func (h *EvolucionHandler) HandleBandeja(c *gin.Context) {
+	fechaInicio := c.Query("fechaInicio")
+	fechaFin := c.Query("fechaFin")
+	filtro := c.Query("filtro")
+
+	list, err := h.service.GetBandeja(c.Request.Context(), fechaInicio, fechaFin, filtro)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "BANDEJA_ERR", "Error consultando la bandeja de evoluciones: "+err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, list)
+}
+
+// @Summary Insert a complete medical evolution using usp_go_EvolucionesMedicas_Insertar
+// @Tags Evoluciones
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Router /api/v1/evoluciones/registro [post]
+func (h *EvolucionHandler) HandleInsertEvolucionMedica(c *gin.Context) {
+	var req domain.EvolucionMedicaInsert
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_BODY", "Cuerpo de petición inválido: "+err.Error())
+		return
+	}
+
+	idEmpleado := c.GetInt("idEmpleado")
+	if idEmpleado != 0 {
+		req.UsuarioCreacion = idEmpleado
+	}
+
+	idEvolucion, mensaje, err := h.service.InsertEvolucionMedica(c.Request.Context(), req)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "EVOL_INSERT_ERR", "Error registrando evolución médica: "+err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, map[string]any{
+		"idEvolucion": idEvolucion,
+		"mensaje":     mensaje,
 	})
 }

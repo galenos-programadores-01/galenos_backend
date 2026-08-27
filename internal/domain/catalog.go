@@ -132,3 +132,21 @@ type Parametro struct {
 	ValorInt   *int64
 	ValorFloat *float64
 }
+
+type CatalogItem struct {
+	ID          int64  `json:"id"`
+	Descripcion string `json:"descripcion"`
+}
+
+type MedicamentoBusqueda struct {
+	IdProducto          int     `json:"idProducto"`
+	Codigo              string  `json:"codigo"`
+	Nombre              string  `json:"nombre"`
+	Stock               int     `json:"stock"`
+	Precio              float64 `json:"precio"`
+	IdDosisRecetada     int     `json:"idDosisRecetada"`
+	IdUNIDDosisReceta   int     `json:"idUNIDDosisReceta"`
+	IdFrecuencia        int     `json:"idFrecuencia"`
+	IdViaAdministracion int     `json:"idViaAdministracion"`
+	TieneRecetaAnterior int     `json:"tieneRecetaAnterior"`
+}

@@ -35,3 +35,14 @@ type AuthMenus struct {
 	Menus    []Menu        `json:"menus"`
 	Permisos []MenuPermiso `json:"permisos"`
 }
+
+type UserProfile struct {
+	IdEmpleado      int    `json:"idEmpleado"`
+	Username        string `json:"username"`
+	Nombres         string `json:"nombres"`
+	ApellidoPaterno string `json:"apellidoPaterno"`
+	ApellidoMaterno string `json:"apellidoMaterno"`
+	NombreCompleto  string `json:"nombreCompleto"`
+	Foto            string `json:"foto"`
+	Rol             string `json:"rol"`
+}

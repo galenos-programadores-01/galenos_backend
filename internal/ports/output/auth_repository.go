@@ -14,4 +14,6 @@ type AuthRepository interface {
 	GetMenus(ctx context.Context, idEmpleado int) ([]domain.Menu, error)
 	// GetMenuPermisos obtiene los permisos detallados de los menús para el empleado.
 	GetMenuPermisos(ctx context.Context, idEmpleado int) ([]domain.MenuPermiso, error)
+	// GetUserProfile obtiene el perfil completo con nombres, apellidos y foto del empleado.
+	GetUserProfile(ctx context.Context, idEmpleado int) (domain.UserProfile, error)
 }

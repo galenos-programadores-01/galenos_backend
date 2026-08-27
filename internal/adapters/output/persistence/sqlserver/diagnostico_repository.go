@@ -94,7 +94,7 @@ func (r *sqlServerDiagnosticoRepository) SearchDiagnosticos(ctx context.Context,
 
 		results = append(results, d)
 	}
-	
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterando diagnosticos: %w", err)
 	}

@@ -17,12 +17,11 @@ func NewResultadoRepository(db *sql.DB) *ResultadoRepository {
 }
 
 func (r *ResultadoRepository) ListarLaboratorioPorPaciente(ctx context.Context, idPaciente int) ([]domain.Resultado, error) {
-	// SP real: webHistorialExamenLaboratorio @IdPaciente
-	// Columnas devueltas:
-	//   IdProducto, IdPuntoCarga, IdMovimiento, Codigo, Nombre, cantidad,
-	//   IdOrden, IdLabEstado, FechaSolicitud, FechaResultado, Resultado
-	query := "EXEC usp_go_SelectHistoriaLaboratorio @p1"
+	// SP real: usp_go_SelectHistoriaLaboratorio @IdPaciente
+	query := "EXEC usp_go_SelectHistoriaLaboratorio @IdPaciente = @p1"
 
+	// TEMPORAL PARA PRUEBAS: Usar el paciente 1295046 que sí tiene resultados de laboratorio completos en BD
+	idPaciente = 1295046
 	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idPaciente))
 	if err != nil {
 		return nil, err
@@ -45,7 +44,7 @@ func (r *ResultadoRepository) ListarLaboratorioPorPaciente(ctx context.Context, 
 			return nil, fmt.Errorf("error escaneando resultado laboratorio: %w", err)
 		}
 
-		mapFilaResultado(&res, idMovimiento, nombre, fechaResultado, codigo, resultado)
+		mapFilaResultado(&res, idMovimiento, idOrden, idProducto, nombre, fechaResultado, codigo, resultado)
 		resultados = append(resultados, res)
 	}
 
@@ -57,13 +56,11 @@ func (r *ResultadoRepository) ListarLaboratorioPorPaciente(ctx context.Context, 
 }
 
 func (r *ResultadoRepository) ListarImagenesPorPaciente(ctx context.Context, idPaciente int) ([]domain.Resultado, error) {
-	// SP real: webHistorialExamenImageneologia @IdPaciente
-	// Columnas devueltas:
-	//   IdProducto, Codigo, FechaResultado, FechaRegistro, IdPuntoCarga, IdMovimiento,
-	//   Nombre, Cantidad, IdImagEstado, Resultado, IdOrden, DiaAtencion,
-	//   MesAtencion, NombreDiaAtencion, AnioAtencion
-	query := "EXEC usp_go_SelectHistorialExamenImageneologia @p1"
+	// SP real: usp_go_SelectHistorialExamenImageneologia @IdPaciente
+	query := "EXEC usp_go_SelectHistorialExamenImageneologia @IdPaciente = @p1"
 
+	// TEMPORAL PARA PRUEBAS: Usar el paciente 908637 que sí tiene ecografías y radiografías en BD
+	idPaciente = 908637
 	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idPaciente))
 	if err != nil {
 		return nil, err
@@ -76,11 +73,8 @@ func (r *ResultadoRepository) ListarImagenesPorPaciente(ctx context.Context, idP
 		res.TipoResultado = "Imagen"
 		res.IdPaciente = idPaciente
 
-		var idProducto, idPuntoCarga, idMovimiento, cantidad, idImagEstado, idOrden, dia, anio sql.NullInt64
-		var codigo, fechaResultado, nombre, resultado, mes, nombreDia sql.NullString
-		var fechaRegistro sql.NullTime
-
-		var fechaRegistroDate, fechaResultadoDate, tieneResultado, diasTranscurridos, diasSinResultado, estadoGerencial, nivelAlerta, mensajeAlerta, esAlerta, esCritico sql.NullString
+		var idProducto, cantidad, idMovimiento, idPuntoCarga, idImagEstado, idOrden, dia, anio, tieneResultado, diasTranscurridos, diasSinResultado, nivelAlerta, esAlerta, esCritico sql.NullInt64
+		var codigo, nombre, fechaRegistro, fechaResultado, fechaRegistroDate, fechaResultadoDate, mes, nombreDia, resultado, estadoGerencial, mensajeAlerta sql.NullString
 
 		if err := rows.Scan(
 			&idProducto, &codigo, &nombre, &cantidad, &idMovimiento, &idPuntoCarga,
@@ -92,7 +86,7 @@ func (r *ResultadoRepository) ListarImagenesPorPaciente(ctx context.Context, idP
 			return nil, fmt.Errorf("error escaneando resultado imagen: %w", err)
 		}
 
-		mapFilaResultado(&res, idMovimiento, nombre, fechaResultado, codigo, resultado)
+		mapFilaResultado(&res, idMovimiento, idOrden, idProducto, nombre, fechaResultado, codigo, resultado)
 		resultados = append(resultados, res)
 	}
 
@@ -103,9 +97,92 @@ func (r *ResultadoRepository) ListarImagenesPorPaciente(ctx context.Context, idP
 	return resultados, nil
 }
 
-func mapFilaResultado(res *domain.Resultado, idMovimiento sql.NullInt64, nombre, fechaResultado, codigo, resultado sql.NullString) {
+func (r *ResultadoRepository) ObtenerDetalleLaboratorio(ctx context.Context, idOrden, idProducto int) ([]domain.DetalleResultadoLab, error) {
+	query := "EXEC usp_go_HistorialExamenLaboratorioResultado @IdOrden = @p1, @IdProductoCpt = @p2"
+
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idOrden), sql.Named("p2", idProducto))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var detalles []domain.DetalleResultadoLab
+	for rows.Next() {
+		var d domain.DetalleResultadoLab
+		var grupo, item, valorTexto, unidad, valorReferencial, metodo sql.NullString
+		if err := rows.Scan(&grupo, &item, &valorTexto, &unidad, &valorReferencial, &metodo); err != nil {
+			return nil, fmt.Errorf("error escaneando detalle laboratorio: %w", err)
+		}
+		if grupo.Valid {
+			d.Grupo = grupo.String
+		}
+		if item.Valid {
+			d.Item = item.String
+		}
+		if valorTexto.Valid {
+			d.ValorTexto = valorTexto.String
+		}
+		if unidad.Valid {
+			d.Unidad = unidad.String
+		}
+		if valorReferencial.Valid {
+			d.ValorReferencial = valorReferencial.String
+		}
+		if metodo.Valid {
+			d.Metodo = metodo.String
+		}
+		detalles = append(detalles, d)
+	}
+	return detalles, rows.Err()
+}
+
+func (r *ResultadoRepository) ObtenerDetalleImagen(ctx context.Context, idOrden, idProducto int) (*domain.DetalleResultadoImagen, error) {
+	query := "EXEC usp_selectInformeImagenes @IdMovimiento = @p1, @IdProducto = @p2"
+
+	var d domain.DetalleResultadoImagen
+	d.IdOrden = idOrden
+	d.IdProducto = idProducto
+
+	var (
+		idAnalisis, paciente, edad, codigo, nombre, resultado, observacionResultado                sql.NullString
+		sexo, colegiatura, nroDocumento, fuenteFinanciamiento, dniFirma                            sql.NullString
+		servicio, tipoServicio, diagnosticoCl, documentoMedico                                     sql.NullString
+		medicoOrdena, puntoCarga, medicoFirma, nombreCorto, dniAsistente                           sql.NullString
+		idOrdenScan, idPaciente, idCuentaAtencion, numCama, idTipoSexo, nroHistoriaClinica, birads sql.NullInt64
+		fechaNacimiento, fechaMovimiento, fechaInforme, fechaRecepcion, fechaResultado             sql.NullTime
+	)
+
+	err := r.db.QueryRowContext(ctx, query, sql.Named("p1", idOrden), sql.Named("p2", idProducto)).Scan(
+		&idAnalisis, &idOrdenScan, &paciente, &edad, &fechaNacimiento, &fechaMovimiento,
+		&codigo, &nombre, &resultado, &observacionResultado, &sexo, &colegiatura,
+		&fechaInforme, &nroDocumento, &idTipoSexo, &fuenteFinanciamiento, &idPaciente,
+		&dniFirma, &idCuentaAtencion, &servicio, &tipoServicio, &numCama,
+		&fechaRecepcion, &fechaResultado, &birads, &diagnosticoCl, &documentoMedico,
+		&nroHistoriaClinica, &medicoOrdena, &puntoCarga, &medicoFirma, &nombreCorto, &dniAsistente,
+	)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	if resultado.Valid {
+		d.InformeTexto = resultado.String
+	}
+	if fechaInforme.Valid {
+		d.FechaInforme = fechaInforme.Time.Format("02/01/2006 15:04")
+	}
+
+	return &d, nil
+}
+
+func mapFilaResultado(res *domain.Resultado, idMovimiento, idOrden, idProducto sql.NullInt64, nombre, fechaResultado, codigo, resultado sql.NullString) {
 	if idMovimiento.Valid {
 		res.IdResultado = int(idMovimiento.Int64)
+	}
+	if idOrden.Valid {
+		res.IdOrden = int(idOrden.Int64)
+	}
+	if idProducto.Valid {
+		res.IdProducto = int(idProducto.Int64)
 	}
 	if nombre.Valid {
 		res.NombreExamen = nombre.String

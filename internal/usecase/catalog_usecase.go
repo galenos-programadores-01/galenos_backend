@@ -161,3 +161,19 @@ func (uc *catalogUseCase) GetParametro(ctx context.Context, idParametro int64) (
 	}
 	return item, nil
 }
+
+func (uc *catalogUseCase) ListRecetaFrecuencias(ctx context.Context) ([]domain.CatalogItem, error) {
+	return uc.repo.ListRecetaFrecuencias(ctx)
+}
+
+func (uc *catalogUseCase) ListRecetaUnidadesDosis(ctx context.Context) ([]domain.CatalogItem, error) {
+	return uc.repo.ListRecetaUnidadesDosis(ctx)
+}
+
+func (uc *catalogUseCase) ListRecetaViasAdministracion(ctx context.Context) ([]domain.CatalogItem, error) {
+	return uc.repo.ListRecetaViasAdministracion(ctx)
+}
+
+func (uc *catalogUseCase) BuscarMedicamentosReceta(ctx context.Context, filtro string, idPaciente int) ([]domain.MedicamentoBusqueda, error) {
+	return uc.repo.BuscarMedicamentosReceta(ctx, filtro, idPaciente)
+}

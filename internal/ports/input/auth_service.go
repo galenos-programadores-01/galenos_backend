@@ -18,4 +18,7 @@ type AuthService interface {
 
 	// GetMenus obtiene los menús y permisos asignados al usuario.
 	GetMenus(ctx context.Context, idEmpleado int) (domain.AuthMenus, error)
+
+	// GetUserProfile obtiene el perfil con nombres, apellidos y foto del usuario.
+	GetUserProfile(ctx context.Context, idEmpleado int) (domain.UserProfile, error)
 }

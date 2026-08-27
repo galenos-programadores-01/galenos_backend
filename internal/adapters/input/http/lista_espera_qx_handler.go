@@ -40,8 +40,8 @@ func (h *ListaEsperaQxHandler) HandleListar(c *gin.Context) {
 }
 
 type crearListaEsperaQxRequest struct {
-	IdPaciente      int    `json:"idPaciente"`
-	IdMedico        int    `json:"idMedico"`
+	IdPaciente       int    `json:"idPaciente"`
+	IdMedico         int    `json:"idMedico"`
 	IdTipoDocumento  int    `json:"idTipoDocumento" binding:"required"`
 	NroDocumento     string `json:"nroDocumento" binding:"required"`
 	ApellidoPaterno  string `json:"apellidoPaterno" binding:"required"`
