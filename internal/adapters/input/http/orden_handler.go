@@ -24,7 +24,7 @@ func NewOrdenHandler(service input.OrdenService) *OrdenHandler {
 // @Produce json
 // @Security BearerAuth
 // @Param idRegAtencion path int true "ID de la Atencion"
-// @Router /api/v1/ordenes/cuenta/{idRegAtencion} [get]
+// @Router /ordenes/cuenta/{idRegAtencion} [get]
 func (h *OrdenHandler) HandleListOrdenes(c *gin.Context) {
 	idStr := c.Param("idCuentaAtencion")
 	idRegAtencion, err := strconv.Atoi(idStr)
@@ -55,7 +55,7 @@ type CreateOrdenRequest struct {
 // @Produce json
 // @Security BearerAuth
 // @Param request body CreateOrdenRequest true "Orden data"
-// @Router /api/v1/ordenes [post]
+// @Router /ordenes [post]
 func (h *OrdenHandler) HandleCreateOrden(c *gin.Context) {
 	var req CreateOrdenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -101,7 +101,7 @@ func (h *OrdenHandler) HandleCreateOrden(c *gin.Context) {
 // @Security BearerAuth
 // @Param q query string false "Filtro por nombre, código o nombre comercial"
 // @Param limite query int false "Máximo de resultados (default 50)"
-// @Router /api/v1/ordenes/productos [get]
+// @Router /ordenes/productos [get]
 func (h *OrdenHandler) HandleBuscarProductos(c *gin.Context) {
 	filtro := c.Query("q")
 	limite, _ := strconv.Atoi(c.DefaultQuery("limite", "50"))

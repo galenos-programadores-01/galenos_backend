@@ -207,10 +207,10 @@ func (r *triageRepository) GetReporte(ctx context.Context, params shared.TriageR
 // usp_go_MedicosFiltrarPorIdEspecialidad con el id de la especialidad.
 // El SP retorna filas con las columnas IdMedico, ApellidoPaterno,
 // ApellidoMaterno y Nombre. Se arma NombreCompleto concatenando las partes.
-func (r *triageRepository) ListarMedicosPorEspecialidad(ctx context.Context, idEspecialidad int) ([]domain.MedicoFila, error) {
+func (r *triageRepository) ListarMedicosPorEspecialidad(ctx context.Context, IdEspecialidad int) ([]domain.MedicoFila, error) {
 	const procedure = `usp_go_MedicosFiltrarPorIdEspecialidad`
 
-	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdEspecialialidad", idEspecialidad))
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdEspecialialidad", IdEspecialidad))
 	if err != nil {
 		return nil, fmt.Errorf("calling usp_go_MedicosFiltrarPorIdEspecialidad: %w", err)
 	}

@@ -43,6 +43,6 @@ func (s *interconsultaService) ListarEspecialidades(ctx context.Context) ([]doma
 	return s.repo.ListarEspecialidades(ctx)
 }
 
-func (s *interconsultaService) ListarMedicosPorEspecialidad(ctx context.Context, idEspecialidad int) ([]domain.MedicoInterconsulta, error) {
-	return s.repo.ListarMedicosPorEspecialidad(ctx, idEspecialidad)
+func (s *interconsultaService) ListarMedicosPorEspecialidad(ctx context.Context, IdEspecialidad int) ([]domain.MedicoInterconsulta, error) {
+	return s.repo.ListarMedicosPorEspecialidad(ctx, IdEspecialidad)
 }

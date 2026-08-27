@@ -44,7 +44,7 @@ type TriageRepository interface {
 	// ListarMedicosPorEspecialidad invoca el SP
 	// usp_go_MedicosFiltrarPorIdEspecialidad y devuelve los médicos de la
 	// especialidad indicada.
-	ListarMedicosPorEspecialidad(ctx context.Context, idEspecialidad int) ([]domain.MedicoFila, error)
+	ListarMedicosPorEspecialidad(ctx context.Context, IdEspecialidad int) ([]domain.MedicoFila, error)
 
 	// ListTriajeConsulta invoca el SP AtencionesTriajeFiltro con el
 	// fragmento WHERE construido a partir de los filtros validados.

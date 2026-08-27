@@ -19,8 +19,8 @@ func NewMedicoListaEsperaHandler(service input.MedicoListaEsperaService) *Medico
 // @Description Retorna la lista de medicos activos para la lista de espera quirurgica
 // @Tags MedicosListaEspera
 // @Produce json
-// @Success 200 {object} httpadapter.apiResponse{data=[]domain.MedicoListaEspera}
-// @Router /api/v1/medicos-lista-espera [get]
+// @Success 200 {object} apiResponse{data=object}
+// @Router /medicos-lista-espera [get]
 func (h *MedicoListaEsperaHandler) HandleListar(c *gin.Context) {
 	lista, err := h.service.Listar(c.Request.Context())
 	if err != nil {

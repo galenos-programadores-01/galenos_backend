@@ -19,3 +19,7 @@ func NewDiagnosticoUseCase(repo output.DiagnosticoRepository) input.DiagnosticoU
 func (uc *diagnosticoUseCase) SearchDiagnosticos(ctx context.Context, filtro string, idAtencion, idPaciente int) ([]domain.DiagnosticoBusqueda, error) {
 	return uc.repo.SearchDiagnosticos(ctx, filtro, idAtencion, idPaciente)
 }
+
+func (uc *diagnosticoUseCase) ListarDiagnosticos(ctx context.Context, filtro string) ([]domain.DiagnosticoSimple, error) {
+	return uc.repo.ListarDiagnosticos(ctx, filtro)
+}

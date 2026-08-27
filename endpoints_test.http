@@ -84,7 +84,7 @@ Content-Type: application/json
 
 {
   "idAtencionOrigen": 100,
-  "idEspecialidad": 5,
+  "IdEspecialidad": 5,
   "idMedicoDestino": 15,
   "motivo": "Evaluación por riesgo quirúrgico"
 }

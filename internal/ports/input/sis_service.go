@@ -12,6 +12,10 @@ type SisService interface {
 	// ConsultarAfiliado trae el paciente afiliado por su número de documento.
 	ConsultarAfiliado(ctx context.Context, params shared.SISAfiliadoParams) (domain.SisAfiliado, error)
 
+	// BuscarPorAfiliacion trae el paciente afiliado por los parámetros de
+	// afiliación (DISA, Lote, Contrato, Correlativo, CodTabla).
+	BuscarPorAfiliacion(ctx context.Context, params shared.SISAfiliadoParams) (domain.SisAfiliado, error)
+
 	// GestionarAfiliacion guarda o actualiza una afiliación SIS invocando
 	// el SP webSisFiliacionesGestionar.
 	GestionarAfiliacion(ctx context.Context, afiliacion *domain.SisAfiliacion) error

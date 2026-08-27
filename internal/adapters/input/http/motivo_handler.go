@@ -23,7 +23,7 @@ func NewMotivoHandler(service input.MotivoService) *MotivoHandler {
 // @Produce json
 // @Security BearerAuth
 // @Param idRegAtencion path int true "ID of the Registration / Encounter"
-// @Router /api/v1/evoluciones/{idRegAtencion}/motivos [get]
+// @Router /evoluciones/{idRegAtencion}/motivos [get]
 func (h *MotivoHandler) HandleListMotivos(c *gin.Context) {
 	idStr := c.Param("idRegAtencion")
 	idRegAtencion, err := strconv.Atoi(idStr)
@@ -53,7 +53,7 @@ type SaveMotivoRequest struct {
 // @Security BearerAuth
 // @Param idRegAtencion path int true "ID of the Registration / Encounter"
 // @Param request body SaveMotivoRequest true "Motivo data"
-// @Router /api/v1/evoluciones/{idRegAtencion}/motivos [post]
+// @Router /evoluciones/{idRegAtencion}/motivos [post]
 func (h *MotivoHandler) HandleCreateMotivo(c *gin.Context) {
 	idStr := c.Param("idRegAtencion")
 	idRegAtencion, err := strconv.Atoi(idStr)

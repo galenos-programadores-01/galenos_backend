@@ -92,7 +92,7 @@ func (uc *sisUseCase) ListConsumo(ctx context.Context, idCuentaAtencion int64) (
 }
 
 func (uc *sisUseCase) ConsultarAfiliado(ctx context.Context, params shared.SISAfiliadoParams) (domain.SisAfiliado, error) {
-	if params.DocumentNumber == "" {
+	if params.DocumentNumber == "" && (params.Disa == "" || params.TipoFormato == "" || params.NroContrato == "") {
 		return domain.SisAfiliado{}, domain.ErrInvalidDocumentNumber
 	}
 	if params.TipoDocumento != 1 && params.TipoDocumento != 3 {
@@ -105,6 +105,19 @@ func (uc *sisUseCase) ConsultarAfiliado(ctx context.Context, params shared.SISAf
 	result, err := uc.client.ConsultarAfiliado(ctx, params)
 	if err != nil {
 		return domain.SisAfiliado{}, fmt.Errorf("consulting sis: %w", err)
+	}
+
+	return result, nil
+}
+
+func (uc *sisUseCase) BuscarPorAfiliacion(ctx context.Context, params shared.SISAfiliadoParams) (domain.SisAfiliado, error) {
+	if params.Disa == "" || params.Lote == "" || params.NroContrato == "" {
+		return domain.SisAfiliado{}, domain.ErrInvalidDocumentNumber
+	}
+
+	result, err := uc.client.BuscarPorAfiliacion(ctx, params)
+	if err != nil {
+		return domain.SisAfiliado{}, fmt.Errorf("searching sis by affiliation: %w", err)
 	}
 
 	return result, nil
