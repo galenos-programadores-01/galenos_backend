@@ -3,6 +3,8 @@ package sqlserver
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
@@ -25,9 +27,11 @@ func (r *InterconsultaRepository) ObtenerPorId(ctx context.Context, id int) (*do
 	var estado sql.NullString
 
 	err := row.Scan(&ic.IdInterconsulta, &ic.IdAtencionOrigen, &ic.IdEspecialidad, &ic.IdMedicoDestino, &ic.Motivo, &fecha, &estado)
-	if err != nil && err != sql.ErrNoRows {
-		// return nil, err
-		// Ignoring exact scan for generated skeleton
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("escaneando interconsulta %d: %w", id, err)
 	}
 	if fecha.Valid {
 		ic.FechaSolicitud = fecha.Time.Format(time.RFC3339)
@@ -62,6 +66,7 @@ func (r *InterconsultaRepository) ejecutarConsultaInterconsultas(ctx context.Con
 		var estado sql.NullString
 
 		if err := rows.Scan(&ic.IdInterconsulta, &ic.IdAtencionOrigen, &ic.IdEspecialidad, &ic.IdMedicoDestino, &ic.Motivo, &fecha, &estado); err != nil {
+			log.Printf("escaneando interconsulta: %v", err)
 			continue
 		}
 		if fecha.Valid {
@@ -107,6 +112,7 @@ func (r *InterconsultaRepository) ListarEspecialidades(ctx context.Context) ([]d
 		var nombre sql.NullString
 		var descLarga sql.NullString
 		if err := rows.Scan(&esp.IdEspecialidad, &descLarga, &nombre); err != nil {
+			log.Printf("escaneando especialidad: %v", err)
 			continue
 		}
 		if nombre.Valid {
@@ -134,6 +140,7 @@ func (r *InterconsultaRepository) ListarMedicosPorEspecialidad(ctx context.Conte
 		var codigo sql.NullString
 		var medico sql.NullString
 		if err := rows.Scan(&m.IdMedico, &m.IdEmpleado, &codigo, &medico); err != nil {
+			log.Printf("escaneando médico por especialidad: %v", err)
 			continue
 		}
 		if codigo.Valid {

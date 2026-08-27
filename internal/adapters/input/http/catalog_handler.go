@@ -495,6 +495,56 @@ func (h *CatalogHandler) GetParametro(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, toParametroResponse(*item))
 }
 
+func (h *CatalogHandler) ListRecetaFrecuencias(c *gin.Context) {
+	items, err := h.service.ListRecetaFrecuencias(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.CatalogItem, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
+func (h *CatalogHandler) ListRecetaUnidadesDosis(c *gin.Context) {
+	items, err := h.service.ListRecetaUnidadesDosis(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.CatalogItem, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
+func (h *CatalogHandler) ListRecetaViasAdministracion(c *gin.Context) {
+	items, err := h.service.ListRecetaViasAdministracion(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.CatalogItem, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
+func (h *CatalogHandler) BuscarMedicamentosReceta(c *gin.Context) {
+	filtro := c.Query("q")
+	idPaciente, _ := strconv.Atoi(c.DefaultQuery("idPaciente", "908637"))
+	items, err := h.service.BuscarMedicamentosReceta(c.Request.Context(), filtro, idPaciente)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.MedicamentoBusqueda, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
 // parseID extrae y valida el path param "id" como entero.
 func parseID(c *gin.Context) (int64, bool) {
 	raw := c.Param("id")

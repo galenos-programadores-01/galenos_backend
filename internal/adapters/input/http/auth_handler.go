@@ -75,3 +75,26 @@ func (h *AuthHandler) GetMenus(c *gin.Context) {
 
 	respondSuccess(c, http.StatusOK, menus)
 }
+
+// GetPerfil maneja GET /api/v1/auth/perfil y devuelve los datos completos del operador (nombres, apellidos, foto).
+func (h *AuthHandler) GetPerfil(c *gin.Context) {
+	claims, ok := c.Get("auth_claims")
+	if !ok {
+		respondError(c, http.StatusUnauthorized, "UNAUTHORIZED", "token no válido o no proporcionado")
+		return
+	}
+
+	authClaims, ok := claims.(domain.AuthClaims)
+	if !ok {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "error procesando claims")
+		return
+	}
+
+	perfil, err := h.service.GetUserProfile(c.Request.Context(), authClaims.IdEmpleado)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, perfil)
+}

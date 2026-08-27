@@ -527,3 +527,135 @@ func (r *catalogRepository) GetParametro(ctx context.Context, idParametro int64)
 		ValorFloat: rowFloat64(m, "ValorFloat"),
 	}, nil
 }
+
+func (r *catalogRepository) ListRecetaFrecuencias(ctx context.Context) ([]domain.CatalogItem, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC Usp_SelectRecetaFrecuenciaSelecionarTodos")
+	if err != nil {
+		return nil, fmt.Errorf("calling Usp_SelectRecetaFrecuenciaSelecionarTodos: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.CatalogItem
+	for rows.Next() {
+		var item domain.CatalogItem
+		var id sql.NullInt64
+		var desc sql.NullString
+		if err := rows.Scan(&id, &desc); err != nil {
+			return nil, err
+		}
+		if id.Valid {
+			item.ID = id.Int64
+		}
+		if desc.Valid {
+			item.Descripcion = desc.String
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+func (r *catalogRepository) ListRecetaUnidadesDosis(ctx context.Context) ([]domain.CatalogItem, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC Usp_SelectRecetaUndDosisSelecionarTodos")
+	if err != nil {
+		return nil, fmt.Errorf("calling Usp_SelectRecetaUndDosisSelecionarTodos: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.CatalogItem
+	for rows.Next() {
+		var item domain.CatalogItem
+		var id sql.NullInt64
+		var desc sql.NullString
+		if err := rows.Scan(&id, &desc); err != nil {
+			return nil, err
+		}
+		if id.Valid {
+			item.ID = id.Int64
+		}
+		if desc.Valid {
+			item.Descripcion = desc.String
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+func (r *catalogRepository) ListRecetaViasAdministracion(ctx context.Context) ([]domain.CatalogItem, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC RecetasListadoViasAdministracion")
+	if err != nil {
+		return nil, fmt.Errorf("calling RecetasListadoViasAdministracion: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.CatalogItem
+	for rows.Next() {
+		var item domain.CatalogItem
+		var id sql.NullInt64
+		var desc sql.NullString
+		if err := rows.Scan(&id, &desc); err != nil {
+			return nil, err
+		}
+		if id.Valid {
+			item.ID = id.Int64
+		}
+		if desc.Valid {
+			item.Descripcion = desc.String
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+func (r *catalogRepository) BuscarMedicamentosReceta(ctx context.Context, filtro string, idPaciente int) ([]domain.MedicamentoBusqueda, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC usp_go_SelectMedicamentosFiltro @Filtro = @p1, @IdPaciente = @p2", sql.Named("p1", filtro), sql.Named("p2", idPaciente))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_SelectMedicamentosFiltro: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.MedicamentoBusqueda
+	for rows.Next() {
+		var m domain.MedicamentoBusqueda
+		var idProd, stock, tipoProd, ultCant, ultDosis, ultUnid, ultFrec, ultVia, ultDur, tieneAnt, cargaFua sql.NullInt64
+		var cod, nom, nomLargo sql.NullString
+		var precio sql.NullFloat64
+		var ultFecha sql.NullString
+
+		if err := rows.Scan(&idProd, &cod, &nom, &nomLargo, &stock, &precio, &tipoProd, &ultFecha, &ultCant, &ultDosis, &ultUnid, &ultFrec, &ultVia, &ultDur, &tieneAnt, &cargaFua); err != nil {
+			return nil, err
+		}
+		if idProd.Valid {
+			m.IdProducto = int(idProd.Int64)
+		}
+		if cod.Valid {
+			m.Codigo = cod.String
+		}
+		if nom.Valid {
+			m.Nombre = nom.String
+		}
+		if stock.Valid {
+			m.Stock = int(stock.Int64)
+		}
+		if precio.Valid {
+			m.Precio = precio.Float64
+		}
+		if ultDosis.Valid {
+			m.IdDosisRecetada = int(ultDosis.Int64)
+		}
+		if ultUnid.Valid {
+			m.IdUNIDDosisReceta = int(ultUnid.Int64)
+		}
+		if ultFrec.Valid {
+			m.IdFrecuencia = int(ultFrec.Int64)
+		}
+		if ultVia.Valid {
+			m.IdViaAdministracion = int(ultVia.Int64)
+		}
+		if tieneAnt.Valid {
+			m.TieneRecetaAnterior = int(tieneAnt.Int64)
+		}
+
+		items = append(items, m)
+	}
+	return items, nil
+}

@@ -92,3 +92,7 @@ func (uc *authUseCase) GetMenus(ctx context.Context, idEmpleado int) (domain.Aut
 		Permisos: permisos,
 	}, nil
 }
+
+func (uc *authUseCase) GetUserProfile(ctx context.Context, idEmpleado int) (domain.UserProfile, error) {
+	return uc.repo.GetUserProfile(ctx, idEmpleado)
+}

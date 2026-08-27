@@ -14,23 +14,23 @@ import (
 
 // Config agrupa toda la configuración externa de la aplicación.
 type Config struct {
-	ServerPort        string
-	ServerHost        string
-	SQLServerDSN      string
-	AllowedOrigins    []string
-	DBMaxOpenConns    int
-	DBMaxIdleConns    int
-	DBConnMaxLifetime time.Duration
-	ReniecApp         string
-	ReniecUsuario     string
-	ReniecClave       string
-	ReniecURL         string
-	ReniecTimeout     time.Duration
-	SISUsuario        string
-	SISClave          string
-	SISURL            string
-	SISDNIAutorizado  string
-	SISTimeout        time.Duration
+	ServerPort            string
+	ServerHost            string
+	SQLServerDSN          string
+	AllowedOrigins        []string
+	DBMaxOpenConns        int
+	DBMaxIdleConns        int
+	DBConnMaxLifetime     time.Duration
+	ReniecApp             string
+	ReniecUsuario         string
+	ReniecClave           string
+	ReniecURL             string
+	ReniecTimeout         time.Duration
+	SISUsuario            string
+	SISClave              string
+	SISURL                string
+	SISDNIAutorizado      string
+	SISTimeout            time.Duration
 	FirmaPeruTokenURL     string
 	FirmaPeruClientID     string
 	FirmaPeruClientSecret string
@@ -38,10 +38,10 @@ type Config struct {
 	FirmaPeruTimeout      time.Duration
 	FirmaPeruSignedDir    string
 	SevenZipPath          string
-	AuthUsername      string
-	AuthPassword      string
-	AuthSecret        string
-	AuthTTL           time.Duration
+	AuthUsername          string
+	AuthPassword          string
+	AuthSecret            string
+	AuthTTL               time.Duration
 }
 
 // Load lee la configuración desde el entorno aplicando valores por defecto
@@ -68,23 +68,23 @@ func Load() (*Config, error) {
 	}
 
 	return &Config{
-		ServerPort:        envOrDefault("SERVER_PORT", "8080"),
-		ServerHost:        envOrDefault("SERVER_HOST", defaultServerHost()),
-		SQLServerDSN:      dsn,
-		AllowedOrigins:    allowedOriginsWithServer(envOrDefault("ALLOWED_ORIGINS", "http://localhost:4200"), envOrDefault("SERVER_PORT", "8080"), envOrDefault("SERVER_HOST", defaultServerHost())),
-		DBMaxOpenConns:    envIntOrDefault("DB_MAX_OPEN_CONNS", 25),
-		DBMaxIdleConns:    envIntOrDefault("DB_MAX_IDLE_CONNS", 10),
-		DBConnMaxLifetime: envDurationOrDefault("DB_CONN_MAX_LIFETIME", 5*time.Minute),
-		ReniecApp:         envOrDefault("RENIEC_APP", "HNSEB"),
-		ReniecUsuario:     envOrDefault("RENIEC_USUARIO", "44602631"),
-		ReniecClave:       os.Getenv("RENIEC_CLAVE"),
-		ReniecURL:         envOrDefault("RENIEC_URL", "https://wsvmin.minsa.gob.pe/wsreniecmq/serviciomq.asmx"),
-		ReniecTimeout:     envDurationOrDefault("RENIEC_TIMEOUT", 30*time.Second),
-		SISUsuario:        envOrDefault("SIS_USUARIO", "HNAL"),
-		SISClave:          os.Getenv("SIS_CLAVE"),
-		SISURL:            envOrDefault("SIS_URL", "http://app.sis.gob.pe/sisWSAFI/Service.asmx"),
-		SISDNIAutorizado:  envOrDefault("SIS_DNI_AUTORIZADO", ""),
-		SISTimeout:        envDurationOrDefault("SIS_TIMEOUT", 30*time.Second),
+		ServerPort:            envOrDefault("SERVER_PORT", "8080"),
+		ServerHost:            envOrDefault("SERVER_HOST", defaultServerHost()),
+		SQLServerDSN:          dsn,
+		AllowedOrigins:        allowedOriginsWithServer(envOrDefault("ALLOWED_ORIGINS", "http://localhost:4200"), envOrDefault("SERVER_PORT", "8080"), envOrDefault("SERVER_HOST", defaultServerHost())),
+		DBMaxOpenConns:        envIntOrDefault("DB_MAX_OPEN_CONNS", 25),
+		DBMaxIdleConns:        envIntOrDefault("DB_MAX_IDLE_CONNS", 10),
+		DBConnMaxLifetime:     envDurationOrDefault("DB_CONN_MAX_LIFETIME", 5*time.Minute),
+		ReniecApp:             envOrDefault("RENIEC_APP", "HNSEB"),
+		ReniecUsuario:         envOrDefault("RENIEC_USUARIO", "44602631"),
+		ReniecClave:           os.Getenv("RENIEC_CLAVE"),
+		ReniecURL:             envOrDefault("RENIEC_URL", "https://wsvmin.minsa.gob.pe/wsreniecmq/serviciomq.asmx"),
+		ReniecTimeout:         envDurationOrDefault("RENIEC_TIMEOUT", 30*time.Second),
+		SISUsuario:            envOrDefault("SIS_USUARIO", "HNAL"),
+		SISClave:              os.Getenv("SIS_CLAVE"),
+		SISURL:                envOrDefault("SIS_URL", "http://app.sis.gob.pe/sisWSAFI/Service.asmx"),
+		SISDNIAutorizado:      envOrDefault("SIS_DNI_AUTORIZADO", ""),
+		SISTimeout:            envDurationOrDefault("SIS_TIMEOUT", 30*time.Second),
 		FirmaPeruTokenURL:     envOrDefault("FIRMAPERU_TOKEN_URL", "https://apps.firmaperu.gob.pe/admin/api/security/generate-token"),
 		FirmaPeruClientID:     os.Getenv("FIRMAPERU_CLIENT_ID"),
 		FirmaPeruClientSecret: os.Getenv("FIRMAPERU_CLIENT_SECRET"),
@@ -92,10 +92,10 @@ func Load() (*Config, error) {
 		FirmaPeruTimeout:      envDurationOrDefault("FIRMAPERU_TIMEOUT", 60*time.Second),
 		FirmaPeruSignedDir:    os.Getenv("FIRMAPERU_SIGNED_DIR"),
 		SevenZipPath:          envOrDefault("SEVENZIP_PATH", `C:\Program Files\7-Zip\7z.exe`),
-		AuthUsername:      apiUsername,
-		AuthPassword:      apiPassword,
-		AuthSecret:        jwtSecret,
-		AuthTTL:           envDurationOrDefault("JWT_TTL", 24*time.Hour),
+		AuthUsername:          apiUsername,
+		AuthPassword:          apiPassword,
+		AuthSecret:            jwtSecret,
+		AuthTTL:               envDurationOrDefault("JWT_TTL", 24*time.Hour),
 	}, nil
 }
 
