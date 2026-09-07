@@ -401,11 +401,11 @@ func (r *catalogRepository) ListServicios(ctx context.Context, idTipoServicio in
 // devuelve una única fila con los datos de la institución (RUC, nombre,
 // dirección, teléfono, logos, etc.). Devuelve nil si el SP no retorna filas.
 func (r *catalogRepository) GetDatosInstitucion(ctx context.Context) (*domain.DatosInstitucion, error) {
-	const procedure = `webParametrosDatosInstitucion`
+	const procedure = `usp_go_ParametrosDatosInstitucion`
 
 	rows, err := r.db.QueryContext(ctx, procedure)
 	if err != nil {
-		return nil, fmt.Errorf("calling webParametrosDatosInstitucion: %w", err)
+		return nil, fmt.Errorf("calling usp_go_ParametrosDatosInstitucion: %w", err)
 	}
 	defer rows.Close()
 
@@ -529,9 +529,9 @@ func (r *catalogRepository) GetParametro(ctx context.Context, idParametro int64)
 }
 
 func (r *catalogRepository) ListRecetaFrecuencias(ctx context.Context) ([]domain.CatalogItem, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC Usp_SelectRecetaFrecuenciaSelecionarTodos")
+	rows, err := r.db.QueryContext(ctx, "EXEC usp_go_SelectRecetaFrecuenciaSelecionarTodos")
 	if err != nil {
-		return nil, fmt.Errorf("calling Usp_SelectRecetaFrecuenciaSelecionarTodos: %w", err)
+		return nil, fmt.Errorf("calling usp_go_SelectRecetaFrecuenciaSelecionarTodos: %w", err)
 	}
 	defer rows.Close()
 
@@ -555,9 +555,9 @@ func (r *catalogRepository) ListRecetaFrecuencias(ctx context.Context) ([]domain
 }
 
 func (r *catalogRepository) ListRecetaUnidadesDosis(ctx context.Context) ([]domain.CatalogItem, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC Usp_SelectRecetaUndDosisSelecionarTodos")
+	rows, err := r.db.QueryContext(ctx, "EXEC Usp_go_SelectRecetaUndDosisSelecionarTodos")
 	if err != nil {
-		return nil, fmt.Errorf("calling Usp_SelectRecetaUndDosisSelecionarTodos: %w", err)
+		return nil, fmt.Errorf("calling Usp_go_SelectRecetaUndDosisSelecionarTodos: %w", err)
 	}
 	defer rows.Close()
 
@@ -581,9 +581,9 @@ func (r *catalogRepository) ListRecetaUnidadesDosis(ctx context.Context) ([]doma
 }
 
 func (r *catalogRepository) ListRecetaViasAdministracion(ctx context.Context) ([]domain.CatalogItem, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC RecetasListadoViasAdministracion")
+	rows, err := r.db.QueryContext(ctx, "EXEC usp_go_RecetasListadoViasAdministracion")
 	if err != nil {
-		return nil, fmt.Errorf("calling RecetasListadoViasAdministracion: %w", err)
+		return nil, fmt.Errorf("calling usp_go_RecetasListadoViasAdministracion: %w", err)
 	}
 	defer rows.Close()
 
@@ -616,13 +616,22 @@ func (r *catalogRepository) BuscarMedicamentosReceta(ctx context.Context, filtro
 	var items []domain.MedicamentoBusqueda
 	for rows.Next() {
 		var m domain.MedicamentoBusqueda
-		var idProd, stock, tipoProd, ultCant, ultDosis, ultUnid, ultFrec, ultVia, ultDur, tieneAnt, cargaFua sql.NullInt64
-		var cod, nom, nomLargo sql.NullString
-		var precio sql.NullFloat64
-		var ultFecha sql.NullString
+		var (
+			cod, nom, nomLargo, formaFarm                                sql.NullString
+			stock, tipoProd, ultCant, ultDosis, ultUnid, ultFrec, ultVia sql.NullInt64
+			ultDur, tieneAnt, cargaFua, idProd                           sql.NullInt64
+			precio                                                       sql.NullFloat64
+			ultFecha                                                     sql.NullTime
+		)
 
-		if err := rows.Scan(&idProd, &cod, &nom, &nomLargo, &stock, &precio, &tipoProd, &ultFecha, &ultCant, &ultDosis, &ultUnid, &ultFrec, &ultVia, &ultDur, &tieneAnt, &cargaFua); err != nil {
-			return nil, err
+		if err := rows.Scan(
+			&idProd, &cod, &nom, &nomLargo,
+			&formaFarm, &stock, &precio, &tipoProd,
+			&ultFecha, &ultCant, &ultDosis,
+			&ultUnid, &ultFrec, &ultVia,
+			&ultDur, &tieneAnt, &cargaFua,
+		); err != nil {
+			return nil, fmt.Errorf("escaneando medicamento: %w", err)
 		}
 		if idProd.Valid {
 			m.IdProducto = int(idProd.Int64)
@@ -656,6 +665,67 @@ func (r *catalogRepository) BuscarMedicamentosReceta(ctx context.Context, filtro
 		}
 
 		items = append(items, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *catalogRepository) BuscarExamenesCatalogo(ctx context.Context, filtro string, tipo string) ([]domain.ExamenCatalogo, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC [dbo].[usp_go_BuscarCatalogoExamenes] @Filtro = @p1, @Tipo = @p2", sql.Named("p1", filtro), sql.Named("p2", tipo))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_BuscarCatalogoExamenes: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.ExamenCatalogo
+	for rows.Next() {
+		var (
+			idProd, esCpt int
+			cod, nom, tip string
+		)
+		if err := rows.Scan(&idProd, &cod, &nom, &tip, &esCpt); err != nil {
+			return nil, fmt.Errorf("escaneando examen catalogo: %w", err)
+		}
+		items = append(items, domain.ExamenCatalogo{
+			IdProducto: idProd,
+			Codigo:     cod,
+			Nombre:     nom,
+			Tipo:       tip,
+			EsCPT:      esCpt == 1,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *catalogRepository) ListParametrosClinicos(ctx context.Context, idGrupo int) ([]domain.ParametroClinico, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC dbo.usp_go_Cat_ParametroClinico_Listar @IdGrupo = @p1", sql.Named("p1", idGrupo))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_Cat_ParametroClinico_Listar: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.ParametroClinico
+	for rows.Next() {
+		var (
+			idParam   int
+			cod, desc string
+		)
+		if err := rows.Scan(&idParam, &cod, &desc); err != nil {
+			return nil, fmt.Errorf("escaneando parametro clinico: %w", err)
+		}
+		items = append(items, domain.ParametroClinico{
+			IdParametro: idParam,
+			Codigo:      cod,
+			Descripcion: desc,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return items, nil
 }

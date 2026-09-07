@@ -21,7 +21,6 @@ func NewTriageHandler(service input.TriageService) *TriageHandler {
 	return &TriageHandler{service: service}
 }
 
-
 func (h *TriageHandler) Create(c *gin.Context) {
 	var req createTriajeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -29,7 +28,13 @@ func (h *TriageHandler) Create(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.CreateTriage(c.Request.Context(), req.toDomain())
+	domainObj := req.toDomain()
+	if idEmpleado := c.GetInt("idEmpleado"); idEmpleado != 0 {
+		empID := int64(idEmpleado)
+		domainObj.EmployeeID = &empID
+	}
+
+	result, err := h.service.CreateTriage(c.Request.Context(), domainObj)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "TRIAGE_REGISTER_FAILED", err.Error())
 		return
@@ -38,14 +43,22 @@ func (h *TriageHandler) Create(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
 
-
 func (h *TriageHandler) List(c *gin.Context) {
+	idEmpleado := c.GetInt("idEmpleado")
+	if idEmpleado == 0 {
+		if raw := c.Query("idEmpleado"); raw != "" {
+			if v, err := strconv.ParseInt(raw, 10, 64); err == nil {
+				idEmpleado = int(v)
+			}
+		}
+	}
+
 	params := shared.TriageListParams{
 		FechaInicio:       c.Query("fini"),
 		FechaFin:          c.Query("ffin"),
 		Filtro:            c.Query("filtro"),
 		DerivadoAServicio: -100,
-		IdEstado:          -100,
+		IdEmpleado:        idEmpleado,
 	}
 
 	if params.FechaInicio == "" || params.FechaFin == "" {
@@ -53,22 +66,13 @@ func (h *TriageHandler) List(c *gin.Context) {
 		return
 	}
 
-	if raw := c.Query("derivadoAServicio"); raw != "" {
+	if raw := c.Query("derivadoAServicio"); raw != "" && raw != "-100" {
 		v, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil {
 			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "derivadoAServicio debe ser un entero")
 			return
 		}
 		params.DerivadoAServicio = int(v)
-	}
-
-	if raw := c.Query("idEstado"); raw != "" {
-		v, err := strconv.ParseInt(raw, 10, 64)
-		if err != nil {
-			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idEstado debe ser un entero")
-			return
-		}
-		params.IdEstado = int(v)
 	}
 
 	items, err := h.service.ListTriage(c.Request.Context(), params)
@@ -79,7 +83,6 @@ func (h *TriageHandler) List(c *gin.Context) {
 
 	respondSuccess(c, http.StatusOK, items)
 }
-
 
 func (h *TriageHandler) ListPendingAdmission(c *gin.Context) {
 	params := shared.TriageAdmisionParams{
@@ -124,7 +127,6 @@ func (h *TriageHandler) ListPendingAdmission(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-
 func (h *TriageHandler) CreateAdmission(c *gin.Context) {
 	var req createAdmissionFromTriageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -146,7 +148,6 @@ func (h *TriageHandler) CreateAdmission(c *gin.Context) {
 
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
-
 
 func (h *TriageHandler) GetReporte(c *gin.Context) {
 	params := shared.TriageReporteParams{
@@ -181,7 +182,6 @@ func (h *TriageHandler) GetReporte(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-
 func (h *TriageHandler) GetFichaAdmision(c *gin.Context) {
 	raw := c.Query("idCuentaAtencion")
 	if raw == "" {
@@ -202,7 +202,6 @@ func (h *TriageHandler) GetFichaAdmision(c *gin.Context) {
 
 	respondSuccess(c, http.StatusOK, item)
 }
-
 
 func (h *TriageHandler) ListMedicosPorEspecialidad(c *gin.Context) {
 	raw := c.Param("IdEspecialidad")
@@ -225,7 +224,6 @@ func (h *TriageHandler) ListMedicosPorEspecialidad(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-
 func (h *TriageHandler) ListTriajeConsulta(c *gin.Context) {
 	params := shared.TriajeConsultaParams{
 		FechaInicio: c.Query("fini"),
@@ -238,7 +236,6 @@ func (h *TriageHandler) ListTriajeConsulta(c *gin.Context) {
 		return
 	}
 
-	// Validar el formato de las fechas antes de armar el fragmento WHERE.
 	if _, err := time.Parse("2006-01-02", params.FechaInicio); err != nil {
 		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "fini debe ser YYYY-MM-DD")
 		return
@@ -266,7 +263,6 @@ func (h *TriageHandler) ListTriajeConsulta(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-
 func (h *TriageHandler) CreateTriajeConsulta(c *gin.Context) {
 	var req createTriajeConsultaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -288,7 +284,6 @@ func (h *TriageHandler) CreateTriajeConsulta(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
 
-
 func (h *TriageHandler) GetTriajeConsultaPorAtencion(c *gin.Context) {
 	raw := c.Param("idAtencion")
 	if raw == "" {
@@ -309,7 +304,6 @@ func (h *TriageHandler) GetTriajeConsultaPorAtencion(c *gin.Context) {
 
 	respondSuccess(c, http.StatusOK, item)
 }
-
 
 func (h *TriageHandler) UpdateEstadoTriajeConsulta(c *gin.Context) {
 	raw := c.Param("id")

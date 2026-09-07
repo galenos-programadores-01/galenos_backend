@@ -42,6 +42,10 @@ type Config struct {
 	AuthPassword          string
 	AuthSecret            string
 	AuthTTL               time.Duration
+	RedisAddr             string
+	RedisPassword         string
+	RedisDB               int
+	RedisTTL              time.Duration
 }
 
 // Load lee la configuración desde el entorno aplicando valores por defecto
@@ -65,6 +69,16 @@ func Load() (*Config, error) {
 	apiPassword := os.Getenv("API_PASSWORD")
 	if apiPassword == "" {
 		return nil, fmt.Errorf("API_PASSWORD environment variable is required")
+	}
+
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := envOrDefault("REDIS_PORT", "6379")
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" && redisHost != "" {
+		redisAddr = redisHost + ":" + redisPort
+	}
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
 	}
 
 	return &Config{
@@ -96,6 +110,10 @@ func Load() (*Config, error) {
 		AuthPassword:          apiPassword,
 		AuthSecret:            jwtSecret,
 		AuthTTL:               envDurationOrDefault("JWT_TTL", 24*time.Hour),
+		RedisAddr:             redisAddr,
+		RedisPassword:         os.Getenv("REDIS_PASSWORD"),
+		RedisDB:               envIntOrDefault("REDIS_DB", 0),
+		RedisTTL:              envDurationOrDefault("REDIS_TTL", 30*time.Minute),
 	}, nil
 }
 

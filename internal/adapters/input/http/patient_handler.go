@@ -114,6 +114,82 @@ func (h *PatientHandler) respondGetError(c *gin.Context, err error) {
 	}
 }
 
+// GetDatosAdicionales maneja GET /api/v1/pacientes/:idOrDoc/datos-adicionales.
+//
+// @Summary Obtiene los antecedentes y datos adicionales de un paciente
+// @Description Invoca el SP usp_go_PacientesDatosAdicionalesIdPaciente para devolver antecedentes quirúrgicos, patológicos, obstétricos, etc.
+// @Tags Pacientes
+// @Produce json
+// @Param idOrDoc path int true "Id del paciente"
+// @Success 200 {object} apiResponse{data=domain.PacienteDatosAdicionales}
+// @Failure 400 {object} apiResponse{error=apiError} "Identificador inválido"
+// @Router /pacientes/{idOrDoc}/datos-adicionales [get]
+func (h *PatientHandler) GetDatosAdicionales(c *gin.Context) {
+	idParam := c.Param("idOrDoc")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil || id <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_PATIENT_ID", domain.ErrInvalidPatientID.Error())
+		return
+	}
+
+	datos, err := h.service.GetDatosAdicionales(c.Request.Context(), id)
+	if err != nil {
+		h.respondGetError(c, err)
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, datos)
+}
+
+// UpdateDatosAdicionales maneja PUT /api/v1/pacientes/:idOrDoc/datos-adicionales.
+//
+// @Summary Actualiza los antecedentes y datos adicionales de un paciente
+// @Description Invoca los SPs PacientesDatosAdicionalesModificar / PacientesDatosAdicionalesAgregar
+// @Tags Pacientes
+// @Accept json
+// @Produce json
+// @Param idOrDoc path int true "Id del paciente"
+// @Param request body domain.PacienteDatosAdicionales true "Antecedentes a guardar"
+// @Success 200 {object} apiResponse{data=domain.PacienteDatosAdicionales}
+// @Failure 400 {object} apiResponse{error=apiError} "Identificador o payload inválido"
+// @Router /pacientes/{idOrDoc}/datos-adicionales [put]
+func (h *PatientHandler) UpdateDatosAdicionales(c *gin.Context) {
+	idParam := c.Param("idOrDoc")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil || id <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_PATIENT_ID", domain.ErrInvalidPatientID.Error())
+		return
+	}
+
+	var req domain.PacienteDatosAdicionales
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST_BODY", "Cuerpo de solicitud inválido")
+		return
+	}
+
+	idUsuario := 1
+	if val, exists := c.Get("idEmpleado"); exists {
+		switch v := val.(type) {
+		case int:
+			idUsuario = v
+		case float64:
+			idUsuario = int(v)
+		case string:
+			if parsed, err := strconv.Atoi(v); err == nil {
+				idUsuario = parsed
+			}
+		}
+	}
+
+	updated, err := h.service.UpdateDatosAdicionales(c.Request.Context(), id, req, idUsuario)
+	if err != nil {
+		h.respondGetError(c, err)
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, updated)
+}
+
 // Update maneja PUT /api/v1/pacientes/:id.
 //
 // @Summary Modifica un paciente
@@ -128,7 +204,11 @@ func (h *PatientHandler) respondGetError(c *gin.Context, err error) {
 // @Failure 404 {object} apiResponse{error=apiError} "Paciente no encontrado"
 // @Router /pacientes/{id} [put]
 func (h *PatientHandler) Update(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	param := c.Param("idOrDoc")
+	if param == "" {
+		param = c.Param("id")
+	}
+	id, err := strconv.ParseInt(param, 10, 64)
 	if err != nil || id <= 0 {
 		respondError(c, http.StatusBadRequest, "INVALID_PATIENT_ID", domain.ErrInvalidPatientID.Error())
 		return
@@ -197,7 +277,11 @@ func (h *PatientHandler) Create(c *gin.Context) {
 // @Failure 409 {object} apiResponse{error=apiError} "Paciente con registros asociados, no se puede eliminar"
 // @Router /pacientes/{id} [delete]
 func (h *PatientHandler) Delete(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	param := c.Param("idOrDoc")
+	if param == "" {
+		param = c.Param("id")
+	}
+	id, err := strconv.ParseInt(param, 10, 64)
 	if err != nil || id <= 0 {
 		respondError(c, http.StatusBadRequest, "INVALID_PATIENT_ID", domain.ErrInvalidPatientID.Error())
 		return

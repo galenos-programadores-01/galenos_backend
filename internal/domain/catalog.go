@@ -157,3 +157,17 @@ type MedicamentoBusqueda struct {
 	IdViaAdministracion int     `json:"idViaAdministracion"`
 	TieneRecetaAnterior int     `json:"tieneRecetaAnterior"`
 }
+
+type ExamenCatalogo struct {
+	IdProducto int    `json:"idProducto"`
+	Codigo     string `json:"codigo"`
+	Nombre     string `json:"nombre"`
+	Tipo       string `json:"tipo"`
+	EsCPT      bool   `json:"esCpt"`
+}
+
+type ParametroClinico struct {
+	IdParametro int    `json:"idParametro"`
+	Codigo      string `json:"codigo"`
+	Descripcion string `json:"descripcion"`
+}

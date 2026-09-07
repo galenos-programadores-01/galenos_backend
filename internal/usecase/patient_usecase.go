@@ -134,3 +134,28 @@ func (uc *patientUseCase) Delete(ctx context.Context, id int64) error {
 
 	return nil
 }
+
+func (uc *patientUseCase) GetDatosAdicionales(ctx context.Context, idPaciente int64) (domain.PacienteDatosAdicionales, error) {
+	if idPaciente <= 0 {
+		return domain.PacienteDatosAdicionales{}, domain.ErrInvalidPatientID
+	}
+
+	datos, err := uc.repo.GetDatosAdicionales(ctx, idPaciente)
+	if err != nil {
+		return domain.PacienteDatosAdicionales{}, fmt.Errorf("getting patient additional data: %w", err)
+	}
+
+	return datos, nil
+}
+
+func (uc *patientUseCase) UpdateDatosAdicionales(ctx context.Context, idPaciente int64, datos domain.PacienteDatosAdicionales, idUsuario int) (domain.PacienteDatosAdicionales, error) {
+	if idPaciente <= 0 {
+		return domain.PacienteDatosAdicionales{}, domain.ErrInvalidPatientID
+	}
+
+	if err := uc.repo.UpdateDatosAdicionales(ctx, idPaciente, datos, idUsuario); err != nil {
+		return domain.PacienteDatosAdicionales{}, fmt.Errorf("updating patient additional data: %w", err)
+	}
+
+	return uc.repo.GetDatosAdicionales(ctx, idPaciente)
+}

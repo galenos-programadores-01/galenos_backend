@@ -1,6 +1,5 @@
 package domain
 
-// PatientListItem representa a un paciente en la bandeja
 type PatientListItem struct {
 	IdRegAtencion int    `json:"idRegAtencion"`
 	IdPaciente    int    `json:"idPaciente"`
@@ -9,6 +8,8 @@ type PatientListItem struct {
 	Edad          string `json:"edad"`
 	Sexo          string `json:"sexo"`
 	Ubicacion     string `json:"ubicacion"`
+	Servicio      string `json:"servicio"`
+	Especialidad  string `json:"especialidad"`
 	Cama          string `json:"cama"`
 	Estado        string `json:"estado"`
 }
@@ -22,6 +23,7 @@ type EvolucionFirma struct {
 	RutaBase           string `json:"rutaBase"`
 	DataB64            string `json:"dataB64"`
 	IdEmpleadoRegistra int    `json:"idEmpleadoRegistra"`
+	MedicoNombre       string `json:"medicoNombre,omitempty"`
 	FechaRegistro      string `json:"fechaRegistro"`
 	Estado             int    `json:"estado"`
 }
@@ -55,12 +57,19 @@ type EvolucionBandejaItem struct {
 }
 
 type EvolucionMedicaInsert struct {
+	IdEvolucion                           *int     `json:"idEvolucion"`
+	IdEpisodio                            *int     `json:"idEpisodio"`
 	IdAtencion                            int      `json:"idAtencion"`
+	NroAtencion                           *int     `json:"nroAtencion"`
 	IdPaciente                            int      `json:"idPaciente"`
 	IdMedico                              int      `json:"idMedico"`
+	IdServicioActual                      *int     `json:"idServicioActual"`
 	FechaAtencion                         *string  `json:"fechaAtencion"`
+	IdTipoAtencion                        *int     `json:"idTipoAtencion"`
 	IdTipoGravedad                        *int     `json:"idTipoGravedad"`
+	Motivo                                *string  `json:"motivo"`
 	MotivoConsulta                        *string  `json:"motivoConsulta"`
+	Subjetivo                             *string  `json:"subjetivo"`
 	TiempoEnfermedad                      *string  `json:"tiempoEnfermedad"`
 	Anamnesis                             *string  `json:"anamnesis"`
 	EscalaDolor                           *int     `json:"escalaDolor"`
@@ -96,4 +105,5 @@ type EvolucionMedicaInsert struct {
 	EquipoCreacion                        *string  `json:"equipoCreacion"`
 	EstadoRegistro                        *int     `json:"estadoRegistro"`
 	EstadoFirma                           *int     `json:"estadoFirma"`
+	UbicacionArchivo                      *string  `json:"ubicacionArchivo"`
 }

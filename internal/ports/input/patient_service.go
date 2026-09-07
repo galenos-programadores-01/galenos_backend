@@ -37,4 +37,10 @@ type PatientService interface {
 	// Delete elimina un paciente si no tiene registros asociados (SP
 	// PacientesSePuedeEliminar + PacientesEliminarPorIdPaciente).
 	Delete(ctx context.Context, id int64) error
+
+	// GetDatosAdicionales retorna los antecedentes de un paciente.
+	GetDatosAdicionales(ctx context.Context, idPaciente int64) (domain.PacienteDatosAdicionales, error)
+
+	// UpdateDatosAdicionales actualiza o inserta los antecedentes de un paciente.
+	UpdateDatosAdicionales(ctx context.Context, idPaciente int64, datos domain.PacienteDatosAdicionales, idUsuario int) (domain.PacienteDatosAdicionales, error)
 }

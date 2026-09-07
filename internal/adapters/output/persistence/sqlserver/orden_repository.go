@@ -19,13 +19,12 @@ func NewOrdenRepository(db *sql.DB) *OrdenRepository {
 }
 
 func (r *OrdenRepository) ListarPorCuenta(ctx context.Context, idRegAtencion int) ([]domain.OrdenMedica, error) {
-	// El frontend envía idRegAtencion = Atenciones.IdAtencion; el SP exige IdCuentaAtencion.
-	idCuenta, err := r.resolverCuentaAtencion(ctx, idRegAtencion)
+	idCuenta, err := r.resolverIdCuenta(ctx, idRegAtencion)
 	if err != nil {
 		return nil, err
 	}
 
-	query := "EXEC webOrdenesListarIdCuentaAtencion @IdCuentaAtencion = @p1, @RecetaAdicional = @p2"
+	query := "EXEC usp_go_OrdenesListarIdCuentaAtencion @idCuentaAtencion = @p1, @RecetaAdicional = @p2"
 
 	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idCuenta), sql.Named("p2", -100))
 	if err != nil {
@@ -83,7 +82,6 @@ func (r *OrdenRepository) ListarPorCuenta(ctx context.Context, idRegAtencion int
 		return nil, err
 	}
 
-	// Completar fecha y médico desde la cabecera real de la receta
 	if len(ordenes) > 0 {
 		r.completarCabeceras(ctx, idCuenta, ordenes)
 	}
@@ -91,7 +89,6 @@ func (r *OrdenRepository) ListarPorCuenta(ctx context.Context, idRegAtencion int
 	return ordenes, nil
 }
 
-// completarCabeceras rellena FechaOrden y Medico de cada receta desde RecetaCabecera.
 func (r *OrdenRepository) completarCabeceras(ctx context.Context, idCuentaAtencion int, ordenes []domain.OrdenMedica) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT rc.idReceta, CONVERT(varchar(19), rc.FechaReceta, 120),
@@ -134,97 +131,42 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 	}
 	defer tx.Rollback()
 
-	// 1. Resolver la atención real (el frontend envía IdAtencion como idRegAtencion)
-	var idCuentaAtencion, idPaciente, idServicioIngreso int
+	// 1. Resolver la atención real
 	var (
-		apellidoPaterno, apellidoMaterno, primerNombre, segundoNombre sql.NullString
-		nroHistoriaClinica, idAtencionScan, idPacienteScan, edad      sql.NullInt64
-		fechaIngreso                                                  sql.NullTime
-		horaIngreso, idDestinoAtencion, idDestinoServicio             sql.NullString
-		idTipoCondicionAlServicio, idTipoCondicionALEstab             sql.NullInt64
-		idServicioIngresoScan, idMedicoIngreso, idEspecialidadMedico  sql.NullInt64
-		idMedicoEgreso                                                sql.NullInt64
-		fechaEgreso                                                   sql.NullTime
-		horaEgreso, idOrigenAtencion                                  sql.NullString
-		fechaEgresoAdministrativo                                     sql.NullTime
-		horaEgresoAdministrativo, idCondicionAlta, idTipoAlta         sql.NullString
-		idServicioEgreso, idCamaIngreso, idCamaEgreso                 sql.NullInt64
-		idTipoGravedad, idTipoGravedadEgreso, idTipoEdad              sql.NullInt64
-		idTipoServicioScan, idFormaPago, idFuenteFinanciamiento       sql.NullInt64
-		idEstadoAtencion                                              sql.NullInt64
-		esPacienteExterno                                             sql.NullBool
-		idSunasaPacienteHistorico, idCartaGarantia                    sql.NullInt64
-		numCartaGarantia, cuentaAtencionRelacion, numIntegracion      sql.NullString
-		idMotivoAnulacion                                             sql.NullInt64
-		observacion, tieneSolicitudSOP, horaInicioAtencion            sql.NullString
-		rutaBase                                                      sql.NullString
-		fechaFirma                                                    sql.NullTime
-		estadoFirma                                                   sql.NullString
-		fechaRecuperacion                                             sql.NullTime
-		idUsuarioRecupera                                             sql.NullInt64
-		fechaRecepcion                                                sql.NullTime
-		idUsuarioRecepciona                                           sql.NullInt64
-		estadoFicha                                                   sql.NullString
-		idInterconsulta, cirugiaDeDia, idTriaje                       sql.NullInt64
-		numeradorReracion                                             sql.NullInt64
-		emailEnvioAtencion                                            sql.NullString
-		envioFua                                                      sql.NullInt64
-		idRecetaGeneraCita                                            sql.NullInt64
-		descripcion, nroDocumento                                     sql.NullString
-		idDocIdentidad                                                sql.NullInt64
-		email                                                         sql.NullString
-		fechaNacimiento                                               sql.NullTime
-		idTipoSexo                                                    sql.NullInt64
-		telefono, idDistritoDomicilio                                 sql.NullString
+		idPacienteScan        sql.NullInt64
+		idServicioIngresoScan sql.NullInt64
+		idCuentaAtencion      sql.NullInt64
+		idTipoServicioScan    sql.NullInt64
 	)
-	err = tx.QueryRowContext(ctx, "EXEC AtencionesSeleccionarPorIdAtencion @idAtencion = @p1",
+	err = tx.QueryRowContext(ctx, `
+		SELECT 
+			ISNULL(IdCuentaAtencion, 0),
+			ISNULL(IdPaciente, 0),
+			ISNULL(IdServicioIngreso, 0),
+			ISNULL(IdTipoServicio, 0)
+		FROM dbo.Atenciones WITH (NOLOCK)
+		WHERE IdAtencion = @p1`,
 		sql.Named("p1", orden.IdRegAtencion),
-	).Scan(
-		&apellidoPaterno, &apellidoMaterno, &primerNombre, &segundoNombre,
-		&nroHistoriaClinica, &idAtencionScan, &idPacienteScan, &edad,
-		&fechaIngreso, &horaIngreso, &idDestinoAtencion, &idDestinoServicio,
-		&idTipoCondicionAlServicio, &idTipoCondicionALEstab,
-		&idServicioIngresoScan, &idMedicoIngreso, &idEspecialidadMedico,
-		&idMedicoEgreso, &fechaEgreso, &horaEgreso, &idOrigenAtencion,
-		&fechaEgresoAdministrativo, &horaEgresoAdministrativo,
-		&idCondicionAlta, &idTipoAlta, &idServicioEgreso,
-		&idCamaIngreso, &idCamaEgreso, &idTipoGravedad, &idTipoGravedadEgreso,
-		&idTipoEdad, &idCuentaAtencion, &idTipoServicioScan, &idFormaPago,
-		&idFuenteFinanciamiento, &idEstadoAtencion, &esPacienteExterno,
-		&idSunasaPacienteHistorico, &idCartaGarantia, &numCartaGarantia,
-		&cuentaAtencionRelacion, &numIntegracion, &idMotivoAnulacion,
-		&observacion, &tieneSolicitudSOP, &horaInicioAtencion,
-		&rutaBase, &fechaFirma, &estadoFirma, &fechaRecuperacion,
-		&idUsuarioRecupera, &fechaRecepcion, &idUsuarioRecepciona,
-		&estadoFicha, &idInterconsulta, &cirugiaDeDia, &idTriaje,
-		&numeradorReracion, &emailEnvioAtencion, &envioFua,
-		&idRecetaGeneraCita, &descripcion, &nroDocumento,
-		&idDocIdentidad, &email, &fechaNacimiento, &idTipoSexo,
-		&telefono, &idDistritoDomicilio,
-	)
+	).Scan(&idCuentaAtencion, &idPacienteScan, &idServicioIngresoScan, &idTipoServicioScan)
 	if err != nil {
 		return fmt.Errorf("resolviendo atención %d: %w", orden.IdRegAtencion, err)
 	}
-	idPaciente = int(idPacienteScan.Int64)
-	idServicioIngreso = int(idServicioIngresoScan.Int64)
+	idPaciente := int(idPacienteScan.Int64)
+	idServicioIngreso := int(idServicioIngresoScan.Int64)
 
 	// 2. Resolver el médico real desde el empleado autenticado (JWT)
 	var idMedico int
 	var idEmpOut int
 	var colegiatura, idColegioHIS sql.NullString
-	err = tx.QueryRowContext(ctx, "EXEC MedicosXidEmpleado @IdEmpleado = @p1",
+	err = tx.QueryRowContext(ctx, "EXEC usp_go_MedicosXidEmpleado @IdEmpleado = @p1",
 		sql.Named("p1", idEmpleado),
 	).Scan(&idEmpOut, &colegiatura, &idMedico, &idColegioHIS)
 	if err != nil {
 		return fmt.Errorf("el empleado %d no tiene médico asociado: %w", idEmpleado, err)
 	}
 
-	// 3. Crear cabecera de receta (SP real)
-	// Params: @Respuesta OUTPUT, @IdPuntoCarga, @idCuentaAtencion, @idServicioReceta,
-	//         @idMedicoReceta, @IdProducto, @Idpaciente, @IdUsuarioAuditoria,
-	//         @IdEvolucion, @IdPrimeraAtencion
-	// Respuesta: "OK;<IdReceta>" o mensaje de error
-	const idPuntoCargaFarmacia = 5 // Punto de carga Farmacia (el más usado en recetas reales)
+	// 3. Insertar la cabecera de la receta
+	const idPuntoCargaFarmacia = 5
 	var respuesta string
 	err = tx.QueryRowContext(ctx, `
 		EXEC usp_go_RecetaCabeceraAgregar
@@ -240,7 +182,7 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 			@IdPrimeraAtencion = @p10`,
 		sql.Named("p1", sql.Out{Dest: &respuesta}),
 		sql.Named("p2", idPuntoCargaFarmacia),
-		sql.Named("p3", idCuentaAtencion),
+		sql.Named("p3", int(idCuentaAtencion.Int64)),
 		sql.Named("p4", idServicioIngreso),
 		sql.Named("p5", idMedico),
 		sql.Named("p6", detalles[0].IdProducto),
@@ -258,11 +200,7 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 		return fmt.Errorf("el sistema rechazó la receta: %s", respuesta)
 	}
 
-	// 4. Agregar cada detalle (SP real)
-	// Params: @Mensaje OUTPUT, @idReceta, @IdProducto, @Cantidad, @Precio,
-	//         @SaldoEnRegistroReceta, @idDosisRecetada, @observaciones, @IdViaAdministracion,
-	//         @CodigoDiagnostico, @Justificacion, @idUNIDDosisReceta, @idFrecuencia,
-	//         @DescripcionadicionalReceta, @Duracion, @idCuentaAtencionProxCita
+	// 4. Agregar cada detalle
 	for _, det := range detalles {
 		precio, err := r.precioProducto(ctx, tx, det.IdProducto)
 		if err != nil {
@@ -306,7 +244,7 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 			sql.Named("p16", nil),
 		).Scan(&mensaje)
 		if err != nil {
-			return fmt.Errorf("agregando detalle %d a la receta %d: %w", det.IdProducto, idReceta, err)
+			return fmt.Errorf("agregando producto %d a receta: %w", det.IdProducto, err)
 		}
 		if !strings.HasPrefix(strings.TrimSpace(mensaje), "OK") {
 			return fmt.Errorf("el sistema rechazó el producto %d: %s", det.IdProducto, mensaje)
@@ -351,6 +289,9 @@ func (r *OrdenRepository) BuscarProductos(ctx context.Context, filtro string, li
 		); err != nil {
 			return nil, fmt.Errorf("error escaneando producto: %w", err)
 		}
+		if formaFarm.Valid {
+			p.FormaFarmaceutica = formaFarm.String
+		}
 		if len(productos) >= limite {
 			break
 		}
@@ -364,109 +305,40 @@ func (r *OrdenRepository) BuscarProductos(ctx context.Context, filtro string, li
 	return productos, nil
 }
 
-// resolverCuentaAtencion obtiene IdCuentaAtencion desde el IdAtencion enviado
-// por el frontend (idRegAtencion). Si el valor ya es una cuenta válida, lo usa directo.
-func (r *OrdenRepository) resolverCuentaAtencion(ctx context.Context, idRegAtencion int) (int, error) {
+func (r *OrdenRepository) resolverIdCuenta(ctx context.Context, idRegAtencion int) (int, error) {
 	var idCuenta int
-	var (
-		apellidoPaterno, apellidoMaterno, primerNombre, segundoNombre sql.NullString
-		nroHistoriaClinica, idAtencion, idPaciente, edad              sql.NullInt64
-		fechaIngreso                                                  sql.NullTime
-		horaIngreso, idDestinoAtencion, idDestinoServicio             sql.NullString
-		idTipoCondicionAlServicio, idTipoCondicionALEstab             sql.NullInt64
-		idServicioIngreso, idMedicoIngreso, idEspecialidadMedico      sql.NullInt64
-		idMedicoEgreso                                                sql.NullInt64
-		fechaEgreso                                                   sql.NullTime
-		horaEgreso, idOrigenAtencion                                  sql.NullString
-		fechaEgresoAdministrativo                                     sql.NullTime
-		horaEgresoAdministrativo, idCondicionAlta, idTipoAlta         sql.NullString
-		idServicioEgreso, idCamaIngreso, idCamaEgreso                 sql.NullInt64
-		idTipoGravedad, idTipoGravedadEgreso, idTipoEdad              sql.NullInt64
-		idTipoServicio, idFormaPago                                   sql.NullInt64
-		idFuenteFinanciamiento, idEstadoAtencion                      sql.NullInt64
-		esPacienteExterno                                             sql.NullBool
-		idSunasaPacienteHistorico, idCartaGarantia                    sql.NullInt64
-		numCartaGarantia, cuentaAtencionRelacion, numIntegracion      sql.NullString
-		idMotivoAnulacion                                             sql.NullInt64
-		observacion, tieneSolicitudSOP, horaInicioAtencion            sql.NullString
-		rutaBase                                                      sql.NullString
-		fechaFirma                                                    sql.NullTime
-		estadoFirma                                                   sql.NullString
-		fechaRecuperacion                                             sql.NullTime
-		idUsuarioRecupera                                             sql.NullInt64
-		fechaRecepcion                                                sql.NullTime
-		idUsuarioRecepciona                                           sql.NullInt64
-		estadoFicha                                                   sql.NullString
-		idInterconsulta, cirugiaDeDia, idTriaje                       sql.NullInt64
-		numeradorReracion                                             sql.NullInt64
-		emailEnvioAtencion                                            sql.NullString
-		envioFua                                                      sql.NullInt64
-		idRecetaGeneraCita                                            sql.NullInt64
-		descripcion, nroDocumento                                     sql.NullString
-		idDocIdentidad                                                sql.NullInt64
-		email                                                         sql.NullString
-		fechaNacimiento                                               sql.NullTime
-		idTipoSexo                                                    sql.NullInt64
-		telefono, idDistritoDomicilio                                 sql.NullString
-	)
-	err := r.db.QueryRowContext(ctx,
-		"EXEC AtencionesSeleccionarPorIdAtencion @idAtencion = @p1",
+	err := r.db.QueryRowContext(ctx, `
+		SELECT ISNULL(IdCuentaAtencion, 0)
+		FROM dbo.Atenciones WITH (NOLOCK)
+		WHERE IdAtencion = @p1`,
 		sql.Named("p1", idRegAtencion),
-	).Scan(
-		&apellidoPaterno, &apellidoMaterno, &primerNombre, &segundoNombre,
-		&nroHistoriaClinica, &idAtencion, &idPaciente, &edad,
-		&fechaIngreso, &horaIngreso, &idDestinoAtencion, &idDestinoServicio,
-		&idTipoCondicionAlServicio, &idTipoCondicionALEstab,
-		&idServicioIngreso, &idMedicoIngreso, &idEspecialidadMedico,
-		&idMedicoEgreso, &fechaEgreso, &horaEgreso, &idOrigenAtencion,
-		&fechaEgresoAdministrativo, &horaEgresoAdministrativo,
-		&idCondicionAlta, &idTipoAlta, &idServicioEgreso,
-		&idCamaIngreso, &idCamaEgreso, &idTipoGravedad, &idTipoGravedadEgreso,
-		&idTipoEdad, &idCuenta, &idTipoServicio, &idFormaPago,
-		&idFuenteFinanciamiento, &idEstadoAtencion, &esPacienteExterno,
-		&idSunasaPacienteHistorico, &idCartaGarantia, &numCartaGarantia,
-		&cuentaAtencionRelacion, &numIntegracion, &idMotivoAnulacion,
-		&observacion, &tieneSolicitudSOP, &horaInicioAtencion,
-		&rutaBase, &fechaFirma, &estadoFirma, &fechaRecuperacion,
-		&idUsuarioRecupera, &fechaRecepcion, &idUsuarioRecepciona,
-		&estadoFicha, &idInterconsulta, &cirugiaDeDia, &idTriaje,
-		&numeradorReracion, &emailEnvioAtencion, &envioFua,
-		&idRecetaGeneraCita, &descripcion, &nroDocumento,
-		&idDocIdentidad, &email, &fechaNacimiento, &idTipoSexo,
-		&telefono, &idDistritoDomicilio,
-	)
-	if err == nil {
-		return int(idCuenta), nil
+	).Scan(&idCuenta)
+	if err == nil && idCuenta > 0 {
+		return idCuenta, nil
 	}
-	if err != sql.ErrNoRows {
+	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
 	return idRegAtencion, nil
 }
 
-// precioProducto obtiene el precio unitario vigente del catálogo hospitalario
-// (por producto y tipo de financiamiento de la atención, con prioridad al tipo de la atención).
 func (r *OrdenRepository) precioProducto(ctx context.Context, tx *sql.Tx, idProducto int) (float64, error) {
-	var idPlanCatalogo, idTipoFinanciamiento int
 	var precio float64
-	var activo bool
 	err := tx.QueryRowContext(ctx, `
-		EXEC CatalogoBienesInsumosHospSeleccionarXIdProducto @IdProducto = @p1`,
+		SELECT ISNULL(PrecioDistribucion, 0)
+		FROM dbo.FactCatalogoBienesInsumos WITH (NOLOCK)
+		WHERE IdProducto = @p1`,
 		sql.Named("p1", idProducto),
-	).Scan(&idPlanCatalogo, &precio, &idProducto, &idTipoFinanciamiento, &activo)
+	).Scan(&precio)
 	if err == sql.ErrNoRows {
 		return 0, nil
 	}
 	if err != nil {
 		return 0, fmt.Errorf("obteniendo precio del producto %d: %w", idProducto, err)
 	}
-	if !activo {
-		return 0, nil
-	}
 	return precio, nil
 }
 
-// parsearRespuestaReceta extrae el IdReceta de una respuesta "OK;<IdReceta>".
 func parsearRespuestaReceta(respuesta string) (int, bool) {
 	respuesta = strings.TrimSpace(respuesta)
 	if !strings.HasPrefix(respuesta, "OK;") {

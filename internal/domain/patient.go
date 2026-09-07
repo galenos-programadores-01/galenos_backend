@@ -27,3 +27,26 @@ type Patient struct {
 	HomeAddress       *string
 	Phone             *string
 }
+
+// PacienteDatosAdicionales representa los datos de antecedentes retornados
+// por el procedimiento almacenado usp_go_PacientesDatosAdicionalesIdPaciente.
+type PacienteDatosAdicionales struct {
+	IdPaciente           int    `json:"idPaciente"`
+	Antecedentes         string `json:"antecedentes"`
+	AntecedAlergico      string `json:"antecedAlergico"`
+	AntecedObstetrico    string `json:"antecedObstetrico"`
+	AntecedQuirurgico    string `json:"antecedQuirurgico"`
+	AntecedFamiliar      string `json:"antecedFamiliar"`
+	AntecedPatologico    string `json:"antecedPatologico"`
+	FNacimientoCalculada bool   `json:"fNacimientoCalculada"`
+	HipertensionArterial int    `json:"hipertensionArterial"`
+	Obesidad             int    `json:"obesidad"`
+	Dislipidemia         int    `json:"dislipidemia"`
+	Anemia               int    `json:"anemia"`
+	HigadoGraso          int    `json:"higadoGraso"`
+	EnfTiroidea          int    `json:"enfTiroidea"`
+	Tuberculosis         int    `json:"tuberculosis"`
+	FumaActualmente      int    `json:"fumaActualmente"`
+	Cancer               int    `json:"cancer"`
+	OtrosComorbilidad    string `json:"otrosComorbilidad"`
+}

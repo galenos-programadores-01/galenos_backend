@@ -60,10 +60,14 @@ Al arrancar, la API hace `PING` a SQL Server; si el host no es alcanzable (red/V
 
 ### Formato y Linter (Validación de código)
 
-Para revisar y formatear el código rápidamente antes de hacer un commit, ejecuta el script de Windows incluido en la raíz del proyecto:
+Para revisar y formatear el código rápidamente antes de hacer un commit, ejecuta el script incluido en la raíz del proyecto según tu terminal:
 
 ```bash
-.\fix
+# En Git Bash / Linux:
+./fix.bat
+
+# En PowerShell / Windows CMD:
+.\fix.bat
 ```
 
 Este comando ejecuta internamente `go fmt ./...` (para formatear el código) y `go vet ./...` (el linter oficial estricto de Go).

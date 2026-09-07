@@ -22,6 +22,7 @@ import (
 
 	"github.com/galenos-pro/appointments-api/docs"
 	httpadapter "github.com/galenos-pro/appointments-api/internal/adapters/input/http"
+	"github.com/galenos-pro/appointments-api/internal/adapters/output/cache"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/firmaperu"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/persistence/sqlserver"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/reniec"
@@ -37,8 +38,6 @@ func main() {
 }
 
 func run() error {
-	// Carga .env solo si existe (desarrollo local); en producción las
-	// variables de entorno se inyectan directamente en el proceso.
 	_ = godotenv.Load()
 
 	cfg, err := config.Load()
@@ -58,6 +57,9 @@ func run() error {
 	}
 	defer db.Close()
 
+	// --- Adaptador de salida: Caché Redis ---
+	redisCache := cache.NewRedisCache(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB, cfg.RedisTTL)
+
 	appointmentRepo := sqlserver.NewAppointmentRepository(db)
 	patientRepo := sqlserver.NewPatientRepository(db)
 	catalogRepo := sqlserver.NewCatalogRepository(db)
@@ -72,6 +74,7 @@ func run() error {
 	diagnosticoRepo := sqlserver.NewSqlServerDiagnosticoRepository(db)
 	listaEsperaQxRepo := sqlserver.NewListaEsperaQxRepository(db)
 	medicoListaEsperaRepo := sqlserver.NewMedicoListaEsperaRepository(db)
+	refConRepo := sqlserver.NewRefConRepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
 	reniecClient := reniec.New(reniec.Config{
@@ -104,7 +107,7 @@ func run() error {
 	// --- Núcleo de dominio: casos de uso implementando los puertos de entrada ---
 	appointmentService := usecase.NewAppointmentUseCase(appointmentRepo)
 	patientService := usecase.NewPatientUseCase(patientRepo)
-	catalogService := usecase.NewCatalogUseCase(catalogRepo)
+	catalogService := usecase.NewCatalogUseCase(catalogRepo, redisCache)
 	reniecService := usecase.NewReniecUseCase(reniecClient)
 	sisService := usecase.NewSisUseCase(sisClient, sisRepo)
 	firmaPeruService := usecase.NewFirmaPeruUseCase(firmaPeruClient, firmaPeruStore, firmaPeruArchive)
@@ -118,6 +121,7 @@ func run() error {
 	diagnosticoUseCase := usecase.NewDiagnosticoUseCase(diagnosticoRepo)
 	listaEsperaQxService := usecase.NewListaEsperaQxService(listaEsperaQxRepo)
 	medicoListaEsperaService := usecase.NewMedicoListaEsperaService(medicoListaEsperaRepo)
+	refConService := usecase.NewRefConService(refConRepo)
 
 	authRepo := sqlserver.NewAuthRepository(db)
 	authService := usecase.NewAuthUseCase(authRepo, cfg.AuthSecret, cfg.AuthTTL)
@@ -145,6 +149,7 @@ func run() error {
 	diagnosticoHandler := httpadapter.NewDiagnosticoHandler(diagnosticoUseCase)
 	listaEsperaQxHandler := httpadapter.NewListaEsperaQxHandler(listaEsperaQxService)
 	medicoListaEsperaHandler := httpadapter.NewMedicoListaEsperaHandler(medicoListaEsperaService)
+	refConHandler := httpadapter.NewRefConHandler(refConService)
 
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
 		AppointmentHandler:       appointmentHandler,
@@ -164,6 +169,7 @@ func run() error {
 		DiagnosticoHandler:       diagnosticoHandler,
 		ListaEsperaQxHandler:     listaEsperaQxHandler,
 		MedicoListaEsperaHandler: medicoListaEsperaHandler,
+		RefConHandler:            refConHandler,
 		AuthService:              authService,
 		AllowedOrigins:           cfg.AllowedOrigins,
 	})

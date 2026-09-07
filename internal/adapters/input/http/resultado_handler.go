@@ -1,6 +1,7 @@
 package httpadapter
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -28,14 +29,15 @@ func NewResultadoHandler(service input.ResultadoService) *ResultadoHandler {
 func (h *ResultadoHandler) HandleListResultadosLaboratorio(c *gin.Context) {
 	idStr := c.Param("idPaciente")
 	idPaciente, err := strconv.Atoi(idStr)
-	if err != nil {
-		respondError(c, http.StatusBadRequest, "INVALID_ID", "ID de paciente inválido")
+	if err != nil || idPaciente <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_PATIENT_ID", "ID de paciente inválido")
 		return
 	}
 
 	resultados, err := h.service.ListarResultadosLaboratorio(c.Request.Context(), idPaciente)
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, "RES_LAB_ERR", "Error obteniendo resultados de laboratorio")
+		log.Printf("[ResultadoHandler] ERROR en ListarResultadosLaboratorio (idPaciente=%d): %v", idPaciente, err)
+		respondError(c, http.StatusInternalServerError, "RES_LAB_LIST_ERR", "Error obteniendo historial de laboratorio")
 		return
 	}
 
@@ -57,14 +59,15 @@ func (h *ResultadoHandler) HandleListResultadosLaboratorio(c *gin.Context) {
 func (h *ResultadoHandler) HandleListResultadosImagenes(c *gin.Context) {
 	idStr := c.Param("idPaciente")
 	idPaciente, err := strconv.Atoi(idStr)
-	if err != nil {
-		respondError(c, http.StatusBadRequest, "INVALID_ID", "ID de paciente inválido")
+	if err != nil || idPaciente <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_PATIENT_ID", "ID de paciente inválido")
 		return
 	}
 
 	resultados, err := h.service.ListarResultadosImagenes(c.Request.Context(), idPaciente)
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, "RES_IMG_ERR", "Error obteniendo resultados de imágenes")
+		log.Printf("[ResultadoHandler] ERROR en ListarResultadosImagenes (idPaciente=%d): %v", idPaciente, err)
+		respondError(c, http.StatusInternalServerError, "RES_IMG_LIST_ERR", "Error obteniendo historial de imágenes")
 		return
 	}
 
@@ -89,6 +92,7 @@ func (h *ResultadoHandler) HandleObtenerDetalleLaboratorio(c *gin.Context) {
 
 	detalles, err := h.service.ObtenerDetalleLaboratorio(c.Request.Context(), idOrden, idProducto)
 	if err != nil {
+		log.Printf("[ResultadoHandler] ERROR en ObtenerDetalleLaboratorio (idOrden=%d, idProducto=%d): %v", idOrden, idProducto, err)
 		respondError(c, http.StatusInternalServerError, "RES_LAB_DET_ERR", "Error obteniendo detalle de laboratorio")
 		return
 	}
@@ -114,6 +118,7 @@ func (h *ResultadoHandler) HandleObtenerDetalleImagen(c *gin.Context) {
 
 	detalle, err := h.service.ObtenerDetalleImagen(c.Request.Context(), idOrden, idProducto)
 	if err != nil {
+		log.Printf("[ResultadoHandler] ERROR en ObtenerDetalleImagen (idOrden=%d, idProducto=%d): %v", idOrden, idProducto, err)
 		respondError(c, http.StatusInternalServerError, "RES_IMG_DET_ERR", "Error obteniendo detalle de imágenes")
 		return
 	}

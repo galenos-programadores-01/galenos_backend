@@ -45,4 +45,12 @@ type PatientRepository interface {
 	// si el paciente tiene registros asociados retorna
 	// domain.ErrPatientCannotBeDeleted y no elimina nada.
 	Delete(ctx context.Context, id int64) error
+
+	// GetDatosAdicionales retorna los antecedentes de un paciente invocando
+	// el procedimiento almacenado usp_go_PacientesDatosAdicionalesIdPaciente.
+	GetDatosAdicionales(ctx context.Context, idPaciente int64) (domain.PacienteDatosAdicionales, error)
+
+	// UpdateDatosAdicionales actualiza o inserta los antecedentes de un paciente
+	// invocando PacientesDatosAdicionalesModificar / PacientesDatosAdicionalesAgregar.
+	UpdateDatosAdicionales(ctx context.Context, idPaciente int64, datos domain.PacienteDatosAdicionales, idUsuario int) error
 }

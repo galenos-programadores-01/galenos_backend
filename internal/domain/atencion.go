@@ -7,6 +7,7 @@ package domain
 type AdmisionDesdeTriaje struct {
 	IDTriaje            *int64
 	IDPacienteTriaje    *int64
+	NroDocumento        *string
 	IDEmpleado          *int64
 	IDMedico            *int64
 	NombreAcompanante   *string
