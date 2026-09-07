@@ -33,4 +33,6 @@ type CatalogService interface {
 	ListRecetaUnidadesDosis(ctx context.Context) ([]domain.CatalogItem, error)
 	ListRecetaViasAdministracion(ctx context.Context) ([]domain.CatalogItem, error)
 	BuscarMedicamentosReceta(ctx context.Context, filtro string, idPaciente int) ([]domain.MedicamentoBusqueda, error)
+	BuscarExamenesCatalogo(ctx context.Context, filtro string, tipo string) ([]domain.ExamenCatalogo, error)
+	ListParametrosClinicos(ctx context.Context, idGrupo int) ([]domain.ParametroClinico, error)
 }

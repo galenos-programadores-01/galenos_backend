@@ -1,6 +1,8 @@
 package httpadapter
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -130,10 +132,11 @@ func (h *InterconsultaHandler) HandleListarMedicosPorEspecialidad(c *gin.Context
 }
 
 type CreateInterconsultaRequest struct {
-	IdAtencionOrigen int    `json:"idAtencionOrigen" binding:"required"`
-	IdEspecialidad   int    `json:"IdEspecialidad" binding:"required"`
-	IdMedicoDestino  int    `json:"idMedicoDestino" binding:"required"`
-	Motivo           string `json:"motivo" binding:"required"`
+	IdAtencionOrigen  int    `json:"idAtencionOrigen" binding:"required"`
+	IdEspecialidad    int    `json:"IdEspecialidad"`
+	IdEspecialidadAlt int    `json:"idEspecialidad"`
+	IdMedicoDestino   int    `json:"idMedicoDestino"`
+	Motivo            string `json:"motivo" binding:"required"`
 }
 
 // @Summary Create an interconsulta
@@ -151,16 +154,26 @@ func (h *InterconsultaHandler) HandleCrear(c *gin.Context) {
 		return
 	}
 
+	esp := req.IdEspecialidad
+	if esp == 0 {
+		esp = req.IdEspecialidadAlt
+	}
+	if esp == 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_BODY", "La especialidad es requerida")
+		return
+	}
+
 	ic := domain.Interconsulta{
 		IdAtencionOrigen: req.IdAtencionOrigen,
-		IdEspecialidad:   req.IdEspecialidad,
+		IdEspecialidad:   esp,
 		IdMedicoDestino:  req.IdMedicoDestino,
 		Motivo:           req.Motivo,
 	}
 
 	err := h.service.Crear(c.Request.Context(), ic)
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, "INTER_CREATE_ERR", "Error creando interconsulta")
+		log.Printf("Error creando interconsulta: %v", err)
+		respondError(c, http.StatusInternalServerError, "INTER_CREATE_ERR", fmt.Sprintf("Error creando interconsulta: %v", err))
 		return
 	}
 

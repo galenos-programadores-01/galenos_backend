@@ -533,7 +533,7 @@ func (h *CatalogHandler) ListRecetaViasAdministracion(c *gin.Context) {
 
 func (h *CatalogHandler) BuscarMedicamentosReceta(c *gin.Context) {
 	filtro := c.Query("q")
-	idPaciente, _ := strconv.Atoi(c.DefaultQuery("idPaciente", "908637"))
+	idPaciente, _ := strconv.Atoi(c.DefaultQuery("idPaciente", "0"))
 	items, err := h.service.BuscarMedicamentosReceta(c.Request.Context(), filtro, idPaciente)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
@@ -541,6 +541,49 @@ func (h *CatalogHandler) BuscarMedicamentosReceta(c *gin.Context) {
 	}
 	if items == nil {
 		items = make([]domain.MedicamentoBusqueda, 0)
+	}
+	c.Header("X-Cache-Engine", "Redis-v9")
+	respondSuccess(c, http.StatusOK, items)
+}
+
+func (h *CatalogHandler) BuscarExamenesCatalogo(c *gin.Context) {
+	filtro := c.Query("q")
+	tipo := c.Query("tipo")
+	items, err := h.service.BuscarExamenesCatalogo(c.Request.Context(), filtro, tipo)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.ExamenCatalogo, 0)
+	}
+	c.Header("X-Cache-Engine", "Redis-v9")
+	respondSuccess(c, http.StatusOK, items)
+}
+
+// @Summary Listar parámetros clínicos por grupo
+// @Description Devuelve el catálogo de parámetros clínicos según su grupo (SP usp_go_Cat_ParametroClinico_Listar).
+// @Tags Catálogos
+// @Accept json
+// @Produce json
+// @Param idGrupo path int true "ID del grupo (1: Estado General, 2: Hidratación, 3: Conciencia/Glasgow, 4: Destino Alta, 5: Tipo Atención)"
+// @Success 200 {object} apiResponse{data=[]domain.ParametroClinico}
+// @Router /catalogos/parametros-clinicos/{idGrupo} [get]
+func (h *CatalogHandler) HandleListParametrosClinicos(c *gin.Context) {
+	raw := c.Param("idGrupo")
+	idGrupo, err := strconv.Atoi(raw)
+	if err != nil || idGrupo <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_GRUPO_ID", "ID de grupo inválido")
+		return
+	}
+
+	items, err := h.service.ListParametrosClinicos(c.Request.Context(), idGrupo)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.ParametroClinico, 0)
 	}
 	respondSuccess(c, http.StatusOK, items)
 }

@@ -3,19 +3,27 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+	"time"
 
+	"github.com/galenos-pro/appointments-api/internal/adapters/output/cache"
 	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/input"
 	"github.com/galenos-pro/appointments-api/internal/ports/output"
 )
 
 type catalogUseCase struct {
-	repo output.CatalogRepository
+	repo  output.CatalogRepository
+	cache cache.Cache
 }
 
 // NewCatalogUseCase construye el caso de uso de catálogos de datos maestros.
-func NewCatalogUseCase(repo output.CatalogRepository) input.CatalogService {
-	return &catalogUseCase{repo: repo}
+func NewCatalogUseCase(repo output.CatalogRepository, cache cache.Cache) input.CatalogService {
+	return &catalogUseCase{
+		repo:  repo,
+		cache: cache,
+	}
 }
 
 func (uc *catalogUseCase) ListEtnias(ctx context.Context) ([]domain.Etnia, error) {
@@ -191,5 +199,73 @@ func (uc *catalogUseCase) ListRecetaViasAdministracion(ctx context.Context) ([]d
 }
 
 func (uc *catalogUseCase) BuscarMedicamentosReceta(ctx context.Context, filtro string, idPaciente int) ([]domain.MedicamentoBusqueda, error) {
-	return uc.repo.BuscarMedicamentosReceta(ctx, filtro, idPaciente)
+	cleanFilter := strings.ToLower(strings.TrimSpace(filtro))
+	cacheKey := fmt.Sprintf("cache:meds:%s:%d", cleanFilter, idPaciente)
+	if uc.cache != nil {
+		var cached []domain.MedicamentoBusqueda
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			log.Printf("[REDIS HIT] Medicamentos para '%s' (idPaciente=%d, %d items recuperados del caché)", cleanFilter, idPaciente, len(cached))
+			return cached, nil
+		}
+		log.Printf("[REDIS MISS] Medicamentos para '%s' (idPaciente=%d). Consultando BD...", cleanFilter, idPaciente)
+	}
+
+	items, err := uc.repo.BuscarMedicamentosReceta(ctx, filtro, idPaciente)
+	if err != nil {
+		return nil, err
+	}
+
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 30*time.Minute)
+		log.Printf("[REDIS SET] Guardados %d medicamentos para clave '%s' en caché (TTL 30m)", len(items), cacheKey)
+	}
+
+	return items, nil
+}
+
+func (uc *catalogUseCase) BuscarExamenesCatalogo(ctx context.Context, filtro string, tipo string) ([]domain.ExamenCatalogo, error) {
+	cleanFilter := strings.ToLower(strings.TrimSpace(filtro))
+	cleanTipo := strings.ToLower(strings.TrimSpace(tipo))
+	cacheKey := fmt.Sprintf("cache:examenes:%s:%s", cleanFilter, cleanTipo)
+	if uc.cache != nil {
+		var cached []domain.ExamenCatalogo
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			log.Printf("[REDIS HIT] Exámenes para '%s' (tipo=%s, %d items recuperados del caché)", cleanFilter, cleanTipo, len(cached))
+			return cached, nil
+		}
+		log.Printf("[REDIS MISS] Exámenes para '%s' (tipo=%s). Consultando BD...", cleanFilter, cleanTipo)
+	}
+
+	items, err := uc.repo.BuscarExamenesCatalogo(ctx, filtro, tipo)
+	if err != nil {
+		return nil, err
+	}
+
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 60*time.Minute)
+		log.Printf("[REDIS SET] Guardados %d exámenes para clave '%s' en caché (TTL 60m)", len(items), cacheKey)
+	}
+
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListParametrosClinicos(ctx context.Context, idGrupo int) ([]domain.ParametroClinico, error) {
+	cacheKey := fmt.Sprintf("cache:param_clinicos:grupo:%d", idGrupo)
+	if uc.cache != nil {
+		var cached []domain.ParametroClinico
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			return cached, nil
+		}
+	}
+
+	items, err := uc.repo.ListParametrosClinicos(ctx, idGrupo)
+	if err != nil {
+		return nil, err
+	}
+
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 24*time.Hour)
+	}
+
+	return items, nil
 }

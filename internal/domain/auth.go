@@ -43,6 +43,10 @@ type UserProfile struct {
 	ApellidoPaterno string `json:"apellidoPaterno"`
 	ApellidoMaterno string `json:"apellidoMaterno"`
 	NombreCompleto  string `json:"nombreCompleto"`
+	DNI             string `json:"dni"`
+	Colegiatura     string `json:"colegiatura"`
+	RNE             string `json:"rne"`
 	Foto            string `json:"foto"`
 	Rol             string `json:"rol"`
+	Especialidad    string `json:"especialidad,omitempty"`
 }

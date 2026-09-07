@@ -23,3 +23,11 @@ func (uc *diagnosticoUseCase) SearchDiagnosticos(ctx context.Context, filtro str
 func (uc *diagnosticoUseCase) ListarDiagnosticos(ctx context.Context, filtro string) ([]domain.DiagnosticoSimple, error) {
 	return uc.repo.ListarDiagnosticos(ctx, filtro)
 }
+
+func (uc *diagnosticoUseCase) ObtenerDiagnosticosAtencion(ctx context.Context, idAtencion int, idPrimeraAtencion *int, idEvolucion *int) ([]domain.DiagnosticoAtencion, error) {
+	return uc.repo.ObtenerDiagnosticosAtencion(ctx, idAtencion, idPrimeraAtencion, idEvolucion)
+}
+
+func (uc *diagnosticoUseCase) AgregarDiagnosticoAtencion(ctx context.Context, req domain.AgregarDiagnosticoAtencionRequest) (*domain.AgregarDiagnosticoAtencionResponse, error) {
+	return uc.repo.AgregarDiagnosticoAtencion(ctx, req)
+}

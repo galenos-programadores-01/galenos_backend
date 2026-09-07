@@ -103,3 +103,28 @@ func (h *SintomaHandler) HandleGuardarSintomas(c *gin.Context) {
 
 	respondSuccess(c, http.StatusOK, map[string]string{"message": "Síntomas guardados correctamente"})
 }
+
+// @Summary Obtener síntomas registrados de la atención
+// @Description Devuelve los síntomas registrados para la atención médica (usp_go_ObtenerAtencionSintomas)
+// @Tags Evoluciones
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param idRegAtencion path int true "ID de Atención"
+// @Router /evoluciones/{idRegAtencion}/sintomas [get]
+func (h *SintomaHandler) HandleObtenerAtencionSintomas(c *gin.Context) {
+	idStr := c.Param("idRegAtencion")
+	idRegAtencion, err := strconv.Atoi(idStr)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_ID", "ID de atención inválido")
+		return
+	}
+
+	sintomas, err := h.service.ObtenerAtencionSintomas(c.Request.Context(), idRegAtencion)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "SINTOMAS_GET_ERR", "Error obteniendo síntomas de la atención")
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, sintomas)
+}

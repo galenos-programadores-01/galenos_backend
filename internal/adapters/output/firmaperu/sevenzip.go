@@ -20,10 +20,39 @@ type sevenZipTool struct {
 	exePath string
 }
 
-// NewSevenZipTool construye el adaptador de archivos 7z con la ruta del
-// ejecutable de 7-Zip.
+// NewSevenZipTool construye el adaptador de archivos 7z resolviendo la ruta
+// válida del ejecutable de 7-Zip.
 func NewSevenZipTool(exePath string) *sevenZipTool {
-	return &sevenZipTool{exePath: exePath}
+	return &sevenZipTool{exePath: resolveSevenZipExe(exePath)}
+}
+
+func resolveSevenZipExe(exePath string) string {
+	if exePath != "" {
+		if _, err := os.Stat(exePath); err == nil {
+			return exePath
+		}
+	}
+	if p, err := exec.LookPath("7z"); err == nil {
+		return p
+	}
+	if p, err := exec.LookPath("7za"); err == nil {
+		return p
+	}
+	fallbacks := []string{
+		`C:\Program Files\7-Zip\7z.exe`,
+		`C:\Program Files (x86)\7-Zip\7z.exe`,
+		`C:\7-Zip\7z.exe`,
+		`C:\tools\7z.exe`,
+	}
+	for _, f := range fallbacks {
+		if _, err := os.Stat(f); err == nil {
+			return f
+		}
+	}
+	if exePath != "" {
+		return exePath
+	}
+	return `C:\Program Files\7-Zip\7z.exe`
 }
 
 // Build7z crea un archivo 7z con los documentos (nombre original como nombre
