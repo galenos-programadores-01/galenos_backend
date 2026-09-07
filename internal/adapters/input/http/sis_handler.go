@@ -26,17 +26,17 @@ func NewSisHandler(service input.SisService) *SisHandler {
 
 // ConsultarAfiliado maneja GET /api/v1/sis/afiliado/:nrodoc.
 //
-// @Summary Consulta un afiliado en SIS por número de documento
-// @Description Invoca el servicio SOAP de SIS para consultar la afiliación de una persona.
+// @Summary Consulta un afiliado en SIS por documento o por afiliación
+// @Description Con intOpcion=1 (default) la búsqueda es por tipo y número de documento (nrodoc obligatorio). Con intOpcion=2 la búsqueda es por afiliación (strDisa, strTipoFormato y strNroContrato obligatorios, nrodoc opcional).
 // @Tags SIS
 // @Produce json
-// @Param nrodoc path string true "Número de documento (DNI)"
-// @Param strDisa query string false "Código DISA"
-// @Param strTipoFormato query string false "Tipo de formato"
-// @Param strNroContrato query string false "Número de contrato"
+// @Param nrodoc path string false "Número de documento (DNI), obligatorio con intOpcion=1"
+// @Param strDisa query string false "Código DISA (obligatorio con intOpcion=2)"
+// @Param strTipoFormato query string false "Tipo de formato (obligatorio con intOpcion=2)"
+// @Param strNroContrato query string false "Número de contrato (obligatorio con intOpcion=2)"
 // @Param strCorrelativo query string false "Correlativo"
-// @Param strTipoDocumento query int false "Tipo de documento (1=DNI, 3=CE)"
-// @Param intOpcion query int false "Opción de consulta"
+// @Param strTipoDocumento query int false "Tipo de documento (1=DNI, 3=CE), usado con intOpcion=1"
+// @Param intOpcion query int false "Opción de consulta: 1=por documento (default), 2=por afiliación"
 // @Success 200 {object} apiResponse{data=object} "Afiliado encontrado"
 // @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
 // @Failure 502 {object} apiResponse{error=apiError} "Servicio SIS no disponible"
@@ -93,62 +93,6 @@ func (h *SisHandler) GestionarAfiliacion(c *gin.Context) {
 	}
 
 	respondSuccess(c, http.StatusOK, map[string]string{"estado": "ok"})
-}
-
-// BuscarAfiliacion maneja GET /api/v1/sis/filiaciones.
-//
-// @Summary Busca una afiliación SIS por DISA, TipoFormato, NroContrato, Correlativo y CodigoTabla
-// @Description Consulta el servicio SIS (ConsultarAfiliadoFuaE) usando los parámetros de afiliación. El nrodoc no es obligatorio.
-// @Tags SIS
-// @Produce json
-// @Param strDisa query string true "Código DISA (ej. 035)"
-// @Param strTipoFormato query string true "Tipo formato / Lote (ej. E)"
-// @Param strNroContrato query string true "Número de contrato (ej. 11427904)"
-// @Param strCorrelativo query string false "Correlativo"
-// @Param strCodigoTabla query string false "Código de tabla"
-// @Success 200 {object} apiResponse{data=object} "Afiliado encontrado"
-// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
-// @Failure 502 {object} apiResponse{error=apiError} "Servicio SIS no disponible"
-// @Router /sis/filiaciones [get]
-func (h *SisHandler) BuscarAfiliacion(c *gin.Context) {
-	dis := c.Query("strDisa")
-	tipoFormato := c.Query("strTipoFormato")
-	nroContrato := c.Query("strNroContrato")
-	codigo := c.Query("strCodTabla")
-	if codigo == "" {
-		codigo = c.Query("strCodigoTabla")
-	}
-
-	if dis == "" || tipoFormato == "" || nroContrato == "" {
-		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "strDisa, strTipoFormato y strNroContrato son requeridos")
-		return
-	}
-
-	params := shared.SISAfiliadoParams{
-		TipoDocumento: 1,
-		Opcion:        1,
-		Disa:          dis,
-		TipoFormato:   tipoFormato,
-		NroContrato:   nroContrato,
-		Correlativo:   c.Query("strCorrelativo"),
-		CodTabla:      codigo,
-		Lote:          tipoFormato,
-		Tabla:         codigo,
-	}
-
-	result, err := h.service.BuscarPorAfiliacion(c.Request.Context(), params)
-	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrInvalidDocumentNumber),
-			errors.Is(err, domain.ErrInvalidDocumentType):
-			respondError(c, http.StatusBadRequest, "INVALID_SIS_REQUEST", err.Error())
-		default:
-			respondError(c, http.StatusBadGateway, "SIS_UNAVAILABLE", err.Error())
-		}
-		return
-	}
-
-	respondSuccess(c, http.StatusOK, toSisAfiliadoResponse(result))
 }
 
 // ForzarGuardadoFua maneja POST /api/v1/sis/fua.
@@ -365,7 +309,7 @@ func (h *SisHandler) ListProcedimientos(c *gin.Context) {
 func parseSisAfiliadoParams(c *gin.Context) (shared.SISAfiliadoParams, error) {
 	params := shared.SISAfiliadoParams{
 		DocumentNumber: c.Param("nrodoc"),
-		TipoDocumento:  1,
+		TipoDocumento:  0,
 		Opcion:         1,
 		Disa:           c.Query("strDisa"),
 		TipoFormato:    c.Query("strTipoFormato"),
@@ -374,14 +318,14 @@ func parseSisAfiliadoParams(c *gin.Context) (shared.SISAfiliadoParams, error) {
 	}
 	if raw := c.Query("strTipoDocumento"); raw != "" {
 		parsed, err := strconv.ParseInt(raw, 10, 64)
-		if err != nil || (parsed != 1 && parsed != 3) {
-			return params, errors.New("strTipoDocumento debe ser 1 (DNI) o 3 (Carnet de Extranjería)")
+		if err != nil {
+			return params, errors.New("strTipoDocumento debe ser un entero")
 		}
 		params.TipoDocumento = int(parsed)
 	} else if raw := c.Query("tipoDocumento"); raw != "" {
 		parsed, err := strconv.ParseInt(raw, 10, 64)
-		if err != nil || (parsed != 1 && parsed != 3) {
-			return params, errors.New("tipoDocumento debe ser 1 (DNI) o 3 (Carnet de Extranjería)")
+		if err != nil {
+			return params, errors.New("tipoDocumento debe ser un entero")
 		}
 		params.TipoDocumento = int(parsed)
 	}

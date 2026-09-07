@@ -10,6 +10,7 @@ import (
 	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/output"
 	"github.com/galenos-pro/appointments-api/internal/ports/shared"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type triageRepository struct {
@@ -32,6 +33,33 @@ func NewTriageRepository(db *sql.DB) output.TriageRepository {
 // incluyendo las variantes con mayúsculas/tipos que la base refleja
 // (PrimerNmobre, idEstadollego, telefono, IdfuenteFinanciamiento, etc.),
 // ya que el driver los resolve contra el nombre formal del parámetro.
+
+// namedDate convierte un *time.Time en sql.NamedArg; si el puntero es nil
+// devuelve NULL no tipado que el driver MSSQL acepta.
+func namedDate(name string, t *time.Time) sql.NamedArg {
+	if t == nil {
+		return sql.Named(name, nil)
+	}
+	return sql.Named(name, *t)
+}
+
+// namedBool convierte un *bool en sql.NamedArg; si el puntero es nil
+// devuelve NULL no tipado.
+func namedBool(name string, b *bool) sql.NamedArg {
+	if b == nil {
+		return sql.Named(name, nil)
+	}
+	return sql.Named(name, *b)
+}
+
+// namedInt64Ptr convierte un *int64 en sql.NamedArg; si el puntero es nil
+// devuelve NULL no tipado.
+func namedInt64Ptr(name string, n *int64) sql.NamedArg {
+	if n == nil {
+		return sql.Named(name, nil)
+	}
+	return sql.Named(name, *n)
+}
 func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (string, error) {
 	const procedure = `webTab_PacienteTriajeAgregar`
 
@@ -76,6 +104,12 @@ func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (s
 		sql.Named("motivo", triage.Motivo),
 		sql.Named("Gestante", triage.IsPregnant),
 		sql.Named("IdEstadollego", triage.ArrivalStateID),
+		namedDate("FUR", triage.FUR),
+		namedBool("EsGestante", triage.EsGestante),
+		namedInt64Ptr("EdadGestacional", triage.EdadGestacional),
+		namedDate("FPP", triage.FPP),
+		namedInt64Ptr("NroControlesPrenatales", triage.NroControlesPrenatales),
+		namedInt64Ptr("MovimientosFetales", triage.MovimientosFetales),
 		sql.Named("Foto", triage.Photo),
 		sql.Named("Idempleado", triage.EmployeeID),
 		sql.Named("Resultado", sql.Out{Dest: &resultado}),
@@ -89,9 +123,10 @@ func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (s
 
 // List invoca el procedimiento almacenado ListarTriaje_Emergencia con los
 // filtros de rango de fechas, texto de búsqueda, servicio de derivación y
-// estado. Los nombres de parámetro coinciden exactamente con los del SP.
-// Las columnas que devuelve el SP son desconocidas en build-time, por eso
-// se mapean a map[string]any con rowsToMaps (como el proyecto FastAPI).
+// el id de empleado del operador. Los nombres de parámetro coinciden
+// exactamente con los del SP. Las columnas que devuelve el SP son
+// desconocidas en build-time, por eso se mapean a map[string]any con
+// rowsToMaps (como el proyecto FastAPI).
 func (r *triageRepository) List(ctx context.Context, params shared.TriageListParams) ([]map[string]any, error) {
 	const procedure = `ListarTriaje_Emergencia`
 
@@ -100,7 +135,7 @@ func (r *triageRepository) List(ctx context.Context, params shared.TriageListPar
 		sql.Named("ffin", params.FechaFin),
 		sql.Named("filtro", params.Filtro),
 		sql.Named("derivado_a_servicio", params.DerivadoAServicio),
-		sql.Named("IdEstado", params.IdEstado),
+		sql.Named("IdEmpleado", params.IdEmpleado),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("calling ListarTriaje_Emergencia: %w", err)
@@ -156,13 +191,20 @@ func (r *triageRepository) CreateAdmission(ctx context.Context, admision *domain
 
 	var resultado string
 
-	// Default bcrypt hash for "123456" so the patient can log in later
-	const defaultPasswordHash = "$2a$10$wY.uV7TzS9F2P2n6V4G3bOuB7vD0z5R2G6p3I8J6K5D9L1H6X0C5C"
+	// Genera el hash Bcrypt del NroDocumento del paciente como contraseña por defecto.
+	passwordHash := ""
+	if admision.NroDocumento != nil && *admision.NroDocumento != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(*admision.NroDocumento), bcrypt.DefaultCost)
+		if err != nil {
+			return "", fmt.Errorf("generando hash bcrypt del documento: %w", err)
+		}
+		passwordHash = string(hash)
+	}
 
 	_, err := r.db.ExecContext(ctx, procedure,
 		sql.Named("IdTriaje", admision.IDTriaje),
 		sql.Named("IdPacienteTriaje", admision.IDPacienteTriaje),
-		sql.Named("PasswordHash", defaultPasswordHash),
+		sql.Named("PasswordHash", passwordHash),
 		sql.Named("IdEmpleado", admision.IDEmpleado),
 		sql.Named("IdMedicoIngreso", admision.IDMedico),
 		sql.Named("NombreAcompañante", admision.NombreAcompanante),

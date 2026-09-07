@@ -21,7 +21,18 @@ func NewTriageHandler(service input.TriageService) *TriageHandler {
 	return &TriageHandler{service: service}
 }
 
-
+// Create registra un nuevo triaje de emergencia.
+//
+//	@Summary	 Registrar triaje
+//	@Description Registra un nuevo triaje de emergencia con signos vitales y clasificación.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		body body	 createTriajeRequest	true	"Datos del triaje"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje [post]
 func (h *TriageHandler) Create(c *gin.Context) {
 	var req createTriajeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -29,7 +40,13 @@ func (h *TriageHandler) Create(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.CreateTriage(c.Request.Context(), req.toDomain())
+	domainObj := req.toDomain()
+	if idEmpleado := c.GetInt("idEmpleado"); idEmpleado != 0 {
+		empID := int64(idEmpleado)
+		domainObj.EmployeeID = &empID
+	}
+
+	result, err := h.service.CreateTriage(c.Request.Context(), domainObj)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "TRIAGE_REGISTER_FAILED", err.Error())
 		return
@@ -38,14 +55,38 @@ func (h *TriageHandler) Create(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
 
-
+// List retorna la lista de triajes filtrada por fechas.
+//
+//	@Summary	 Listar triajes
+//	@Description Lista triajes de emergencia con filtros de fecha y estado.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		fini			query		string	true	"Fecha inicio (YYYY-MM-DD)"
+//	@Param		ffin			query		string	true	"Fecha fin (YYYY-MM-DD)"
+//	@Param		filtro			query		string	false	"Filtro por paciente o documento"
+//	@Param		derivadoAServicio	query		int		false	"ID de servicio derivado"
+//	@Param		idEmpleado		query		int		false	"ID del empleado logueado"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje [get]
 func (h *TriageHandler) List(c *gin.Context) {
+	idEmpleado := c.GetInt("idEmpleado")
+	if idEmpleado == 0 {
+		if raw := c.Query("idEmpleado"); raw != "" {
+			if v, err := strconv.ParseInt(raw, 10, 64); err == nil {
+				idEmpleado = int(v)
+			}
+		}
+	}
+
 	params := shared.TriageListParams{
 		FechaInicio:       c.Query("fini"),
 		FechaFin:          c.Query("ffin"),
 		Filtro:            c.Query("filtro"),
 		DerivadoAServicio: -100,
-		IdEstado:          -100,
+		IdEmpleado:        idEmpleado,
 	}
 
 	if params.FechaInicio == "" || params.FechaFin == "" {
@@ -53,22 +94,13 @@ func (h *TriageHandler) List(c *gin.Context) {
 		return
 	}
 
-	if raw := c.Query("derivadoAServicio"); raw != "" {
+	if raw := c.Query("derivadoAServicio"); raw != "" && raw != "-100" {
 		v, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil {
 			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "derivadoAServicio debe ser un entero")
 			return
 		}
 		params.DerivadoAServicio = int(v)
-	}
-
-	if raw := c.Query("idEstado"); raw != "" {
-		v, err := strconv.ParseInt(raw, 10, 64)
-		if err != nil {
-			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idEstado debe ser un entero")
-			return
-		}
-		params.IdEstado = int(v)
 	}
 
 	items, err := h.service.ListTriage(c.Request.Context(), params)
@@ -80,7 +112,24 @@ func (h *TriageHandler) List(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-
+// ListPendingAdmission lista pacientes pendientes de admisión desde triaje.
+//
+//	@Summary	 Pendientes de admisión
+//	@Description Lista pacientes en triaje pendientes de admisión hospitalaria.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		fecha			query		string	true	"Fecha de atención (YYYY-MM-DD)"
+//	@Param		filtro			query		string	false	"Filtro por paciente o documento"
+//	@Param		nroCta			query		int		false	"Número de cuenta"
+//	@Param		idDepartamento	query		int		false	"ID de departamento"
+//	@Param		IdEspecialidad	query		int		false	"ID de especialidad"
+//	@Param		idServicio		query		int		false	"ID de servicio"
+//	@Param		idTipoServicio	query		int		false	"ID de tipo de servicio"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje/pendientes-admision [get]
 func (h *TriageHandler) ListPendingAdmission(c *gin.Context) {
 	params := shared.TriageAdmisionParams{
 		Fecha:  c.Query("fecha"),
@@ -124,7 +173,18 @@ func (h *TriageHandler) ListPendingAdmission(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-
+// CreateAdmission crea una admisión hospitalaria desde un triaje.
+//
+//	@Summary	 Crear admisión desde triaje
+//	@Description Registra la admisión de un paciente derivado desde triaje de emergencia.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		body body	 createAdmissionFromTriageRequest	true	"Datos de la admisión"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje/admision [post]
 func (h *TriageHandler) CreateAdmission(c *gin.Context) {
 	var req createAdmissionFromTriageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -147,7 +207,19 @@ func (h *TriageHandler) CreateAdmission(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
 
-
+// GetReporte retorna el reporte de un triaje.
+//
+//	@Summary	 Reporte de triaje
+//	@Description Obtiene los datos del reporte de un triaje específico.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		id			query		int	false	"ID del triaje"
+//	@Param		idPaciente	query		int	false	"ID del paciente"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje/reporte [get]
 func (h *TriageHandler) GetReporte(c *gin.Context) {
 	params := shared.TriageReporteParams{
 		IDTriaje:   -100,
@@ -181,7 +253,18 @@ func (h *TriageHandler) GetReporte(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-
+// GetFichaAdmision retorna la ficha de admisión de una cuenta de atención.
+//
+//	@Summary	 Ficha de admisión
+//	@Description Obtiene los datos de la ficha de admisión por número de cuenta.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		idCuentaAtencion	query		int	true	"ID de la cuenta de atención"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje/ficha-admision [get]
 func (h *TriageHandler) GetFichaAdmision(c *gin.Context) {
 	raw := c.Query("idCuentaAtencion")
 	if raw == "" {
@@ -203,7 +286,18 @@ func (h *TriageHandler) GetFichaAdmision(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, item)
 }
 
-
+// ListMedicosPorEspecialidad retorna médicos de una especialidad.
+//
+//	@Summary	 Médicos por especialidad
+//	@Description Lista los médicos disponibles de una especialidad específica.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		IdEspecialidad	path		int	true	"ID de la especialidad"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje/medicos/{IdEspecialidad} [get]
 func (h *TriageHandler) ListMedicosPorEspecialidad(c *gin.Context) {
 	raw := c.Param("IdEspecialidad")
 	if raw == "" {
@@ -225,7 +319,21 @@ func (h *TriageHandler) ListMedicosPorEspecialidad(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-
+// ListTriajeConsulta retorna la lista de triajes de consulta externa.
+//
+//	@Summary	 Listar triajes consulta
+//	@Description Lista triajes de consulta externa con filtros de fecha y servicio.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		fini		query		string	true	"Fecha inicio (YYYY-MM-DD)"
+//	@Param		ffin		query		string	true	"Fecha fin (YYYY-MM-DD)"
+//	@Param		filtro		query		string	false	"Filtro por paciente o documento"
+//	@Param		idServicio	query		int		false	"ID de servicio"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje/consulta [get]
 func (h *TriageHandler) ListTriajeConsulta(c *gin.Context) {
 	params := shared.TriajeConsultaParams{
 		FechaInicio: c.Query("fini"),
@@ -238,7 +346,6 @@ func (h *TriageHandler) ListTriajeConsulta(c *gin.Context) {
 		return
 	}
 
-	// Validar el formato de las fechas antes de armar el fragmento WHERE.
 	if _, err := time.Parse("2006-01-02", params.FechaInicio); err != nil {
 		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "fini debe ser YYYY-MM-DD")
 		return
@@ -266,7 +373,18 @@ func (h *TriageHandler) ListTriajeConsulta(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
-
+// CreateTriajeConsulta registra un triaje de consulta externa.
+//
+//	@Summary	 Registrar triaje consulta
+//	@Description Registra signos vitales de un paciente en consulta externa.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		body body	 createTriajeConsultaRequest	true	"Datos del triaje de consulta"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje/consulta [post]
 func (h *TriageHandler) CreateTriajeConsulta(c *gin.Context) {
 	var req createTriajeConsultaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -288,7 +406,18 @@ func (h *TriageHandler) CreateTriajeConsulta(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
 
-
+// GetTriajeConsultaPorAtencion retorna el triaje de consulta de una atención.
+//
+//	@Summary	 Triaje por atención
+//	@Description Obtiene el triaje de consulta externa asociado a una atención.
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		idAtencion	path		int	true	"ID de la atención"
+//	@Success	200	{object}	map[string]string
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje/consulta/atencion/{idAtencion} [get]
 func (h *TriageHandler) GetTriajeConsultaPorAtencion(c *gin.Context) {
 	raw := c.Param("idAtencion")
 	if raw == "" {
@@ -310,7 +439,19 @@ func (h *TriageHandler) GetTriajeConsultaPorAtencion(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, item)
 }
 
-
+// UpdateEstadoTriajeConsulta actualiza el estado de un triaje de consulta.
+//
+//	@Summary	 Actualizar estado triaje consulta
+//	@Description Cambia el estado de un triaje de consulta externa (ej. atendido).
+//	@Tags		triaje
+//	@Accept		json
+//	@Produce	json
+//	@Param		id		path		int						true	"ID del triaje"
+//	@Param		body	body		triajeConsultaEstadoRequest	true	"Nuevo estado"
+//	@Success	200	{object}	map[string]bool
+//	@Failure	400	{object}	map[string]string
+//	@Failure	500	{object}	map[string]string
+//	@Router		 /triaje/consulta/{id}/estado [put]
 func (h *TriageHandler) UpdateEstadoTriajeConsulta(c *gin.Context) {
 	raw := c.Param("id")
 	if raw == "" {

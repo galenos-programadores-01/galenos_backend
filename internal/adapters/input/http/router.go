@@ -31,6 +31,7 @@ type RouterParams struct {
 	DiagnosticoHandler       *DiagnosticoHandler
 	ListaEsperaQxHandler     *ListaEsperaQxHandler
 	MedicoListaEsperaHandler *MedicoListaEsperaHandler
+	RefConHandler            *RefConHandler
 	AuthService              input.AuthService
 	AllowedOrigins           []string
 }
@@ -120,7 +121,6 @@ func NewRouter(p RouterParams) *gin.Engine {
 		sis := v1.Group("/sis")
 		{
 			sis.GET("/afiliado/:nrodoc", p.SisHandler.ConsultarAfiliado)
-			sis.GET("/filiaciones", p.SisHandler.BuscarAfiliacion)
 			sis.POST("/filiaciones", p.SisHandler.GestionarAfiliacion)
 			sis.POST("/fua", p.SisHandler.ForzarGuardadoFua)
 			sis.POST("/fua/agregar", p.SisHandler.AgregarFua)
@@ -222,6 +222,12 @@ func NewRouter(p RouterParams) *gin.Engine {
 		}
 
 		v1.GET("/medicos-lista-espera", p.MedicoListaEsperaHandler.HandleListar)
+
+		dashrefcon := protected.Group("/dashrefcon")
+		{
+			dashrefcon.GET("/referencias", p.RefConHandler.HandleListarReferencias)
+			dashrefcon.GET("/ups", p.RefConHandler.HandleListarUps)
+		}
 	}
 
 	router.GET("/health", func(c *gin.Context) {

@@ -72,7 +72,7 @@ type TriageListParams struct {
 	FechaFin          string
 	Filtro            string
 	DerivadoAServicio int
-	IdEstado          int
+	IdEmpleado        int
 }
 
 // TriageAdmisionParams agrupa los filtros del SP

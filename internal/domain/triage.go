@@ -45,6 +45,12 @@ type Triage struct {
 	Motivo                    *string
 	IsPregnant                *int64
 	ArrivalStateID            *int64
+	FUR                       *time.Time
+	EsGestante                *bool
+	EdadGestacional           *int64
+	FPP                       *time.Time
+	NroControlesPrenatales    *int64
+	MovimientosFetales        *int64
 	Photo                     *string
 	EmployeeID                *int64
 }
