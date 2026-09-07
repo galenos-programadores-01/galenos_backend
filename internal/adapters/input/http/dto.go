@@ -211,6 +211,20 @@ type sisFuaAgregarRequest struct {
 // createTriajeRequest es el cuerpo de POST /api/v1/triaje. Cada campo es
 // puntero para que el frontend pueda enviar solo los datos que recopiló;
 // los que faltan se persisten como NULL en el SP.
+// parseDate convierte un puntero a string con fecha "YYYY-MM-DD" a un
+// *time.Time. Si el string es nil o vacío retorna nil; si el formato es
+// inválido retorna nil (se tratará como NULL al persistir).
+func parseDate(s *string) *time.Time {
+	if s == nil || *s == "" {
+		return nil
+	}
+	t, err := time.Parse("2006-01-02", *s)
+	if err != nil {
+		return nil
+	}
+	return &t
+}
+
 type createTriajeRequest struct {
 	IDTriaje                  *int64     `json:"idTriaje"`
 	DocIdentityType           *int64     `json:"idDocIdentidad"`
@@ -250,6 +264,12 @@ type createTriajeRequest struct {
 	Motivo                    *string    `json:"motivo"`
 	IsPregnant                *int64     `json:"gestante"`
 	ArrivalStateID            *int64     `json:"idEstadollego"`
+	FUR                       *string    `json:"fur"`
+	EsGestante                *bool      `json:"esGestante"`
+	EdadGestacional           *int64     `json:"edadGestacional"`
+	FPP                       *string    `json:"fpp"`
+	NroControlesPrenatales    *int64     `json:"nroControlesPrenatales"`
+	MovimientosFetales        *int64     `json:"movimientosFetales"`
 	Photo                     *string    `json:"foto"`
 	EmployeeID                *int64     `json:"idEmpleado"`
 }
@@ -295,6 +315,12 @@ func (r createTriajeRequest) toDomain() *domain.Triage {
 		Motivo:                    r.Motivo,
 		IsPregnant:                r.IsPregnant,
 		ArrivalStateID:            r.ArrivalStateID,
+		FUR:                       parseDate(r.FUR),
+		EsGestante:                r.EsGestante,
+		EdadGestacional:           r.EdadGestacional,
+		FPP:                       parseDate(r.FPP),
+		NroControlesPrenatales:    r.NroControlesPrenatales,
+		MovimientosFetales:        r.MovimientosFetales,
 		Photo:                     r.Photo,
 		EmployeeID:                r.EmployeeID,
 	}
@@ -306,6 +332,7 @@ func (r createTriajeRequest) toDomain() *domain.Triage {
 type createAdmissionFromTriageRequest struct {
 	IDTriaje            *int64  `json:"idTriaje" binding:"required"`
 	IDPacienteTriaje    *int64  `json:"idPacienteTriaje" binding:"required"`
+	NroDocumento        *string `json:"nroDocumento"`
 	IDMedico            *int64  `json:"idMedico"`
 	NombreAcompanante   *string `json:"nombreAcompanante"`
 	TelefonoAcompanante *string `json:"telefonoAcompanante"`
@@ -318,6 +345,7 @@ func (r createAdmissionFromTriageRequest) toDomain() *domain.AdmisionDesdeTriaje
 	return &domain.AdmisionDesdeTriaje{
 		IDTriaje:            r.IDTriaje,
 		IDPacienteTriaje:    r.IDPacienteTriaje,
+		NroDocumento:        r.NroDocumento,
 		IDMedico:            r.IDMedico,
 		NombreAcompanante:   r.NombreAcompanante,
 		TelefonoAcompanante: r.TelefonoAcompanante,

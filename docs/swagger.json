@@ -9,6 +9,138 @@
     "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
+        "/api/v1/evoluciones/bandeja": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Get evolutions for the main tray using usp_go_EvolucionesMedicas_Bandeja",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha inicial (YYYY-MM-DD)",
+                        "name": "fechaInicio",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha final (YYYY-MM-DD)",
+                        "name": "fechaFin",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Texto de búsqueda (DNI, Nombre, NroAtencion)",
+                        "name": "filtro",
+                        "in": "query"
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/v1/evoluciones/registro": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Insert a complete medical evolution using usp_go_EvolucionesMedicas_Insertar",
+                "responses": {}
+            }
+        },
+        "/api/v1/resultados/imagenes/detalle": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resultados"
+                ],
+                "summary": "Get imaging detailed results by order and product ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de Orden",
+                        "name": "idOrden",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de Producto",
+                        "name": "idProducto",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/v1/resultados/laboratorio/detalle": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resultados"
+                ],
+                "summary": "Get laboratory detailed results by order and product CPT",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de Orden",
+                        "name": "idOrden",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de Producto CPT",
+                        "name": "idProducto",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/appointments": {
             "post": {
                 "description": "Valida los datos del paciente, médico y horario, y agenda la cita si el médico está disponible.",
@@ -221,6 +353,123 @@
                                     "properties": {
                                         "error": {
                                             "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/dashrefcon/referencias": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna la cantidad de referencias/contrarreferencias agrupadas por mes y estado para el dashboard de barras",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "DashRefCon"
+                ],
+                "summary": "Listar referencias por mes y año",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Mes (0 = todos los meses)",
+                        "name": "mes",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Año de la referencia",
+                        "name": "anio",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Estado de la referencia (3 ACEPTADO, 4 RECHAZADO, 5 PACIENTE RECIBIDO, 7 PACIENTE CITADO, 8 CONTRAREFERIDO)",
+                        "name": "estado",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Código de la UPS",
+                        "name": "ups",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Opción del reporte (1 total, 2 por estado, 3 por estado filtrado, 4 por estado y UPS)",
+                        "name": "opcion",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.ReferenciaPorMes"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/dashrefcon/ups": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna el catálogo de Unidades Productoras de Servicios (UPS)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "DashRefCon"
+                ],
+                "summary": "Listar UPS",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.Ups"
+                                            }
                                         }
                                     }
                                 }
@@ -3833,37 +4082,36 @@
         },
         "/sis/afiliado/{nrodoc}": {
             "get": {
-                "description": "Invoca el servicio SOAP de SIS para consultar la afiliación de una persona.",
+                "description": "Con intOpcion=1 (default) la búsqueda es por tipo y número de documento (nrodoc obligatorio). Con intOpcion=2 la búsqueda es por afiliación (strDisa, strTipoFormato y strNroContrato obligatorios, nrodoc opcional).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "SIS"
                 ],
-                "summary": "Consulta un afiliado en SIS por número de documento",
+                "summary": "Consulta un afiliado en SIS por documento o por afiliación",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Número de documento (DNI)",
+                        "description": "Número de documento (DNI), obligatorio con intOpcion=1",
                         "name": "nrodoc",
-                        "in": "path",
-                        "required": true
+                        "in": "path"
                     },
                     {
                         "type": "string",
-                        "description": "Código DISA",
+                        "description": "Código DISA (obligatorio con intOpcion=2)",
                         "name": "strDisa",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Tipo de formato",
+                        "description": "Tipo de formato (obligatorio con intOpcion=2)",
                         "name": "strTipoFormato",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Número de contrato",
+                        "description": "Número de contrato (obligatorio con intOpcion=2)",
                         "name": "strNroContrato",
                         "in": "query"
                     },
@@ -3875,13 +4123,13 @@
                     },
                     {
                         "type": "integer",
-                        "description": "Tipo de documento (1=DNI, 3=CE)",
+                        "description": "Tipo de documento (1=DNI, 3=CE), usado con intOpcion=1",
                         "name": "strTipoDocumento",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Opción de consulta",
+                        "description": "Opción de consulta: 1=por documento (default), 2=por afiliación",
                         "name": "intOpcion",
                         "in": "query"
                     }
@@ -4108,107 +4356,6 @@
             }
         },
         "/sis/filiaciones": {
-            "get": {
-                "description": "Consulta el servicio SIS (ConsultarAfiliadoFuaE) usando los parámetros de afiliación. El nrodoc no es obligatorio.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "SIS"
-                ],
-                "summary": "Busca una afiliación SIS por DISA, TipoFormato, NroContrato, Correlativo y CodigoTabla",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Código DISA (ej. 035)",
-                        "name": "strDisa",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Tipo formato / Lote (ej. E)",
-                        "name": "strTipoFormato",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Número de contrato (ej. 11427904)",
-                        "name": "strNroContrato",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Correlativo",
-                        "name": "strCorrelativo",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Código de tabla",
-                        "name": "strCodigoTabla",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Afiliado encontrado",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Parámetros inválidos",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "502": {
-                        "description": "Servicio SIS no disponible",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/httpadapter.apiError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
             "post": {
                 "description": "Invoca el SP webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.",
                 "consumes": [
@@ -4792,6 +4939,685 @@
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje": {
+            "get": {
+                "description": "Lista triajes de emergencia con filtros de fecha y estado.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Listar triajes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha inicio (YYYY-MM-DD)",
+                        "name": "fini",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha fin (YYYY-MM-DD)",
+                        "name": "ffin",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtro por paciente o documento",
+                        "name": "filtro",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de servicio derivado",
+                        "name": "derivadoAServicio",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID del empleado logueado",
+                        "name": "idEmpleado",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Registra un nuevo triaje de emergencia con signos vitales y clasificación.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Registrar triaje",
+                "parameters": [
+                    {
+                        "description": "Datos del triaje",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.createTriajeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/admision": {
+            "post": {
+                "description": "Registra la admisión de un paciente derivado desde triaje de emergencia.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Crear admisión desde triaje",
+                "parameters": [
+                    {
+                        "description": "Datos de la admisión",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.createAdmissionFromTriageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/consulta": {
+            "get": {
+                "description": "Lista triajes de consulta externa con filtros de fecha y servicio.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Listar triajes consulta",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha inicio (YYYY-MM-DD)",
+                        "name": "fini",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha fin (YYYY-MM-DD)",
+                        "name": "ffin",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtro por paciente o documento",
+                        "name": "filtro",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de servicio",
+                        "name": "idServicio",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Registra signos vitales de un paciente en consulta externa.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Registrar triaje consulta",
+                "parameters": [
+                    {
+                        "description": "Datos del triaje de consulta",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.createTriajeConsultaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/consulta/atencion/{idAtencion}": {
+            "get": {
+                "description": "Obtiene el triaje de consulta externa asociado a una atención.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Triaje por atención",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la atención",
+                        "name": "idAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/consulta/{id}/estado": {
+            "put": {
+                "description": "Cambia el estado de un triaje de consulta externa (ej. atendido).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Actualizar estado triaje consulta",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del triaje",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Nuevo estado",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.triajeConsultaEstadoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/ficha-admision": {
+            "get": {
+                "description": "Obtiene los datos de la ficha de admisión por número de cuenta.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Ficha de admisión",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la cuenta de atención",
+                        "name": "idCuentaAtencion",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/medicos/{IdEspecialidad}": {
+            "get": {
+                "description": "Lista los médicos disponibles de una especialidad específica.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Médicos por especialidad",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la especialidad",
+                        "name": "IdEspecialidad",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/pendientes-admision": {
+            "get": {
+                "description": "Lista pacientes en triaje pendientes de admisión hospitalaria.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Pendientes de admisión",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha de atención (YYYY-MM-DD)",
+                        "name": "fecha",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtro por paciente o documento",
+                        "name": "filtro",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Número de cuenta",
+                        "name": "nroCta",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de departamento",
+                        "name": "idDepartamento",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de especialidad",
+                        "name": "IdEspecialidad",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de servicio",
+                        "name": "idServicio",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de tipo de servicio",
+                        "name": "idTipoServicio",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/reporte": {
+            "get": {
+                "description": "Obtiene los datos del reporte de un triaje específico.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "triaje"
+                ],
+                "summary": "Reporte de triaje",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del triaje",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID del paciente",
+                        "name": "idPaciente",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -5485,6 +6311,23 @@
                 }
             }
         },
+        "domain.ReferenciaPorMes": {
+            "type": "object",
+            "properties": {
+                "cantidad": {
+                    "type": "integer"
+                },
+                "estado": {
+                    "type": "string"
+                },
+                "mes": {
+                    "type": "integer"
+                },
+                "nombreMes": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.ReniecDatos": {
             "type": "object",
             "properties": {
@@ -5655,6 +6498,17 @@
                 },
                 "id": {
                     "type": "integer"
+                }
+            }
+        },
+        "domain.Ups": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "descripcion": {
+                    "type": "string"
                 }
             }
         },
@@ -5842,6 +6696,39 @@
                 }
             }
         },
+        "httpadapter.createAdmissionFromTriageRequest": {
+            "type": "object",
+            "required": [
+                "idPacienteTriaje",
+                "idTriaje"
+            ],
+            "properties": {
+                "direccionPaciente": {
+                    "type": "string"
+                },
+                "idMedico": {
+                    "type": "integer"
+                },
+                "idPacienteTriaje": {
+                    "type": "integer"
+                },
+                "idTriaje": {
+                    "type": "integer"
+                },
+                "nombreAcompanante": {
+                    "type": "string"
+                },
+                "nroDocumento": {
+                    "type": "string"
+                },
+                "observacion": {
+                    "type": "string"
+                },
+                "telefonoAcompanante": {
+                    "type": "string"
+                }
+            }
+        },
         "httpadapter.createAppointmentRequest": {
             "type": "object",
             "required": [
@@ -5928,6 +6815,219 @@
                     "type": "string"
                 },
                 "telefono": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpadapter.createTriajeConsultaRequest": {
+            "type": "object",
+            "required": [
+                "idAtencion",
+                "idEmpleado",
+                "idPaciente"
+            ],
+            "properties": {
+                "fi02": {
+                    "type": "string"
+                },
+                "frecCardiaca": {
+                    "type": "string"
+                },
+                "frecCardiacaFetal": {
+                    "type": "string"
+                },
+                "frecRespiratoria": {
+                    "type": "string"
+                },
+                "gestante": {
+                    "type": "string"
+                },
+                "hemoglobina": {
+                    "type": "string"
+                },
+                "idAtencion": {
+                    "type": "integer"
+                },
+                "idEmpleado": {
+                    "type": "integer"
+                },
+                "idPaciente": {
+                    "type": "integer"
+                },
+                "imc": {
+                    "type": "string"
+                },
+                "observacion": {
+                    "type": "string"
+                },
+                "origen": {
+                    "type": "string"
+                },
+                "perimAbdominal": {
+                    "type": "string"
+                },
+                "perimCefalico": {
+                    "type": "string"
+                },
+                "peso": {
+                    "type": "string"
+                },
+                "presionArterial": {
+                    "type": "string"
+                },
+                "pulso": {
+                    "type": "string"
+                },
+                "sat02": {
+                    "type": "string"
+                },
+                "talla": {
+                    "type": "string"
+                },
+                "temperatura": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpadapter.createTriajeRequest": {
+            "type": "object",
+            "properties": {
+                "apellidoMaterno": {
+                    "type": "string"
+                },
+                "apellidoPaterno": {
+                    "type": "string"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "edadGestacional": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "esGestante": {
+                    "type": "boolean"
+                },
+                "escalaDolor": {
+                    "type": "integer"
+                },
+                "escalaGlasgow": {
+                    "type": "integer"
+                },
+                "fechaNacimiento": {
+                    "type": "string"
+                },
+                "fiO2": {
+                    "type": "integer"
+                },
+                "foto": {
+                    "type": "string"
+                },
+                "fpp": {
+                    "type": "string"
+                },
+                "frecCardiaca": {
+                    "type": "integer"
+                },
+                "frecRespiratoria": {
+                    "type": "integer"
+                },
+                "fur": {
+                    "type": "string"
+                },
+                "gestante": {
+                    "type": "integer"
+                },
+                "idComunidadDomicilio": {
+                    "type": "integer"
+                },
+                "idDepartamentoDomicilio": {
+                    "type": "integer"
+                },
+                "idDistritoDomicilio": {
+                    "type": "integer"
+                },
+                "idDocIdentidad": {
+                    "type": "integer"
+                },
+                "idEmpleado": {
+                    "type": "integer"
+                },
+                "idEsAccidenteTransito": {
+                    "type": "integer"
+                },
+                "idEstadoCivil": {
+                    "type": "integer"
+                },
+                "idEstadollego": {
+                    "type": "integer"
+                },
+                "idFuenteFinanciamiento": {
+                    "type": "integer"
+                },
+                "idProvinciaDomicilio": {
+                    "type": "integer"
+                },
+                "idServicio": {
+                    "type": "integer"
+                },
+                "idSexo": {
+                    "type": "integer"
+                },
+                "idTipoPrioridad": {
+                    "type": "integer"
+                },
+                "idTriaje": {
+                    "type": "integer"
+                },
+                "imc": {
+                    "type": "number"
+                },
+                "motivo": {
+                    "type": "string"
+                },
+                "movimientosFetales": {
+                    "type": "integer"
+                },
+                "nroControlesPrenatales": {
+                    "type": "integer"
+                },
+                "nroDocumento": {
+                    "type": "string"
+                },
+                "peso": {
+                    "type": "number"
+                },
+                "presionArterial": {
+                    "type": "string"
+                },
+                "primerNombre": {
+                    "type": "string"
+                },
+                "saturacion": {
+                    "type": "integer"
+                },
+                "segundoNombre": {
+                    "type": "string"
+                },
+                "talla": {
+                    "type": "number"
+                },
+                "telefono": {
+                    "type": "string"
+                },
+                "temperatura": {
+                    "type": "number"
+                },
+                "tercerNombre": {
+                    "type": "string"
+                },
+                "tiempoEvolucionCantidad": {
+                    "type": "integer"
+                },
+                "tiempoEvolucionCantidadUnidad": {
                     "type": "string"
                 }
             }
@@ -6334,6 +7434,17 @@
             "properties": {
                 "idCuentaAtencion": {
                     "type": "integer"
+                }
+            }
+        },
+        "httpadapter.triajeConsultaEstadoRequest": {
+            "type": "object",
+            "required": [
+                "estado"
+            ],
+            "properties": {
+                "estado": {
+                    "type": "string"
                 }
             }
         },

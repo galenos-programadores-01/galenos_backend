@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
@@ -22,8 +23,6 @@ func NewAuthRepository(db *sql.DB) output.AuthRepository {
 
 func (r *authRepository) Login(ctx context.Context, username, password string) (int, error) {
 	var resultStr sql.NullString
-	// Procedimiento almacenado usp_go_Login devuelve un string como salida
-	// "SUCCESS;IdEmpleado;..." o "ERROR;Mensaje"
 	_, err := r.db.ExecContext(ctx, "EXEC usp_go_Login @Usuario = @p1, @Password = @p2, @Resultado = @p3 OUTPUT",
 		sql.Named("p1", username),
 		sql.Named("p2", password),
@@ -46,20 +45,20 @@ func (r *authRepository) Login(ctx context.Context, username, password string) (
 	}
 
 	if len(parts) > 0 && parts[0] == "OK" {
-		var idEmpleado int
-		// Buscamos el IdEmpleado porque el SP no lo devuelve en el parámetro OUTPUT
-		err = r.db.QueryRowContext(ctx, "SELECT IdEmpleado FROM dbo.Empleados WHERE Usuario = @p1", sql.Named("p1", username)).Scan(&idEmpleado)
-		if err != nil {
-			return 0, fmt.Errorf("error obteniendo IdEmpleado tras login exitoso: %w", err)
+		if len(parts) > 1 {
+			idEmpleado, convErr := strconv.Atoi(parts[1])
+			if convErr == nil && idEmpleado > 0 {
+				return idEmpleado, nil
+			}
 		}
-		return idEmpleado, nil
+		return 0, fmt.Errorf("el procedimiento usp_go_Login no devolvió un IdEmpleado válido: %s", res)
 	}
 
 	return 0, fmt.Errorf("formato de respuesta de login inesperado: %s", res)
 }
 
 func (r *authRepository) GetMenus(ctx context.Context, idEmpleado int) ([]domain.Menu, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC webMenuSeleccionarIdEmpleado @IdEmpleado = @p1", sql.Named("p1", idEmpleado))
+	rows, err := r.db.QueryContext(ctx, "EXEC usp_go_MenuSeleccionarPorIdEmpleado @IdEmpleado = @p1", sql.Named("p1", idEmpleado))
 	if err != nil {
 		return nil, fmt.Errorf("error consultando menus: %w", err)
 	}
@@ -86,7 +85,7 @@ func (r *authRepository) GetMenus(ctx context.Context, idEmpleado int) ([]domain
 }
 
 func (r *authRepository) GetMenuPermisos(ctx context.Context, idEmpleado int) ([]domain.MenuPermiso, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC web_MenuPermisosIdempleado @IdUsuario = @p1", sql.Named("p1", idEmpleado))
+	rows, err := r.db.QueryContext(ctx, "EXEC usp_go_MenuPermisosPorIdEmpleado @IdUsuario = @p1", sql.Named("p1", idEmpleado))
 	if err != nil {
 		return nil, fmt.Errorf("error consultando menu permisos: %w", err)
 	}
@@ -120,56 +119,71 @@ func (r *authRepository) GetUserProfile(ctx context.Context, idEmpleado int) (do
 	var profile domain.UserProfile
 	profile.IdEmpleado = idEmpleado
 
-	var username, nombres, apePat, apeMat, foto, cargo sql.NullString
-	err := r.db.QueryRowContext(ctx, `
-		SELECT 
-			ISNULL(em.Usuario, ''),
-			ISNULL(em.Nombres, ''),
-			ISNULL(em.ApellidoPaterno, ''),
-			ISNULL(em.ApellidoMaterno, ''),
-			ISNULL(em.Foto, ''),
-			ISNULL((SELECT TOP 1 c.Nombre FROM dbo.Cargos c WHERE c.IdCargo = em.IdCargo), 'Médico Tratante')
-		FROM dbo.Empleados em
-		WHERE em.IdEmpleado = @p1`,
+	rowsEmp, err := r.db.QueryContext(
+		ctx,
+		"EXEC usp_go_EmpleadosSeleccionarPorId @IdEmpleado = @p1",
 		sql.Named("p1", idEmpleado),
-	).Scan(&username, &nombres, &apePat, &apeMat, &foto, &cargo)
-
+	)
 	if err != nil {
-		err = r.db.QueryRowContext(ctx, `
-			SELECT 
-				ISNULL(em.Usuario, ''),
-				ISNULL(em.Nombres, ''),
-				ISNULL(em.ApellidoPaterno, ''),
-				ISNULL(em.ApellidoMaterno, ''),
-				ISNULL(em.Foto, '')
-			FROM dbo.Empleados em
-			WHERE em.IdEmpleado = @p1`,
-			sql.Named("p1", idEmpleado),
-		).Scan(&username, &nombres, &apePat, &apeMat, &foto)
+		return profile, fmt.Errorf("error ejecutando usp_go_EmpleadosSeleccionarPorId: %w", err)
+	}
+	defer rowsEmp.Close()
 
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return profile, nil
+	if rowsEmp.Next() {
+		var idEmp, idTipoEmp int
+		var codPlanilla, apePat, apeMat, nombres, dni, usuario, foto sql.NullString
+		var activo bool
+
+		err := rowsEmp.Scan(
+			&idEmp, &codPlanilla, &apePat, &apeMat, &nombres,
+			&dni, &idTipoEmp, &activo, &usuario, &foto,
+		)
+		if err == nil {
+			profile.Username = usuario.String
+			profile.Nombres = nombres.String
+			profile.ApellidoPaterno = apePat.String
+			profile.ApellidoMaterno = apeMat.String
+			profile.DNI = strings.TrimSpace(dni.String)
+			profile.Foto = strings.TrimSpace(foto.String)
+
+			nombreComp := strings.TrimSpace(apePat.String + " " + apeMat.String + " " + nombres.String)
+			if nombreComp == "" {
+				nombreComp = usuario.String
 			}
-			return profile, fmt.Errorf("error obteniendo perfil de empleado: %w", err)
+			profile.NombreCompleto = nombreComp
 		}
 	}
 
-	profile.Username = username.String
-	profile.Nombres = nombres.String
-	profile.ApellidoPaterno = apePat.String
-	profile.ApellidoMaterno = apeMat.String
+	rowsMed, err := r.db.QueryContext(
+		ctx,
+		"EXEC usp_go_MedicosDetallePorIdEmpleado @IdEmpleado = @p1",
+		sql.Named("p1", idEmpleado),
+	)
+	if err == nil {
+		defer rowsMed.Close()
+		if rowsMed.Next() {
+			var idMedico, idEmpMed int
+			var colegiatura, rne, idColegioHis, loteHis, rneEsp, rneEst, firmaMed, especialidad sql.NullString
+			var egresado sql.NullBool
 
-	nombreComp := strings.TrimSpace(apePat.String + " " + apeMat.String + " " + nombres.String)
-	if nombreComp == "" {
-		nombreComp = username.String
+			err := rowsMed.Scan(
+				&idMedico, &idEmpMed, &colegiatura, &rne, &idColegioHis,
+				&loteHis, &rneEsp, &rneEst, &egresado, &firmaMed, &especialidad,
+			)
+			if err == nil {
+				profile.Colegiatura = strings.TrimSpace(colegiatura.String)
+				profile.RNE = strings.TrimSpace(rne.String)
+				esp := strings.TrimSpace(especialidad.String)
+				if esp != "" {
+					profile.Especialidad = esp
+					profile.Rol = fmt.Sprintf("Médico - %s", esp)
+				}
+			}
+		}
 	}
-	profile.NombreCompleto = nombreComp
-	profile.Foto = foto.String
-	if cargo.Valid && cargo.String != "" {
-		profile.Rol = cargo.String
-	} else {
-		profile.Rol = "Médico Tratante"
+
+	if profile.Rol == "" {
+		profile.Rol = "Médico"
 	}
 
 	return profile, nil

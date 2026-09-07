@@ -26,3 +26,7 @@ func (s *sintomaService) AgregarCatalogo(ctx context.Context, sistema, sintoma s
 func (s *sintomaService) GuardarEvolucionSintomas(ctx context.Context, idRegAtencion int, sintomas []domain.SintomaSeleccionado, idUsuario int) error {
 	return s.repo.GuardarEvolucionSintomas(ctx, idRegAtencion, sintomas, idUsuario)
 }
+
+func (s *sintomaService) ObtenerAtencionSintomas(ctx context.Context, idRegAtencion int) ([]domain.SintomaSeleccionado, error) {
+	return s.repo.ObtenerAtencionSintomas(ctx, idRegAtencion)
+}

@@ -79,3 +79,77 @@ func (h *DiagnosticoHandler) HandleListarDiagnosticos(c *gin.Context) {
 
 	respondSuccess(c, http.StatusOK, results)
 }
+
+// HandleObtenerDiagnosticosAtencion maneja GET /api/v1/diagnosticos/atencion/:idAtencion
+// @Summary Obtener diagnósticos de una atención
+// @Description Obtiene los diagnósticos de una atención médica utilizando usp_go_ObtenerDiagnosticosAtencion
+// @Tags Diagnosticos
+// @Accept json
+// @Produce json
+// @Param idAtencion path int true "ID de Atención"
+// @Param idPrimeraAtencion query int false "ID de Primera Atención"
+// @Param idEvolucion query int false "ID de Evolución"
+// @Success 200 {object} httpadapter.apiResponse{data=[]domain.DiagnosticoAtencion}
+// @Router /diagnosticos/atencion/{idAtencion} [get]
+func (h *DiagnosticoHandler) HandleObtenerDiagnosticosAtencion(c *gin.Context) {
+	idAtencionStr := c.Param("idAtencion")
+	idAtencion, err := strconv.Atoi(idAtencionStr)
+	if err != nil || idAtencion <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_ID", "idAtencion inválido")
+		return
+	}
+
+	var idPrimPtr *int
+	if idPrimStr := c.Query("idPrimeraAtencion"); idPrimStr != "" {
+		if idPrim, err := strconv.Atoi(idPrimStr); err == nil {
+			idPrimPtr = &idPrim
+		}
+	}
+
+	var idEvPtr *int
+	if idEvStr := c.Query("idEvolucion"); idEvStr != "" {
+		if idEv, err := strconv.Atoi(idEvStr); err == nil {
+			idEvPtr = &idEv
+		}
+	}
+
+	results, err := h.useCase.ObtenerDiagnosticosAtencion(c.Request.Context(), idAtencion, idPrimPtr, idEvPtr)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "ERR_GET_DIAG_ATENCION", "Error obteniendo diagnósticos de la atención: "+err.Error())
+		return
+	}
+
+	if results == nil {
+		results = make([]domain.DiagnosticoAtencion, 0)
+	}
+
+	respondSuccess(c, http.StatusOK, results)
+}
+
+// HandleAgregarDiagnosticoAtencion maneja POST /api/v1/diagnosticos/atencion
+// @Summary Agregar diagnóstico a una atención médica
+// @Description Registra un diagnóstico para una atención médica utilizando usp_go_AtencionesDiagnosticosAgregar
+// @Tags Diagnosticos
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body domain.AgregarDiagnosticoAtencionRequest true "Datos del diagnóstico a registrar"
+// @Success 200 {object} httpadapter.apiResponse{data=domain.AgregarDiagnosticoAtencionResponse}
+// @Failure 400 {object} httpadapter.apiResponse{error=httpadapter.apiError}
+// @Failure 500 {object} httpadapter.apiResponse{error=httpadapter.apiError}
+// @Router /diagnosticos/atencion [post]
+func (h *DiagnosticoHandler) HandleAgregarDiagnosticoAtencion(c *gin.Context) {
+	var req domain.AgregarDiagnosticoAtencionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Datos de entrada inválidos: "+err.Error())
+		return
+	}
+
+	res, err := h.useCase.AgregarDiagnosticoAtencion(c.Request.Context(), req)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "ERR_ADD_DIAG", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, res)
+}

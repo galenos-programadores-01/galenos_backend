@@ -61,20 +61,20 @@ type ListaEsperaQxCrear struct {
 }
 
 type ListaEsperaQxReporte struct {
-	Id               int     `json:"id"`
-	NroHistoriaClinica int   `json:"nroHistoriaClinica"`
-	NroDocumento      string `json:"nroDocumento"`
-	Paciente          string `json:"paciente"`
-	Edad              int    `json:"edad"`
-	Telefono          string `json:"telefono"`
-	FechaOrden        string `json:"fechaOrden"`
-	Especialidad      string `json:"especialidad"`
-	Diagnostico       string `json:"diagnostico"`
-	FechaLab          string `json:"fechaLab"`
-	FechaICCardio     string `json:"fechaICCardio"`
-	FechaICNeumo      string `json:"fechaICNeumo"`
-	FechaICAnestesio  string `json:"fechaICAnestesio"`
-	Medico            string `json:"medico"`
-	Observacion       string `json:"observacion"`
-	DiasTranscurridos int    `json:"diasTranscurridos"`
+	Id                 int    `json:"id"`
+	NroHistoriaClinica int    `json:"nroHistoriaClinica"`
+	NroDocumento       string `json:"nroDocumento"`
+	Paciente           string `json:"paciente"`
+	Edad               int    `json:"edad"`
+	Telefono           string `json:"telefono"`
+	FechaOrden         string `json:"fechaOrden"`
+	Especialidad       string `json:"especialidad"`
+	Diagnostico        string `json:"diagnostico"`
+	FechaLab           string `json:"fechaLab"`
+	FechaICCardio      string `json:"fechaICCardio"`
+	FechaICNeumo       string `json:"fechaICNeumo"`
+	FechaICAnestesio   string `json:"fechaICAnestesio"`
+	Medico             string `json:"medico"`
+	Observacion        string `json:"observacion"`
+	DiasTranscurridos  int    `json:"diasTranscurridos"`
 }

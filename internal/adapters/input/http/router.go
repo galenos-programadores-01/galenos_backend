@@ -31,6 +31,7 @@ type RouterParams struct {
 	DiagnosticoHandler       *DiagnosticoHandler
 	ListaEsperaQxHandler     *ListaEsperaQxHandler
 	MedicoListaEsperaHandler *MedicoListaEsperaHandler
+	RefConHandler            *RefConHandler
 	AuthService              input.AuthService
 	AllowedOrigins           []string
 }
@@ -40,9 +41,12 @@ func NewRouter(p RouterParams) *gin.Engine {
 	router.Use(gin.Recovery(), gin.Logger())
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     p.AllowedOrigins,
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "Cache-Control", "X-Requested-With"},
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "Cache-Control", "X-Requested-With", "X-Cache-Engine", "X-Cache-Provider"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type", "X-Cache-Engine", "X-Cache-Provider"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
@@ -66,9 +70,11 @@ func NewRouter(p RouterParams) *gin.Engine {
 			pacientes.POST("", p.PatientHandler.Create)
 			pacientes.GET("/buscar", p.PatientHandler.Search)
 			pacientes.GET("/por-documento", p.PatientHandler.GetByDocumentAndType)
+			pacientes.GET("/:idOrDoc/datos-adicionales", p.PatientHandler.GetDatosAdicionales)
+			pacientes.PUT("/:idOrDoc/datos-adicionales", p.PatientHandler.UpdateDatosAdicionales)
 			pacientes.GET("/:idOrDoc", p.PatientHandler.Get)
-			pacientes.PUT("/:id", p.PatientHandler.Update)
-			pacientes.DELETE("/:id", p.PatientHandler.Delete)
+			pacientes.PUT("/:idOrDoc", p.PatientHandler.Update)
+			pacientes.DELETE("/:idOrDoc", p.PatientHandler.Delete)
 
 			appointments := protected.Group("/appointments")
 			{
@@ -111,6 +117,8 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/receta/unidades-dosis", p.CatalogHandler.ListRecetaUnidadesDosis)
 		v1.GET("/receta/vias-administracion", p.CatalogHandler.ListRecetaViasAdministracion)
 		v1.GET("/receta/medicamentos", p.CatalogHandler.BuscarMedicamentosReceta)
+		v1.GET("/catalogos/examenes", p.CatalogHandler.BuscarExamenesCatalogo)
+		v1.GET("/catalogos/parametros-clinicos/:idGrupo", p.CatalogHandler.HandleListParametrosClinicos)
 
 		reniec := v1.Group("/reniec")
 		{
@@ -120,7 +128,6 @@ func NewRouter(p RouterParams) *gin.Engine {
 		sis := v1.Group("/sis")
 		{
 			sis.GET("/afiliado/:nrodoc", p.SisHandler.ConsultarAfiliado)
-			sis.GET("/filiaciones", p.SisHandler.BuscarAfiliacion)
 			sis.POST("/filiaciones", p.SisHandler.GestionarAfiliacion)
 			sis.POST("/fua", p.SisHandler.ForzarGuardadoFua)
 			sis.POST("/fua/agregar", p.SisHandler.AgregarFua)
@@ -170,6 +177,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			evoluciones.POST("/registro", p.EvolucionHandler.HandleInsertEvolucionMedica)
 			evoluciones.GET("/:idRegAtencion/motivos", p.MotivoHandler.HandleListMotivos)
 			evoluciones.POST("/:idRegAtencion/motivos", p.MotivoHandler.HandleCreateMotivo)
+			evoluciones.GET("/:idRegAtencion/sintomas", p.SintomaHandler.HandleObtenerAtencionSintomas)
 			evoluciones.POST("/:idRegAtencion/sintomas", p.SintomaHandler.HandleGuardarSintomas)
 		}
 
@@ -206,10 +214,16 @@ func NewRouter(p RouterParams) *gin.Engine {
 			sintomas.POST("/catalogo", p.SintomaHandler.HandleAgregarCatalogo)
 		}
 
-		diagnosticos := protected.Group("/diagnosticos")
+		diagnosticos := v1.Group("/diagnosticos")
 		{
 			diagnosticos.GET("/search", p.DiagnosticoHandler.SearchDiagnosticos)
 			diagnosticos.GET("/listar", p.DiagnosticoHandler.HandleListarDiagnosticos)
+			diagnosticos.GET("/atencion/:idAtencion", p.DiagnosticoHandler.HandleObtenerDiagnosticosAtencion)
+		}
+
+		diagnosticosProtected := protected.Group("/diagnosticos")
+		{
+			diagnosticosProtected.POST("/atencion", p.DiagnosticoHandler.HandleAgregarDiagnosticoAtencion)
 		}
 
 		listaEsperaQx := protected.Group("/lista-espera-qx")
@@ -222,6 +236,12 @@ func NewRouter(p RouterParams) *gin.Engine {
 		}
 
 		v1.GET("/medicos-lista-espera", p.MedicoListaEsperaHandler.HandleListar)
+
+		dashrefcon := protected.Group("/dashrefcon")
+		{
+			dashrefcon.GET("/referencias", p.RefConHandler.HandleListarReferencias)
+			dashrefcon.GET("/ups", p.RefConHandler.HandleListarUps)
+		}
 	}
 
 	router.GET("/health", func(c *gin.Context) {

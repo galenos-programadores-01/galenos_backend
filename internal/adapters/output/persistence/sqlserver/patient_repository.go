@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/output"
@@ -505,6 +506,148 @@ func (r *patientRepository) Delete(ctx context.Context, id int64) error {
 	if affected == 0 {
 		return domain.ErrPatientNotFound
 	}
+
+	return nil
+}
+
+// GetDatosAdicionales invoca usp_go_PacientesDatosAdicionalesIdPaciente para
+// obtener los antecedentes médicos del paciente.
+func (r *patientRepository) GetDatosAdicionales(ctx context.Context, idPaciente int64) (domain.PacienteDatosAdicionales, error) {
+	var datos domain.PacienteDatosAdicionales
+	datos.IdPaciente = int(idPaciente)
+
+	// Resolver IdPaciente real si el identificador recibido corresponde a un IdAtencion / IdEpisodio
+	resolvedId := idPaciente
+	var idPacFromAtencion int64
+	errAtencion := r.db.QueryRowContext(ctx, "SELECT IdPaciente FROM dbo.Atenciones WHERE IdAtencion = @p1", sql.Named("p1", idPaciente)).Scan(&idPacFromAtencion)
+	if errAtencion == nil && idPacFromAtencion > 0 {
+		resolvedId = idPacFromAtencion
+	}
+
+	rows, err := r.db.QueryContext(
+		ctx,
+		"EXEC usp_go_PacientesDatosAdicionalesIdPaciente @IdPaciente = @p1",
+		sql.Named("p1", resolvedId),
+	)
+	if err != nil {
+		return datos, fmt.Errorf("calling usp_go_PacientesDatosAdicionalesIdPaciente: %w", err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var idPac int
+		var ant, antAlerg, antObst, antQuir, antFam, antPat, otrosComorb sql.NullString
+		var fNacCalc sql.NullBool
+		var hta, ob, dislip, an, hig, tiro, tb, fuma, ca sql.NullInt64
+
+		if err := rows.Scan(
+			&idPac,
+			&ant,
+			&antAlerg,
+			&antObst,
+			&antQuir,
+			&antFam,
+			&antPat,
+			&fNacCalc,
+			&hta,
+			&ob,
+			&dislip,
+			&an,
+			&hig,
+			&tiro,
+			&tb,
+			&fuma,
+			&ca,
+			&otrosComorb,
+		); err != nil {
+			return datos, fmt.Errorf("scanning usp_go_PacientesDatosAdicionalesIdPaciente: %w", err)
+		}
+
+		datos.IdPaciente = int(resolvedId)
+		datos.Antecedentes = strings.TrimSpace(ant.String)
+		datos.AntecedAlergico = strings.TrimSpace(antAlerg.String)
+		datos.AntecedObstetrico = strings.TrimSpace(antObst.String)
+		datos.AntecedQuirurgico = strings.TrimSpace(antQuir.String)
+		datos.AntecedFamiliar = strings.TrimSpace(antFam.String)
+		datos.AntecedPatologico = strings.TrimSpace(antPat.String)
+		datos.FNacimientoCalculada = fNacCalc.Valid && fNacCalc.Bool
+		datos.HipertensionArterial = int(hta.Int64)
+		datos.Obesidad = int(ob.Int64)
+		datos.Dislipidemia = int(dislip.Int64)
+		datos.Anemia = int(an.Int64)
+		datos.HigadoGraso = int(hig.Int64)
+		datos.EnfTiroidea = int(tiro.Int64)
+		datos.Tuberculosis = int(tb.Int64)
+		datos.FumaActualmente = int(fuma.Int64)
+		datos.Cancer = int(ca.Int64)
+		datos.OtrosComorbilidad = strings.TrimSpace(otrosComorb.String)
+	}
+
+	return datos, nil
+}
+
+// UpdateDatosAdicionales invoca usp_go_PacientesDatosAdicionalesModificar (y si no existe
+// la fila, usp_go_PacientesDatosAdicionalesAgregar) y usp_go_PacientesDatosAdicionalesActualizarComorbilidades.
+func (r *patientRepository) UpdateDatosAdicionales(ctx context.Context, idPaciente int64, datos domain.PacienteDatosAdicionales, idUsuario int) error {
+	resolvedId := idPaciente
+	var idPacFromAtencion int64
+	errAtencion := r.db.QueryRowContext(ctx, "SELECT IdPaciente FROM dbo.Atenciones WHERE IdAtencion = @p1", sql.Named("p1", idPaciente)).Scan(&idPacFromAtencion)
+	if errAtencion == nil && idPacFromAtencion > 0 {
+		resolvedId = idPacFromAtencion
+	}
+
+	result, err := r.db.ExecContext(
+		ctx,
+		"EXEC dbo.usp_go_PacientesDatosAdicionalesModificar @idPaciente = @p1, @antecedentes = @p2, @antecedAlergico = @p3, @antecedObstetrico = @p4, @antecedQuirurgico = @p5, @antecedFamiliar = @p6, @antecedPatologico = @p7, @IdUsuarioAuditoria = @p8",
+		sql.Named("p1", resolvedId),
+		sql.Named("p2", datos.Antecedentes),
+		sql.Named("p3", datos.AntecedAlergico),
+		sql.Named("p4", datos.AntecedObstetrico),
+		sql.Named("p5", datos.AntecedQuirurgico),
+		sql.Named("p6", datos.AntecedFamiliar),
+		sql.Named("p7", datos.AntecedPatologico),
+		sql.Named("p8", idUsuario),
+	)
+	if err != nil {
+		return fmt.Errorf("calling usp_go_PacientesDatosAdicionalesModificar: %w", err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err == nil && affected == 0 {
+		_, errInsert := r.db.ExecContext(
+			ctx,
+			"EXEC dbo.usp_go_PacientesDatosAdicionalesAgregar @idPaciente = @p1, @antecedentes = @p2, @antecedAlergico = @p3, @antecedObstetrico = @p4, @antecedQuirurgico = @p5, @antecedFamiliar = @p6, @antecedPatologico = @p7, @IdUsuarioAuditoria = @p8",
+			sql.Named("p1", resolvedId),
+			sql.Named("p2", datos.Antecedentes),
+			sql.Named("p3", datos.AntecedAlergico),
+			sql.Named("p4", datos.AntecedObstetrico),
+			sql.Named("p5", datos.AntecedQuirurgico),
+			sql.Named("p6", datos.AntecedFamiliar),
+			sql.Named("p7", datos.AntecedPatologico),
+			sql.Named("p8", idUsuario),
+		)
+		if errInsert != nil {
+			return fmt.Errorf("calling usp_go_PacientesDatosAdicionalesAgregar: %w", errInsert)
+		}
+	}
+
+	// Actualizar comorbilidades con el nuevo SP usp_go
+	_, _ = r.db.ExecContext(
+		ctx,
+		"EXEC dbo.usp_go_PacientesDatosAdicionalesActualizarComorbilidades @IdPaciente = @p1, @HipertensionArterial = @p2, @Obesidad = @p3, @Dislipidemia = @p4, @Anemia = @p5, @HigadoGraso = @p6, @EnfTiroidea = @p7, @Tuberculosis = @p8, @FumaActualmente = @p9, @Cancer = @p10, @DescripcionCancer = @p11, @OtrosComorbilidad = @p12",
+		sql.Named("p1", resolvedId),
+		sql.Named("p2", datos.HipertensionArterial),
+		sql.Named("p3", datos.Obesidad),
+		sql.Named("p4", datos.Dislipidemia),
+		sql.Named("p5", datos.Anemia),
+		sql.Named("p6", datos.HigadoGraso),
+		sql.Named("p7", datos.EnfTiroidea),
+		sql.Named("p8", datos.Tuberculosis),
+		sql.Named("p9", datos.FumaActualmente),
+		sql.Named("p10", datos.Cancer),
+		sql.Named("p11", ""),
+		sql.Named("p12", datos.OtrosComorbilidad),
+	)
 
 	return nil
 }

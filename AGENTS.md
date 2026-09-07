@@ -8,7 +8,8 @@ Galenos Pro Appointments API — REST API en Go (Gin + SQL Server 2022), arquite
 go mod tidy
 go run ./cmd/api        # arranca la API
 go build ./...          # verificar compilación
-.\fix                   # formatea el código y revisa errores estáticos (go vet)
+./fix.bat               # Git Bash / Linux: formatea el código (go fmt) y revisa errores estáticos (go vet)
+.\fix.bat               # PowerShell / Windows CMD: formatea código y revisa errores estáticos
 ```
 
 - **No hay** tests, linter ni CI. Verifica con `go build ./...`. Formatea con `gofmt -w .`.
