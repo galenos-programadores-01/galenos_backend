@@ -333,6 +333,7 @@ type createAdmissionFromTriageRequest struct {
 	IDTriaje            *int64  `json:"idTriaje" binding:"required"`
 	IDPacienteTriaje    *int64  `json:"idPacienteTriaje" binding:"required"`
 	NroDocumento        *string `json:"nroDocumento"`
+	IDEmpleado          *int64  `json:"idEmpleado"`
 	IDMedico            *int64  `json:"idMedico"`
 	NombreAcompanante   *string `json:"nombreAcompanante"`
 	TelefonoAcompanante *string `json:"telefonoAcompanante"`
@@ -346,6 +347,7 @@ func (r createAdmissionFromTriageRequest) toDomain() *domain.AdmisionDesdeTriaje
 		IDTriaje:            r.IDTriaje,
 		IDPacienteTriaje:    r.IDPacienteTriaje,
 		NroDocumento:        r.NroDocumento,
+		IDEmpleado:          r.IDEmpleado,
 		IDMedico:            r.IDMedico,
 		NombreAcompanante:   r.NombreAcompanante,
 		TelefonoAcompanante: r.TelefonoAcompanante,
