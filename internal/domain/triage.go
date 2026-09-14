@@ -32,7 +32,7 @@ type Triage struct {
 	BloodPressure             *string
 	OxygenSaturation          *int64
 	RespiratoryRate           *int64
-	FiO2                      *int64
+	FiO2                      *float64
 	Weight                    *float64
 	Height                    *float64
 	BMI                       *float64

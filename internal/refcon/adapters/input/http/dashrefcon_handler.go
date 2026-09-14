@@ -1,10 +1,10 @@
-package httpadapter
+package refconhttp
 
 import (
 	"net/http"
 	"strconv"
 
-	"github.com/galenos-pro/appointments-api/internal/ports/input"
+	"github.com/galenos-pro/appointments-api/internal/refcon/ports/input"
 	"github.com/gin-gonic/gin"
 )
 
@@ -73,6 +73,61 @@ func (h *RefConHandler) HandleListarUps(c *gin.Context) {
 	}
 
 	respondSuccess(c, http.StatusOK, ups)
+}
+
+// @Summary Listar todas las UPS
+// @Description Retorna el catálogo completo de Unidades Productoras de Servicios (UPS) con código y descripción desde la tabla SuSalud_ups
+// @Tags RefCon
+// @Produce json
+// @Success 200 {object} apiResponse{data=[]domain.Ups}
+// @Router /refcon/ups [get]
+func (h *RefConHandler) HandleListarTodasLasUps(c *gin.Context) {
+	ups, err := h.service.ListarTodasLasUps(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "REFCON_UPS_ERR", "Error obteniendo las UPS")
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, ups)
+}
+
+// @Summary Listar establecimientos
+// @Description Retorna el catálogo de establecimientos de salud con código IPRESS y nombre desde la tabla Establecimientos
+// @Tags RefCon
+// @Produce json
+// @Success 200 {object} apiResponse{data=[]domain.Establecimiento}
+// @Router /refcon/establecimientos [get]
+func (h *RefConHandler) HandleListarEstablecimientos(c *gin.Context) {
+	establecimientos, err := h.service.ListarEstablecimientos(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "REFCON_ESTABLECIMIENTOS_ERR", "Error obteniendo los establecimientos")
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, establecimientos)
+}
+
+// @Summary Listar distritos por IdReniec
+// @Description Retorna el distrito asociado a un código RENIEC (tabla Distritos)
+// @Tags RefCon
+// @Produce json
+// @Param idReniec path int true "IdReniec del distrito"
+// @Success 200 {object} apiResponse{data=[]domain.DistritoReniec}
+// @Router /refcon/distritos-reniec/{idReniec} [get]
+func (h *RefConHandler) HandleListarDistritosPorIdReniec(c *gin.Context) {
+	idReniec, err := strconv.Atoi(c.Param("idReniec"))
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_ID_RENIEC", "El IdReniec debe ser un número entero")
+		return
+	}
+
+	distritos, err := h.service.ListarDistritosPorIdReniec(c.Request.Context(), idReniec)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "REFCON_DISTRITOS_RENIEC_ERR", "Error obteniendo los distritos por IdReniec")
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, distritos)
 }
 
 func queryIntParam(c *gin.Context, name string, fallback int) int {

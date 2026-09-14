@@ -28,6 +28,11 @@ import (
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/reniec"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/sis"
 	"github.com/galenos-pro/appointments-api/internal/config"
+	refconhttp "github.com/galenos-pro/appointments-api/internal/refcon/adapters/input/http"
+	refconminsa "github.com/galenos-pro/appointments-api/internal/refcon/adapters/output/minsa"
+	refconreports "github.com/galenos-pro/appointments-api/internal/refcon/adapters/output/refconreports"
+	refconsql "github.com/galenos-pro/appointments-api/internal/refcon/adapters/output/sqlserver"
+	refconusecase "github.com/galenos-pro/appointments-api/internal/refcon/usecase"
 	"github.com/galenos-pro/appointments-api/internal/usecase"
 )
 
@@ -74,7 +79,7 @@ func run() error {
 	diagnosticoRepo := sqlserver.NewSqlServerDiagnosticoRepository(db)
 	listaEsperaQxRepo := sqlserver.NewListaEsperaQxRepository(db)
 	medicoListaEsperaRepo := sqlserver.NewMedicoListaEsperaRepository(db)
-	refConRepo := sqlserver.NewRefConRepository(db)
+	refConRepo := refconsql.NewRefConRepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
 	reniecClient := reniec.New(reniec.Config{
@@ -121,7 +126,20 @@ func run() error {
 	diagnosticoUseCase := usecase.NewDiagnosticoUseCase(diagnosticoRepo)
 	listaEsperaQxService := usecase.NewListaEsperaQxService(listaEsperaQxRepo)
 	medicoListaEsperaService := usecase.NewMedicoListaEsperaService(medicoListaEsperaRepo)
-	refConService := usecase.NewRefConService(refConRepo)
+	refConService := refconusecase.NewRefConService(refConRepo, refconminsa.New(refconminsa.Config{
+		URL:                    cfg.MinsaRefConURL,
+		Username:               cfg.MinsaRefConUsername,
+		Password:               cfg.MinsaRefConPassword,
+		IPClient:               cfg.MinsaRefConIPClient,
+		EstablecimientoDestino: cfg.MinsaRefConDestino,
+		Limite:                 cfg.MinsaRefConLimite,
+		Timeout:                cfg.MinsaRefConTimeout,
+	}), refconreports.New(refconreports.Config{
+		BaseURL:     cfg.RefConReportsURL,
+		UserWeb:     cfg.RefConReportsUserWeb,
+		PasswordWeb: cfg.RefConReportsPassword,
+		Timeout:     cfg.RefConReportsTimeout,
+	}))
 
 	authRepo := sqlserver.NewAuthRepository(db)
 	authService := usecase.NewAuthUseCase(authRepo, cfg.AuthSecret, cfg.AuthTTL)
@@ -149,7 +167,7 @@ func run() error {
 	diagnosticoHandler := httpadapter.NewDiagnosticoHandler(diagnosticoUseCase)
 	listaEsperaQxHandler := httpadapter.NewListaEsperaQxHandler(listaEsperaQxService)
 	medicoListaEsperaHandler := httpadapter.NewMedicoListaEsperaHandler(medicoListaEsperaService)
-	refConHandler := httpadapter.NewRefConHandler(refConService)
+	refConHandler := refconhttp.NewRefConHandler(refConService)
 
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
 		AppointmentHandler:       appointmentHandler,

@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/galenos-pro/appointments-api/docs"
 	"github.com/galenos-pro/appointments-api/internal/ports/input"
+	refconhttp "github.com/galenos-pro/appointments-api/internal/refcon/adapters/input/http"
 )
 
 type RouterParams struct {
@@ -31,7 +32,7 @@ type RouterParams struct {
 	DiagnosticoHandler       *DiagnosticoHandler
 	ListaEsperaQxHandler     *ListaEsperaQxHandler
 	MedicoListaEsperaHandler *MedicoListaEsperaHandler
-	RefConHandler            *RefConHandler
+	RefConHandler            *refconhttp.RefConHandler
 	AuthService              input.AuthService
 	AllowedOrigins           []string
 }
@@ -241,6 +242,15 @@ func NewRouter(p RouterParams) *gin.Engine {
 		{
 			dashrefcon.GET("/referencias", p.RefConHandler.HandleListarReferencias)
 			dashrefcon.GET("/ups", p.RefConHandler.HandleListarUps)
+			dashrefcon.GET("/consulta-referencia-detalle", p.RefConHandler.HandleConsultarReferenciaDetalle)
+		}
+
+		refcon := v1.Group("/refcon")
+		{
+			refcon.GET("/ups", p.RefConHandler.HandleListarTodasLasUps)
+			refcon.GET("/establecimientos", p.RefConHandler.HandleListarEstablecimientos)
+			refcon.GET("/distritos-reniec/:idReniec", p.RefConHandler.HandleListarDistritosPorIdReniec)
+			refcon.POST("/hoja-referencia", p.RefConHandler.HandleGenerarHojaReferencia)
 		}
 	}
 

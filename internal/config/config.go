@@ -38,6 +38,17 @@ type Config struct {
 	FirmaPeruTimeout      time.Duration
 	FirmaPeruSignedDir    string
 	SevenZipPath          string
+	MinsaRefConURL        string
+	MinsaRefConUsername   string
+	MinsaRefConPassword   string
+	MinsaRefConIPClient   string
+	MinsaRefConDestino    string
+	MinsaRefConLimite     string
+	MinsaRefConTimeout    time.Duration
+	RefConReportsURL      string
+	RefConReportsUserWeb  string
+	RefConReportsPassword string
+	RefConReportsTimeout  time.Duration
 	AuthUsername          string
 	AuthPassword          string
 	AuthSecret            string
@@ -106,6 +117,17 @@ func Load() (*Config, error) {
 		FirmaPeruTimeout:      envDurationOrDefault("FIRMAPERU_TIMEOUT", 60*time.Second),
 		FirmaPeruSignedDir:    os.Getenv("FIRMAPERU_SIGNED_DIR"),
 		SevenZipPath:          envOrDefault("SEVENZIP_PATH", `C:\Program Files\7-Zip\7z.exe`),
+		MinsaRefConURL:        envOrDefault("MINSA_REFCON_URL", "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/consultaReferenciaDetalle"),
+		MinsaRefConUsername:   os.Getenv("MINSA_REFCON_USERNAME"),
+		MinsaRefConPassword:   os.Getenv("MINSA_REFCON_PASSWORD"),
+		MinsaRefConIPClient:   os.Getenv("MINSA_REFCON_IPCLIENT"),
+		MinsaRefConDestino:    envOrDefault("MINSA_REFCON_ESTABLECIMIENTO", "7634"),
+		MinsaRefConLimite:     envOrDefault("MINSA_REFCON_LIMITE", "11"),
+		MinsaRefConTimeout:    envDurationOrDefault("MINSA_REFCON_TIMEOUT", 30*time.Second),
+		RefConReportsURL:      envOrDefault("REFCON_REPORTS_URL", "https://refcon.minsa.gob.pe/refconv02"),
+		RefConReportsUserWeb:  os.Getenv("REFCON_REPORTS_USERWEB"),
+		RefConReportsPassword: os.Getenv("REFCON_REPORTS_PASSWORDWEB"),
+		RefConReportsTimeout:  envDurationOrDefault("REFCON_REPORTS_TIMEOUT", 30*time.Second),
 		AuthUsername:          apiUsername,
 		AuthPassword:          apiPassword,
 		AuthSecret:            jwtSecret,

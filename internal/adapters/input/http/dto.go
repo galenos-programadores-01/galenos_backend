@@ -251,7 +251,7 @@ type createTriajeRequest struct {
 	BloodPressure             *string    `json:"presionArterial"`
 	Oxygen                    *int64     `json:"saturacion"`
 	RespiratoryRate           *int64     `json:"frecRespiratoria"`
-	FiO2                      *int64     `json:"fiO2"`
+	FiO2                      *float64   `json:"fiO2"`
 	Weight                    *float64   `json:"peso"`
 	Height                    *float64   `json:"talla"`
 	BMI                       *float64   `json:"imc"`
