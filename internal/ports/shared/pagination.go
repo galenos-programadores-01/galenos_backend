@@ -103,6 +103,15 @@ type FichaAdmisionParams struct {
 	IdCuentaAtencion int64
 }
 
+// ReporteTriajeParams agrupa los filtros del SP usp_go_ReporteTriaje, que
+// cuantifica los triajes de un empleado por servicio (tópico) en un rango
+// de fechas con hora y minuto.
+type ReporteTriajeParams struct {
+	IdEmpleado int
+	FechaIni   string
+	FechaFin   string
+}
+
 // TriajeConsultaParams agrupa los filtros de la bandeja de triaje de
 // consulta externa (SP AtencionesTriajeFiltro). El filtro se construye
 // como fragmento WHERE validado en el repositorio; el texto de búsqueda

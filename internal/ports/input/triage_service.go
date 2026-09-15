@@ -55,4 +55,9 @@ type TriageService interface {
 	// UpdateEstadoTriajeConsulta actualiza el estado de un triaje de
 	// consulta externa invocando el SP AtencionesTriajeEstado.
 	UpdateEstadoTriajeConsulta(ctx context.Context, params shared.TriajeConsultaEstadoParams) error
+
+	// ReporteTriajePorEmpleado devuelve las cantidades de triajes de un
+	// empleado por servicio (tópico) en un rango de fechas (con hora y
+	// minuto) invocando el SP usp_go_ReporteTriaje.
+	ReporteTriajePorEmpleado(ctx context.Context, params shared.ReporteTriajeParams) ([]map[string]any, error)
 }

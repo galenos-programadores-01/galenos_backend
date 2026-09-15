@@ -338,3 +338,66 @@ func (h *TriageHandler) UpdateEstadoTriajeConsulta(c *gin.Context) {
 
 	respondSuccess(c, http.StatusOK, map[string]bool{"ok": true})
 }
+
+// @Summary Reporte de triajes por empleado
+// @Description Cantidad de triajes de un empleado por servicio (tópico) entre fechas con hora y minuto (SP usp_go_ReporteTriaje)
+// @Accept json
+// @Produce json
+// @Param IdEmpleado query int true "Id del empleado"
+// @Param fechaini query string true "Fecha inicial (YYYY-MM-DD o YYYY-MM-DD HH:MM)"
+// @Param fechafin query string true "Fecha final (YYYY-MM-DD o YYYY-MM-DD HH:MM)"
+// @Success 200 {array} map[string]interface{} "Cantidad de triajes por tópico"
+// @Failure 400 {object} object "Error de validación"
+// @Router /triaje/reporte-por-empleado [get]
+func (h *TriageHandler) GetReporteTriaje(c *gin.Context) {
+	rawEmpleado := c.Query("IdEmpleado")
+	if rawEmpleado == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "IdEmpleado es obligatorio")
+		return
+	}
+	idEmpleado, err := strconv.ParseInt(rawEmpleado, 10, 64)
+	if err != nil || idEmpleado <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "IdEmpleado debe ser un entero positivo")
+		return
+	}
+
+	fechaIni := c.Query("fechaini")
+	fechaFin := c.Query("fechafin")
+	if fechaIni == "" || fechaFin == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "fechaini y fechafin son obligatorias (YYYY-MM-DD HH:MM)")
+		return
+	}
+	layouts := []string{
+		"2006-01-02T15:04",
+		"2006-01-02 15:04",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+		"2006-01-02T15:04:05.000",
+	}
+	if !esFechaValida(fechaIni, layouts) || !esFechaValida(fechaFin, layouts) {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "fechaini y fechafin deben ser fechas válidas (YYYY-MM-DD HH:MM)")
+		return
+	}
+
+	items, err := h.service.ReporteTriajePorEmpleado(c.Request.Context(), shared.ReporteTriajeParams{
+		IdEmpleado: int(idEmpleado),
+		FechaIni:   fechaIni,
+		FechaFin:   fechaFin,
+	})
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "TRIAGE_REPORT_BY_EMPLOYEE_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, items)
+}
+
+func esFechaValida(valor string, layouts []string) bool {
+	for _, l := range layouts {
+		if _, err := time.Parse(l, valor); err == nil {
+			return true
+		}
+	}
+	return false
+}

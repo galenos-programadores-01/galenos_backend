@@ -128,3 +128,14 @@ func (uc *triageUseCase) UpdateEstadoTriajeConsulta(ctx context.Context, params 
 	}
 	return nil
 }
+
+// ReporteTriajePorEmpleado delega en el repositorio (SP
+// usp_go_ReporteTriaje) y devuelve las cantidades de triajes del empleado
+// por servicio (tópico) en el rango de fechas indicado.
+func (uc *triageUseCase) ReporteTriajePorEmpleado(ctx context.Context, params shared.ReporteTriajeParams) ([]map[string]any, error) {
+	items, err := uc.repo.ReporteTriajePorEmpleado(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("reporting triage by employee: %w", err)
+	}
+	return items, nil
+}

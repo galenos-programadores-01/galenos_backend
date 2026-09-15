@@ -63,4 +63,9 @@ type TriageRepository interface {
 	// UpdateEstadoTriajeConsulta invoca el SP AtencionesTriajeEstado para
 	// actualizar el estado de un triaje de consulta externa.
 	UpdateEstadoTriajeConsulta(ctx context.Context, params shared.TriajeConsultaEstadoParams) error
+
+	// ReporteTriajePorEmpleado invoca el SP usp_go_ReporteTriaje y
+	// devuelve las cantidades de triajes de un empleado por servicio
+	// (tópico) en el rango de fechas (con hora y minuto) indicado.
+	ReporteTriajePorEmpleado(ctx context.Context, params shared.ReporteTriajeParams) ([]map[string]any, error)
 }

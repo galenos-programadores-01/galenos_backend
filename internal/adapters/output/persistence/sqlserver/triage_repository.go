@@ -130,9 +130,18 @@ func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (s
 func (r *triageRepository) List(ctx context.Context, params shared.TriageListParams) ([]map[string]any, error) {
 	const procedure = `ListarTriaje_Emergencia`
 
+	fini, err := parseDateTimeSQL(params.FechaInicio)
+	if err != nil {
+		return nil, err
+	}
+	ffin, err := parseDateTimeSQL(params.FechaFin)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := r.db.QueryContext(ctx, procedure,
-		sql.Named("fini", params.FechaInicio),
-		sql.Named("ffin", params.FechaFin),
+		sql.Named("fini", fini),
+		sql.Named("ffin", ffin),
 		sql.Named("filtro", params.Filtro),
 		sql.Named("derivado_a_servicio", params.DerivadoAServicio),
 		sql.Named("IdEmpleado", params.IdEmpleado),
@@ -361,6 +370,28 @@ func fechaSQL(fecha string) string {
 	return strings.ReplaceAll(fecha, "-", "")
 }
 
+// parseDateTimeSQL convierte una fecha/hora recibida como texto (con o sin
+// hora, con 'T' o espacio, con o sin segundos) a time.Time, para pasarla al
+// driver como parámetro datetime nativo y evitar que SQL Server convierta el
+// literal (formato 'YYYY-MM-DDTHH:MM' sin segundos falla la conversión).
+func parseDateTimeSQL(valor string) (time.Time, error) {
+	layouts := []string{
+		"2006-01-02T15:04",
+		"2006-01-02 15:04",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05.000",
+		"2006-01-02 15:04:05.000",
+		"2006-01-02",
+	}
+	for _, l := range layouts {
+		if t, err := time.ParseInLocation(l, valor, time.Local); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("formato de fecha inválido: %q", valor)
+}
+
 // CreateTriajeConsulta invoca el procedimiento almacenado
 // AtencionesTriajeAgregar, que registra un triaje nuevo de consulta
 // externa o actualiza el vigente de la atención (UltimoTriaje = 1). Los
@@ -443,4 +474,38 @@ func (r *triageRepository) UpdateEstadoTriajeConsulta(ctx context.Context, param
 	}
 
 	return nil
+}
+
+// ReporteTriajePorEmpleado invoca el SP usp_go_ReporteTriaje con el
+// empleado y el rango de fechas (con hora y minuto). Devuelve las
+// cantidades de triajes por servicio (tópico) como mapas columna -> valor,
+// respetando los nombres que el SP devuelve en runtime.
+func (r *triageRepository) ReporteTriajePorEmpleado(ctx context.Context, params shared.ReporteTriajeParams) ([]map[string]any, error) {
+	const procedure = `usp_go_ReporteTriaje`
+
+	fechaIni, err := parseDateTimeSQL(params.FechaIni)
+	if err != nil {
+		return nil, err
+	}
+	fechaFin, err := parseDateTimeSQL(params.FechaFin)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.QueryContext(ctx, procedure,
+		sql.Named("IdEmplead", params.IdEmpleado),
+		sql.Named("Fechaini", fechaIni),
+		sql.Named("Fechafin", fechaFin),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ReporteTriaje: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading triage report by employee: %w", err)
+	}
+
+	return maps, nil
 }

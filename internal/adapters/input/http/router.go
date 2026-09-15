@@ -167,6 +167,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			triaje.POST("", p.TriageHandler.Create)
 			triaje.POST("/consulta", p.TriageHandler.CreateTriajeConsulta)
 			triaje.POST("/admision", p.TriageHandler.CreateAdmission)
+			triaje.GET("/reporte-por-empleado", p.TriageHandler.GetReporteTriaje)
 		}
 
 		evoluciones := protected.Group("/evoluciones")
