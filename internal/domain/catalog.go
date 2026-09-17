@@ -130,6 +130,13 @@ type EspecialidadSimple struct {
 	Nombre         string `json:"nombre"`
 }
 
+// ServicioSimple contiene el id y nombre de un servicio
+// (SP usp_go_ListarServiciosXPrioridad).
+type ServicioSimple struct {
+	IdServicio int    `json:"idServicio"`
+	Nombre     string `json:"nombre"`
+}
+
 // Parametro contiene los valores de un parámetro configurable
 // (SP usp_go_webParametroSeleccionarPorId @IdParametro).
 type Parametro struct {

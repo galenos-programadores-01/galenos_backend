@@ -178,6 +178,14 @@ func (uc *catalogUseCase) ListarEspecialidadesQx(ctx context.Context) ([]domain.
 	return items, nil
 }
 
+func (uc *catalogUseCase) ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error) {
+	items, err := uc.repo.ListarServiciosPorPrioridad(ctx, idPrioridad, fechaNac)
+	if err != nil {
+		return nil, fmt.Errorf("listing servicios por prioridad: %w", err)
+	}
+	return items, nil
+}
+
 func (uc *catalogUseCase) GetParametro(ctx context.Context, idParametro int64) (*domain.Parametro, error) {
 	item, err := uc.repo.GetParametro(ctx, idParametro)
 	if err != nil {

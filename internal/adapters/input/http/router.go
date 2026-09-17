@@ -112,6 +112,8 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/especialidades", p.CatalogHandler.ListEspecialidades)
 		v1.GET("/especialidades-qx", p.CatalogHandler.HandleListarEspecialidadesQx)
 		v1.GET("/especialidades-departamento/:idDepartamento", p.CatalogHandler.HandleListarEspecialidadesPorDepartamento)
+		v1.GET("/servicios-prioridad/:idPrioridad", p.CatalogHandler.HandleListarServiciosPorPrioridad)
+		v1.GET("/servicios-prioridad/:idPrioridad/:fechaNac", p.CatalogHandler.HandleListarServiciosPorPrioridad)
 		v1.GET("/parametros/:idParametro", p.CatalogHandler.GetParametro)
 
 		v1.GET("/receta/frecuencias", p.CatalogHandler.ListRecetaFrecuencias)

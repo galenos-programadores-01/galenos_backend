@@ -465,6 +465,39 @@ func (h *CatalogHandler) HandleListarEspecialidadesQx(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
+// HandleListarServiciosPorPrioridad maneja GET /api/v1/servicios-prioridad/:idPrioridad y
+// GET /api/v1/servicios-prioridad/:idPrioridad/:fechaNac.
+//
+// @Summary Lista servicios por prioridad y fecha de nacimiento
+// @Description Devuelve los servicios según la prioridad y fecha de nacimiento (SP usp_go_ListarServiciosXPrioridad). La fecha de nacimiento es opcional.
+// @Tags Catalogos
+// @Produce json
+// @Param idPrioridad path int true "Id de la prioridad"
+// @Param fechaNac path string false "Fecha de nacimiento (YYYY-MM-DD)"
+// @Success 200 {object} apiResponse{data=[]domain.ServicioSimple}
+// @Failure 400 {object} apiResponse{error=apiError}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /servicios-prioridad/{idPrioridad} [get]
+// @Router /servicios-prioridad/{idPrioridad}/{fechaNac} [get]
+func (h *CatalogHandler) HandleListarServiciosPorPrioridad(c *gin.Context) {
+	idStr := c.Param("idPrioridad")
+	idPrioridad, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_ID", "idPrioridad inválido")
+		return
+	}
+	fechaNac := c.Param("fechaNac")
+	items, err := h.service.ListarServiciosPorPrioridad(c.Request.Context(), int(idPrioridad), fechaNac)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.ServicioSimple, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
 // GetParametro maneja GET /api/v1/parametros/:idParametro.
 //
 // @Summary Obtiene un parámetro por id

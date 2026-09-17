@@ -497,6 +497,33 @@ func (r *catalogRepository) ListarEspecialidadesQx(ctx context.Context) ([]domai
 	return items, rows.Err()
 }
 
+func (r *catalogRepository) ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error) {
+	const query = `EXEC usp_go_ListarServiciosXPrioridad @IdPrioridad = @p1, @FechaNac = @p2`
+
+	// Sin fecha de nacimiento se envía NULL para que el SP aplique su
+	// comportamiento por defecto (lista general según la prioridad).
+	var fechaNacParam any
+	if fechaNac != "" {
+		fechaNacParam = fechaNac
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idPrioridad), sql.Named("p2", fechaNacParam))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarServiciosXPrioridad: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.ServicioSimple
+	for rows.Next() {
+		var s domain.ServicioSimple
+		if err := rows.Scan(&s.IdServicio, &s.Nombre); err != nil {
+			return nil, fmt.Errorf("scanning servicio por prioridad: %w", err)
+		}
+		items = append(items, s)
+	}
+	return items, rows.Err()
+}
+
 // GetParametro invoca el SP usp_go_webParametroSeleccionarPorId, que
 // devuelve en una única fila los valores (Tipo, Codigo, ValorTexto,
 // ValorInt, ValorFloat) del parámetro solicitado. Devuelve nil si el SP

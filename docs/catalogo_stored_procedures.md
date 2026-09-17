@@ -223,6 +223,10 @@ A continuación se detallan los procedimientos almacenados específicos utilizad
   - **Parámetros**: `@IdTipoServicio INT`
   - **Columnas Proyectadas**: `IdServicio`, `Nombre`.
   - **Uso**: Catálogo maestro de servicios activos según el tipo de servicio (Emergencia, Hospitalización, Consulta Externa).
+- **`[dbo].[usp_go_ListarServiciosXPrioridad]`**
+  - **Parámetros**: `@IdPrioridad INT`, `@FechaNac DATE`
+  - **Columnas Proyectadas**: `IdServicio`, `Nombre`.
+  - **Uso en Backend**: [`catalog_repository.go`](file:///c:/galenhospro/galenhos/galenos_backend/internal/adapters/output/persistence/sqlserver/catalog_repository.go) en el endpoint `GET /api/v1/servicios-prioridad/:idPrioridad/:fechaNac`. Lista los servicios válidos para un paciente según su prioridad de triaje y fecha de nacimiento.
 - **`[dbo].[usp_go_ListarEspecialidades]`**
   - **Parámetros**: Ninguno.
   - **Columnas Proyectadas**: `id` (`IdEspecialidad`), `descripcion` (`Nombre`).

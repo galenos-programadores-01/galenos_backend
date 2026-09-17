@@ -818,6 +818,13 @@ definitions:
       nombre:
         type: string
     type: object
+  domain.ServicioSimple:
+    properties:
+      idServicio:
+        type: integer
+      nombre:
+        type: string
+    type: object
   domain.SintomaSeleccionado:
     properties:
       idSintoma:
@@ -4104,6 +4111,104 @@ paths:
       summary: Get laboratory results for a patient
       tags:
       - Resultados
+  /servicios-prioridad/{idPrioridad}:
+    get:
+      description: Devuelve los servicios según la prioridad y fecha de nacimiento
+        (SP usp_go_ListarServiciosXPrioridad). La fecha de nacimiento es opcional.
+      parameters:
+      - description: Id de la prioridad
+        in: path
+        name: idPrioridad
+        required: true
+        type: integer
+      - description: Fecha de nacimiento (YYYY-MM-DD)
+        in: path
+        name: fechaNac
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.ServicioSimple'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista servicios por prioridad y fecha de nacimiento
+      tags:
+      - Catalogos
+  /servicios-prioridad/{idPrioridad}/{fechaNac}:
+    get:
+      description: Devuelve los servicios según la prioridad y fecha de nacimiento
+        (SP usp_go_ListarServiciosXPrioridad). La fecha de nacimiento es opcional.
+      parameters:
+      - description: Id de la prioridad
+        in: path
+        name: idPrioridad
+        required: true
+        type: integer
+      - description: Fecha de nacimiento (YYYY-MM-DD)
+        in: path
+        name: fechaNac
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.ServicioSimple'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista servicios por prioridad y fecha de nacimiento
+      tags:
+      - Catalogos
   /servicios/{idTipoServicio}:
     get:
       description: Devuelve los servicios de un tipo (SP usp_go_ListarServicios).
