@@ -104,7 +104,7 @@ func (uc *sisUseCase) ConsultarAfiliado(ctx context.Context, params shared.SISAf
 		}
 	} else {
 		if params.TipoDocumento == 0 {
-			params.TipoDocumento = 1
+			params.TipoDocumento = 0
 		}
 		if params.TipoDocumento != 1 && params.TipoDocumento != 3 {
 			return domain.SisAfiliado{}, domain.ErrInvalidDocumentType

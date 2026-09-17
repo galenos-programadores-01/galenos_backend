@@ -50,7 +50,7 @@ func (uc *patientUseCase) GetByDocumentNumberAndType(ctx context.Context, docume
 	if documentNumber == "" {
 		return domain.Patient{}, domain.ErrInvalidDocumentNumber
 	}
-	if documentTypeID <= 0 {
+	if documentTypeID < 0 {
 		return domain.Patient{}, domain.ErrInvalidDocumentType
 	}
 
