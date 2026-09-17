@@ -993,6 +993,8 @@ definitions:
         type: integer
       observacion:
         type: string
+      telefono:
+        type: string
     required:
     - fechaOrden
     - idMedico
@@ -1083,6 +1085,8 @@ definitions:
       idEspecialidad:
         type: integer
       observacion:
+        type: string
+      telefono:
         type: string
     type: object
   httpadapter.patientDetailResponse:
@@ -4664,4 +4668,41 @@ paths:
       summary: Lista tipos de sexo
       tags:
       - Catalogos
+  /triaje/reporte-por-empleado:
+    get:
+      consumes:
+      - application/json
+      description: Cantidad de triajes de un empleado por servicio (tópico) entre
+        fechas con hora y minuto (SP usp_go_ReporteTriaje)
+      parameters:
+      - description: Id del empleado
+        in: query
+        name: IdEmpleado
+        required: true
+        type: integer
+      - description: Fecha inicial (YYYY-MM-DD o YYYY-MM-DD HH:MM)
+        in: query
+        name: fechaini
+        required: true
+        type: string
+      - description: Fecha final (YYYY-MM-DD o YYYY-MM-DD HH:MM)
+        in: query
+        name: fechafin
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cantidad de triajes por tópico
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+      summary: Reporte de triajes por empleado
 swagger: "2.0"

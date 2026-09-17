@@ -189,7 +189,57 @@ func (r *ListaEsperaQxRepository) ObtenerPorId(ctx context.Context, id int) (dom
 	item.IdDiagnostico = getIntPtr("IdDiagnostico")
 	item.IdEspecialidad = getIntPtr("IdEspecialidad")
 
+	if telefono := r.obtenerTelefonoListaEspera(ctx, id); telefono != nil {
+		item.Telefono = telefono
+	}
+
 	return item, nil
+}
+
+func (r *ListaEsperaQxRepository) obtenerTelefonoListaEspera(ctx context.Context, id int) *string {
+	var telefono sql.NullString
+	if err := r.db.QueryRowContext(ctx, "SELECT Telefono FROM ListaEsperaQx WHERE Id = @p1", sql.Named("p1", id)).Scan(&telefono); err != nil {
+		return nil
+	}
+	if !telefono.Valid || strings.TrimSpace(telefono.String) == "" {
+		return nil
+	}
+	return &telefono.String
+}
+
+func (r *ListaEsperaQxRepository) actualizarTelefonosListaEspera(ctx context.Context, lista []domain.ListaEsperaQxReporte) []domain.ListaEsperaQxReporte {
+	if len(lista) == 0 {
+		return lista
+	}
+	placeholders := make([]string, len(lista))
+	args := make([]interface{}, len(lista))
+	for i, item := range lista {
+		placeholders[i] = fmt.Sprintf("@p%d", i+1)
+		args[i] = sql.Named(fmt.Sprintf("p%d", i+1), item.Id)
+	}
+	query := "SELECT Id, Telefono FROM ListaEsperaQx WHERE Id IN (" + strings.Join(placeholders, ",") + ")"
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return lista
+	}
+	defer rows.Close()
+	telefonos := make(map[int]string, len(lista))
+	for rows.Next() {
+		var id int
+		var telefono sql.NullString
+		if err := rows.Scan(&id, &telefono); err != nil {
+			continue
+		}
+		if telefono.Valid && strings.TrimSpace(telefono.String) != "" {
+			telefonos[id] = telefono.String
+		}
+	}
+	for i := range lista {
+		if t, ok := telefonos[lista[i].Id]; ok {
+			lista[i].Telefono = t
+		}
+	}
+	return lista
 }
 
 func ptrStr(s string) *string {
@@ -201,19 +251,20 @@ func ptrStr(s string) *string {
 
 func (r *ListaEsperaQxRepository) Modificar(ctx context.Context, item domain.ListaEsperaQxModificar) error {
 	query := `EXEC usp_go_ModificarListaEsperaQx
-		@id = @p1, @observacion = @p2, @diagnostico = @p3,  @IdEspecialidad = @p4,
-		@fechaorden = @p5, @fechalab = @p6, @fechaic_cardio = @p7,
-		@fechaic_neumo = @p8, @fechaic_anestesio = @p9`
+		@id = @p1, @observacion = @p2, @Telefono = @p3, @diagnostico = @p4, @IdEspecialidad = @p5,
+		@fechaorden = @p6, @fechalab = @p7, @fechaic_cardio = @p8,
+		@fechaic_neumo = @p9, @fechaic_anestesio = @p10`
 	_, err := r.db.ExecContext(ctx, query,
 		sql.Named("p1", item.Id),
 		sql.Named("p2", item.Observacion),
-		sql.Named("p3", item.Diagnostico),
-		sql.Named("p4", item.IdEspecialidad),
-		sql.Named("p5", item.FechaOrden),
-		sql.Named("p6", item.FechaLab),
-		sql.Named("p7", item.FechaICCardio),
-		sql.Named("p8", item.FechaICNeumo),
-		sql.Named("p9", item.FechaICAnestesio),
+		sql.Named("p3", item.Telefono),
+		sql.Named("p4", item.Diagnostico),
+		sql.Named("p5", item.IdEspecialidad),
+		sql.Named("p6", item.FechaOrden),
+		sql.Named("p7", item.FechaLab),
+		sql.Named("p8", item.FechaICCardio),
+		sql.Named("p9", item.FechaICNeumo),
+		sql.Named("p10", item.FechaICAnestesio),
 	)
 	return err
 }
@@ -223,7 +274,7 @@ func (r *ListaEsperaQxRepository) Crear(ctx context.Context, item domain.ListaEs
 		@FechaOrden = @p1, @IdPaciente = @p2, @Diagnostico = @p3, @IdEspecialidad = @p4,
 		@FechaLab = @p5, @FechaIC_Cardio = @p6, @FechaIC_Neumo = @p7,
 		@FechaIC_Anestesio = @p8, @IdMedico = @p9, @Observacion = @p10,
-		@IdUsuarioRegistra = @p11`
+		@Telefono = @p11, @IdUsuarioRegistra = @p12`
 	_, err := r.db.ExecContext(ctx, query,
 		sql.Named("p1", item.FechaOrden),
 		sql.Named("p2", item.IdPaciente),
@@ -235,7 +286,8 @@ func (r *ListaEsperaQxRepository) Crear(ctx context.Context, item domain.ListaEs
 		sql.Named("p8", item.FechaICAnestesio),
 		sql.Named("p9", item.IdMedico),
 		sql.Named("p10", item.Observacion),
-		sql.Named("p11", idUsuario),
+		sql.Named("p11", item.Telefono),
+		sql.Named("p12", idUsuario),
 	)
 	return err
 }
@@ -321,5 +373,5 @@ func (r *ListaEsperaQxRepository) Reporte(ctx context.Context, fecha string, fec
 		}
 		lista = append(lista, item)
 	}
-	return lista, rows.Err()
+	return r.actualizarTelefonosListaEspera(ctx, lista), rows.Err()
 }

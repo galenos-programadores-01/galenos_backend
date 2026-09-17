@@ -85,6 +85,7 @@ type crearListaEsperaQxRequest struct {
 	FechaICNeumo     string `json:"fechaICNeumo"`
 	FechaICAnestesio string `json:"fechaICAnestesio"`
 	Observacion      string `json:"observacion"`
+	Telefono         string `json:"telefono"`
 }
 
 // @Summary Crear lista de espera quirurgica
@@ -126,6 +127,7 @@ func (h *ListaEsperaQxHandler) HandleCrear(c *gin.Context) {
 		FechaICNeumo:     req.FechaICNeumo,
 		FechaICAnestesio: req.FechaICAnestesio,
 		Observacion:      req.Observacion,
+		Telefono:         req.Telefono,
 	}
 
 	if err := h.service.Crear(c.Request.Context(), item, idEmpleado); err != nil {
@@ -145,6 +147,7 @@ type modificarListaEsperaQxRequest struct {
 	FechaICNeumo     string `json:"fechaICNeumo"`
 	FechaICAnestesio string `json:"fechaICAnestesio"`
 	Observacion      string `json:"observacion"`
+	Telefono         string `json:"telefono"`
 }
 
 // @Summary Modificar lista de espera quirurgica
@@ -180,6 +183,7 @@ func (h *ListaEsperaQxHandler) HandleModificar(c *gin.Context) {
 		FechaICNeumo:     req.FechaICNeumo,
 		FechaICAnestesio: req.FechaICAnestesio,
 		Observacion:      req.Observacion,
+		Telefono:         req.Telefono,
 	}
 
 	if err := h.service.Modificar(c.Request.Context(), item); err != nil {

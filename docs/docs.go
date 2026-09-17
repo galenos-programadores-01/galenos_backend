@@ -5534,6 +5534,59 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/triaje/reporte-por-empleado": {
+            "get": {
+                "description": "Cantidad de triajes de un empleado por servicio (tópico) entre fechas con hora y minuto (SP usp_go_ReporteTriaje)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Reporte de triajes por empleado",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del empleado",
+                        "name": "IdEmpleado",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha inicial (YYYY-MM-DD o YYYY-MM-DD HH:MM)",
+                        "name": "fechaini",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha final (YYYY-MM-DD o YYYY-MM-DD HH:MM)",
+                        "name": "fechafin",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cantidad de triajes por tópico",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -7055,6 +7108,9 @@ const docTemplate = `{
                 },
                 "observacion": {
                     "type": "string"
+                },
+                "telefono": {
+                    "type": "string"
                 }
             }
         },
@@ -7184,6 +7240,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "observacion": {
+                    "type": "string"
+                },
+                "telefono": {
                     "type": "string"
                 }
             }
