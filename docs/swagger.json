@@ -5700,6 +5700,22 @@
                 }
             }
         },
+        "/triaje/causas-externas-morbilidad": {
+            "get": {
+                "description": "Devuelve el catálogo de causas externas de morbilidad (uso_go_EmergenciaCausaExternaMorbilidadListar)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Triaje"
+                ],
+                "summary": "Listar causas externas de morbilidad",
+                "responses": {}
+            }
+        },
         "/triaje/reporte-por-empleado": {
             "get": {
                 "description": "Cantidad de triajes de un empleado por servicio (tópico) entre fechas con hora y minuto (SP usp_go_ReporteTriaje)",
@@ -5746,6 +5762,99 @@
                     },
                     "400": {
                         "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/{id}": {
+            "get": {
+                "description": "Devuelve los datos del paciente (solo lectura) y del triaje de emergencia del id indicado (SP usp_go_Triaje_EmergeciaPorId)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Datos de un triaje por id",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del triaje",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Datos del paciente y del triaje",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Triaje no encontrado",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Modifica los datos clínicos de un triaje de emergencia invocando el SP usp_go_ModificarTriaje",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Modifica un triaje",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del triaje",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos clínicos editables del triaje",
+                        "name": "triaje",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.createTriajeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mensaje de resultado del SP",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
                         "schema": {
                             "type": "object"
                         }
@@ -7376,6 +7485,152 @@
                     "type": "string"
                 },
                 "telefono": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpadapter.createTriajeRequest": {
+            "type": "object",
+            "properties": {
+                "apellidoMaterno": {
+                    "type": "string"
+                },
+                "apellidoPaterno": {
+                    "type": "string"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "edadGestacional": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "esGestante": {
+                    "type": "boolean"
+                },
+                "escalaDolor": {
+                    "type": "integer"
+                },
+                "escalaGlasgow": {
+                    "type": "integer"
+                },
+                "fechaNacimiento": {
+                    "type": "string"
+                },
+                "fiO2": {
+                    "type": "number"
+                },
+                "foto": {
+                    "type": "string"
+                },
+                "fpp": {
+                    "type": "string"
+                },
+                "frecCardiaca": {
+                    "type": "integer"
+                },
+                "frecRespiratoria": {
+                    "type": "integer"
+                },
+                "fur": {
+                    "type": "string"
+                },
+                "gestante": {
+                    "type": "integer"
+                },
+                "idCausaExternaMorbilidad": {
+                    "type": "integer"
+                },
+                "idComunidadDomicilio": {
+                    "type": "integer"
+                },
+                "idDepartamentoDomicilio": {
+                    "type": "integer"
+                },
+                "idDistritoDomicilio": {
+                    "type": "integer"
+                },
+                "idDocIdentidad": {
+                    "type": "integer"
+                },
+                "idEmpleado": {
+                    "type": "integer"
+                },
+                "idEsAccidenteTransito": {
+                    "type": "integer"
+                },
+                "idEstadoCivil": {
+                    "type": "integer"
+                },
+                "idEstadollego": {
+                    "type": "integer"
+                },
+                "idFuenteFinanciamiento": {
+                    "type": "integer"
+                },
+                "idProvinciaDomicilio": {
+                    "type": "integer"
+                },
+                "idServicio": {
+                    "type": "integer"
+                },
+                "idSexo": {
+                    "type": "integer"
+                },
+                "idTipoPrioridad": {
+                    "type": "integer"
+                },
+                "idTriaje": {
+                    "type": "integer"
+                },
+                "imc": {
+                    "type": "number"
+                },
+                "motivo": {
+                    "type": "string"
+                },
+                "movimientosFetales": {
+                    "type": "integer"
+                },
+                "nroControlesPrenatales": {
+                    "type": "integer"
+                },
+                "nroDocumento": {
+                    "type": "string"
+                },
+                "peso": {
+                    "type": "number"
+                },
+                "presionArterial": {
+                    "type": "string"
+                },
+                "primerNombre": {
+                    "type": "string"
+                },
+                "saturacion": {
+                    "type": "integer"
+                },
+                "segundoNombre": {
+                    "type": "string"
+                },
+                "talla": {
+                    "type": "number"
+                },
+                "telefono": {
+                    "type": "string"
+                },
+                "temperatura": {
+                    "type": "number"
+                },
+                "tercerNombre": {
+                    "type": "string"
+                },
+                "tiempoEvolucionCantidad": {
+                    "type": "integer"
+                },
+                "tiempoEvolucionCantidadUnidad": {
                     "type": "string"
                 }
             }

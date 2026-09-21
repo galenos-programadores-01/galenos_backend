@@ -29,6 +29,16 @@ func (uc *triageUseCase) CreateTriage(ctx context.Context, triage *domain.Triage
 	return result, nil
 }
 
+// UpdateTriage delega la modificación en el repositorio y devuelve el
+// resultado informado por el procedimiento almacenado usp_go_ModificarTriaje.
+func (uc *triageUseCase) UpdateTriage(ctx context.Context, triage *domain.Triage) (string, error) {
+	result, err := uc.repo.UpdateTriaje(ctx, triage)
+	if err != nil {
+		return "", fmt.Errorf("updating triage: %w", err)
+	}
+	return result, nil
+}
+
 // ListTriage delega el listado (SP ListarTriaje_Emergencia) en el
 // repositorio y devuelve los registros crudos.
 func (uc *triageUseCase) ListTriage(ctx context.Context, params shared.TriageListParams) ([]map[string]any, error) {
@@ -75,6 +85,16 @@ func (uc *triageUseCase) GetFichaAdmision(ctx context.Context, params shared.Fic
 	item, err := uc.repo.GetFichaAdmision(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("getting admission record: %w", err)
+	}
+	return item, nil
+}
+
+// GetTriajePorId delega en el repositorio (SP
+// usp_go_Triaje_EmergeciaPorId) y devuelve los datos crudos del triaje.
+func (uc *triageUseCase) GetTriajePorId(ctx context.Context, idTriaje int) (*map[string]any, error) {
+	item, err := uc.repo.GetTriajePorId(ctx, idTriaje)
+	if err != nil {
+		return nil, fmt.Errorf("getting triaje by id: %w", err)
 	}
 	return item, nil
 }

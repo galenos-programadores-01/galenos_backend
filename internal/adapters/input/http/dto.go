@@ -272,6 +272,7 @@ type createTriajeRequest struct {
 	MovimientosFetales        *int64     `json:"movimientosFetales"`
 	Photo                     *string    `json:"foto"`
 	EmployeeID                *int64     `json:"idEmpleado"`
+	IdCausaExternaMorbilidad  *int64     `json:"idCausaExternaMorbilidad"`
 }
 
 // toDomain mapea el request HTTP al objeto de dominio para el SP.
@@ -323,6 +324,7 @@ func (r createTriajeRequest) toDomain() *domain.Triage {
 		MovimientosFetales:        r.MovimientosFetales,
 		Photo:                     r.Photo,
 		EmployeeID:                r.EmployeeID,
+		IdCausaExternaMorbilidad:  r.IdCausaExternaMorbilidad,
 	}
 }
 

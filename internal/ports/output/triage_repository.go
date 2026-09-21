@@ -16,6 +16,11 @@ type TriageRepository interface {
 	// resultado de la operación.
 	Create(ctx context.Context, triage *domain.Triage) (string, error)
 
+	// UpdateTriaje modifica los datos clínicos de un triaje invocando el
+	// procedimiento almacenado usp_go_ModificarTriaje. Retorna el valor
+	// del parámetro de salida @Resultado.
+	UpdateTriaje(ctx context.Context, triage *domain.Triage) (string, error)
+
 	// List invoca el SP ListarTriaje_Emergencia con los filtros de rango
 	// de fechas, texto libre, derivado a servicio y estado. Devuelve los
 	// registros como mapas columna -> valor, respetando los nombres que
@@ -40,6 +45,11 @@ type TriageRepository interface {
 	// datos del paciente y adicionales para generar la ficha de admisión
 	// de la cuenta de atención indicada.
 	GetFichaAdmision(ctx context.Context, params shared.FichaAdmisionParams) (*map[string]any, error)
+
+	// GetTriajePorId invoca el SP usp_go_Triaje_EmergeciaPorId, que
+	// devuelve los datos del paciente (solo lectura) y los del triaje de
+	// emergencia correspondiente al id indicado. Devuelve nil si no hay.
+	GetTriajePorId(ctx context.Context, idTriaje int) (*map[string]any, error)
 
 	// ListarMedicosPorEspecialidad invoca el SP
 	// usp_go_MedicosFiltrarPorIdEspecialidad y devuelve los médicos de la

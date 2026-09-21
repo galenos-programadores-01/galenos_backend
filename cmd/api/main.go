@@ -79,6 +79,7 @@ func run() error {
 	diagnosticoRepo := sqlserver.NewSqlServerDiagnosticoRepository(db)
 	listaEsperaQxRepo := sqlserver.NewListaEsperaQxRepository(db)
 	medicoListaEsperaRepo := sqlserver.NewMedicoListaEsperaRepository(db)
+	causaExternaMorbilidadRepo := sqlserver.NewCausaExternaMorbilidadRepository(db)
 	refConRepo := refconsql.NewRefConRepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
@@ -126,6 +127,7 @@ func run() error {
 	diagnosticoUseCase := usecase.NewDiagnosticoUseCase(diagnosticoRepo)
 	listaEsperaQxService := usecase.NewListaEsperaQxService(listaEsperaQxRepo)
 	medicoListaEsperaService := usecase.NewMedicoListaEsperaService(medicoListaEsperaRepo)
+	causaExternaMorbilidadService := usecase.NewCausaExternaMorbilidadService(causaExternaMorbilidadRepo)
 	refConService := refconusecase.NewRefConService(refConRepo, refconminsa.New(refconminsa.Config{
 		URL:                    cfg.MinsaRefConURL,
 		Username:               cfg.MinsaRefConUsername,
@@ -167,29 +169,31 @@ func run() error {
 	diagnosticoHandler := httpadapter.NewDiagnosticoHandler(diagnosticoUseCase)
 	listaEsperaQxHandler := httpadapter.NewListaEsperaQxHandler(listaEsperaQxService)
 	medicoListaEsperaHandler := httpadapter.NewMedicoListaEsperaHandler(medicoListaEsperaService)
+	causaExternaMorbilidadHandler := httpadapter.NewCausaExternaMorbilidadHandler(causaExternaMorbilidadService)
 	refConHandler := refconhttp.NewRefConHandler(refConService)
 
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
-		AppointmentHandler:       appointmentHandler,
-		PatientHandler:           patientHandler,
-		CatalogHandler:           catalogHandler,
-		ReniecHandler:            reniecHandler,
-		SisHandler:               sisHandler,
-		FirmaPeruHandler:         firmaPeruHandler,
-		TriageHandler:            triageHandler,
-		AuthHandler:              authHandler,
-		EvolucionHandler:         evolucionHandler,
-		MotivoHandler:            motivoHandler,
-		OrdenHandler:             ordenHandler,
-		ResultadoHandler:         resultadoHandler,
-		InterconsultaHandler:     interconsultaHandler,
-		SintomaHandler:           sintomaHandler,
-		DiagnosticoHandler:       diagnosticoHandler,
-		ListaEsperaQxHandler:     listaEsperaQxHandler,
-		MedicoListaEsperaHandler: medicoListaEsperaHandler,
-		RefConHandler:            refConHandler,
-		AuthService:              authService,
-		AllowedOrigins:           cfg.AllowedOrigins,
+		AppointmentHandler:            appointmentHandler,
+		PatientHandler:                patientHandler,
+		CatalogHandler:                catalogHandler,
+		ReniecHandler:                 reniecHandler,
+		SisHandler:                    sisHandler,
+		FirmaPeruHandler:              firmaPeruHandler,
+		TriageHandler:                 triageHandler,
+		AuthHandler:                   authHandler,
+		EvolucionHandler:              evolucionHandler,
+		MotivoHandler:                 motivoHandler,
+		OrdenHandler:                  ordenHandler,
+		ResultadoHandler:              resultadoHandler,
+		InterconsultaHandler:          interconsultaHandler,
+		SintomaHandler:                sintomaHandler,
+		DiagnosticoHandler:            diagnosticoHandler,
+		ListaEsperaQxHandler:          listaEsperaQxHandler,
+		MedicoListaEsperaHandler:      medicoListaEsperaHandler,
+		CausaExternaMorbilidadHandler: causaExternaMorbilidadHandler,
+		RefConHandler:                 refConHandler,
+		AuthService:                   authService,
+		AllowedOrigins:                cfg.AllowedOrigins,
 	})
 
 	server := &http.Server{

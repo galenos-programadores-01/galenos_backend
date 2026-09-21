@@ -53,6 +53,7 @@ type Triage struct {
 	MovimientosFetales        *int64
 	Photo                     *string
 	EmployeeID                *int64
+	IdCausaExternaMorbilidad  *int64
 }
 
 // TriajeConsulta representa el registro de triaje de consulta externa que

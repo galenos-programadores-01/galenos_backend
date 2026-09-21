@@ -43,6 +43,46 @@ func (h *TriageHandler) Create(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
 }
 
+// @Summary Modifica un triaje
+// @Description Modifica los datos clínicos de un triaje de emergencia invocando el SP usp_go_ModificarTriaje
+// @Accept json
+// @Produce json
+// @Param id path int true "Id del triaje"
+// @Param triaje body createTriajeRequest true "Datos clínicos editables del triaje"
+// @Success 200 {object} map[string]string "Mensaje de resultado del SP"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/{id} [put]
+func (h *TriageHandler) UpdateTriaje(c *gin.Context) {
+	var req createTriajeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+
+	raw := c.Param("id")
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || id <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "id debe ser un entero positivo")
+		return
+	}
+
+	domainObj := req.toDomain()
+	domainObj.IDTriaje = &id
+	if idEmpleado := c.GetInt("idEmpleado"); idEmpleado != 0 {
+		empID := int64(idEmpleado)
+		domainObj.EmployeeID = &empID
+	}
+
+	result, err := h.service.UpdateTriage(c.Request.Context(), domainObj)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "TRIAGE_UPDATE_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
+}
+
 func (h *TriageHandler) List(c *gin.Context) {
 	idEmpleado := c.GetInt("idEmpleado")
 	if idEmpleado == 0 {
@@ -197,6 +237,40 @@ func (h *TriageHandler) GetFichaAdmision(c *gin.Context) {
 	item, err := h.service.GetFichaAdmision(c.Request.Context(), shared.FichaAdmisionParams{IdCuentaAtencion: id})
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "ADMISSION_RECORD_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, item)
+}
+
+// @Summary Datos de un triaje por id
+// @Description Devuelve los datos del paciente (solo lectura) y del triaje de emergencia del id indicado (SP usp_go_Triaje_EmergeciaPorId)
+// @Accept json
+// @Produce json
+// @Param id path int true "Id del triaje"
+// @Success 200 {object} map[string]interface{} "Datos del paciente y del triaje"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 404 {object} object "Triaje no encontrado"
+// @Router /triaje/{id} [get]
+func (h *TriageHandler) GetTriajePorId(c *gin.Context) {
+	raw := c.Param("id")
+	if raw == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "id es obligatorio")
+		return
+	}
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || id <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "id debe ser un entero positivo")
+		return
+	}
+
+	item, err := h.service.GetTriajePorId(c.Request.Context(), int(id))
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "TRIAGE_GET_FAILED", err.Error())
+		return
+	}
+	if item == nil {
+		respondError(c, http.StatusNotFound, "TRIAGE_NOT_FOUND", "No se encontró el triaje")
 		return
 	}
 

@@ -14,6 +14,11 @@ type TriageService interface {
 	// webTab_PacienteTriajeAgregar y retorna el @Resultado del SP.
 	CreateTriage(ctx context.Context, triage *domain.Triage) (string, error)
 
+	// UpdateTriage modifica los datos clínicos de un triaje invocando el
+	// procedimiento almacenado usp_go_ModificarTriaje y retorna el
+	// @Resultado del SP.
+	UpdateTriage(ctx context.Context, triage *domain.Triage) (string, error)
+
 	// ListTriage lista los triajes invocando el SP ListarTriaje_Emergencia
 	// con los filtros recibidos.
 	ListTriage(ctx context.Context, params shared.TriageListParams) ([]map[string]any, error)
@@ -34,6 +39,11 @@ type TriageService interface {
 	// GetFichaAdmision genera la ficha de admisión invocando el SP
 	// webFichaEmergencia para la cuenta de atención indicada.
 	GetFichaAdmision(ctx context.Context, params shared.FichaAdmisionParams) (*map[string]any, error)
+
+	// GetTriajePorId devuelve los datos del paciente y del triaje de
+	// emergencia del id indicado invocando el SP
+	// usp_go_Triaje_EmergeciaPorId. Devuelve nil si no existe.
+	GetTriajePorId(ctx context.Context, idTriaje int) (*map[string]any, error)
 
 	// ListarMedicosPorEspecialidad lista los médicos de una especialidad
 	// invocando el SP usp_go_MedicosFiltrarPorIdEspecialidad.

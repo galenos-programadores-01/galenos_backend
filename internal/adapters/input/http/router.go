@@ -15,26 +15,27 @@ import (
 )
 
 type RouterParams struct {
-	AppointmentHandler       *AppointmentHandler
-	PatientHandler           *PatientHandler
-	CatalogHandler           *CatalogHandler
-	ReniecHandler            *ReniecHandler
-	SisHandler               *SisHandler
-	TriageHandler            *TriageHandler
-	AuthHandler              *AuthHandler
-	EvolucionHandler         *EvolucionHandler
-	MotivoHandler            *MotivoHandler
-	OrdenHandler             *OrdenHandler
-	ResultadoHandler         *ResultadoHandler
-	InterconsultaHandler     *InterconsultaHandler
-	SintomaHandler           *SintomaHandler
-	FirmaPeruHandler         *FirmaPeruHandler
-	DiagnosticoHandler       *DiagnosticoHandler
-	ListaEsperaQxHandler     *ListaEsperaQxHandler
-	MedicoListaEsperaHandler *MedicoListaEsperaHandler
-	RefConHandler            *refconhttp.RefConHandler
-	AuthService              input.AuthService
-	AllowedOrigins           []string
+	AppointmentHandler            *AppointmentHandler
+	PatientHandler                *PatientHandler
+	CatalogHandler                *CatalogHandler
+	ReniecHandler                 *ReniecHandler
+	SisHandler                    *SisHandler
+	TriageHandler                 *TriageHandler
+	AuthHandler                   *AuthHandler
+	EvolucionHandler              *EvolucionHandler
+	MotivoHandler                 *MotivoHandler
+	OrdenHandler                  *OrdenHandler
+	ResultadoHandler              *ResultadoHandler
+	InterconsultaHandler          *InterconsultaHandler
+	SintomaHandler                *SintomaHandler
+	FirmaPeruHandler              *FirmaPeruHandler
+	DiagnosticoHandler            *DiagnosticoHandler
+	ListaEsperaQxHandler          *ListaEsperaQxHandler
+	MedicoListaEsperaHandler      *MedicoListaEsperaHandler
+	CausaExternaMorbilidadHandler *CausaExternaMorbilidadHandler
+	RefConHandler                 *refconhttp.RefConHandler
+	AuthService                   input.AuthService
+	AllowedOrigins                []string
 }
 
 func NewRouter(p RouterParams) *gin.Engine {
@@ -162,14 +163,17 @@ func NewRouter(p RouterParams) *gin.Engine {
 			triaje.GET("/pendientes-admision", p.TriageHandler.ListPendingAdmission)
 			triaje.GET("/reporte", p.TriageHandler.GetReporte)
 			triaje.GET("/ficha-admision", p.TriageHandler.GetFichaAdmision)
+			triaje.GET("/:id", p.TriageHandler.GetTriajePorId)
 			triaje.GET("/medicos/:IdEspecialidad", p.TriageHandler.ListMedicosPorEspecialidad)
 			triaje.GET("/consulta", p.TriageHandler.ListTriajeConsulta)
 			triaje.GET("/consulta/atencion/:idAtencion", p.TriageHandler.GetTriajeConsultaPorAtencion)
 			triaje.PUT("/consulta/:id/estado", p.TriageHandler.UpdateEstadoTriajeConsulta)
+			triaje.PUT("/:id", p.TriageHandler.UpdateTriaje)
 			triaje.POST("", p.TriageHandler.Create)
 			triaje.POST("/consulta", p.TriageHandler.CreateTriajeConsulta)
 			triaje.POST("/admision", p.TriageHandler.CreateAdmission)
 			triaje.GET("/reporte-por-empleado", p.TriageHandler.GetReporteTriaje)
+			triaje.GET("/causas-externas-morbilidad", p.CausaExternaMorbilidadHandler.HandleListar)
 		}
 
 		evoluciones := protected.Group("/evoluciones")

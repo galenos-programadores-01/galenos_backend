@@ -60,6 +60,15 @@ func namedInt64Ptr(name string, n *int64) sql.NamedArg {
 	}
 	return sql.Named(name, *n)
 }
+
+// namedIntFromFloat convierte un *float64 al entero SQL que espera un
+// parámetro declarado como INT; si el puntero es nil devuelve NULL.
+func namedIntFromFloat(name string, f *float64) sql.NamedArg {
+	if f == nil {
+		return sql.Named(name, nil)
+	}
+	return sql.Named(name, int64(*f))
+}
 func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (string, error) {
 	const procedure = `webTab_PacienteTriajeAgregar`
 
@@ -112,6 +121,7 @@ func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (s
 		namedInt64Ptr("MovimientosFetales", triage.MovimientosFetales),
 		sql.Named("Foto", triage.Photo),
 		sql.Named("Idempleado", triage.EmployeeID),
+		namedInt64Ptr("IdCausaExternaMorbilidad", triage.IdCausaExternaMorbilidad),
 		sql.Named("Resultado", sql.Out{Dest: &resultado}),
 	)
 	if err != nil {
@@ -121,7 +131,52 @@ func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (s
 	return resultado, nil
 }
 
-// List invoca el procedimiento almacenado ListarTriaje_Emergencia con los
+// UpdateTriaje invoca el procedimiento almacenado usp_go_ModificarTriaje
+// con los datos clínicos editables del triaje. El parámetro @Resultado se
+// declara con sql.Out para capturar el mensaje que el SP devuelve
+// (OK;... o ERROR;...). El SP también comprueba que el triaje no tenga
+// ficha de atención antes de modificar.
+func (r *triageRepository) UpdateTriaje(ctx context.Context, triage *domain.Triage) (string, error) {
+	const procedure = `usp_go_ModificarTriaje`
+
+	var resultado string
+
+	_, err := r.db.ExecContext(ctx, procedure,
+		sql.Named("IdTriaje", triage.IDTriaje),
+		sql.Named("motivo", triage.Motivo),
+		sql.Named("tiempo_evolucion_cantidad", triage.EvolutionTimeQuantity),
+		sql.Named("tiempo_evolucion_unidad", triage.EvolutionTimeQuantityUnit),
+		sql.Named("peso", triage.Weight),
+		namedIntFromFloat("talla", triage.Height),
+		sql.Named("IMC", triage.BMI),
+		sql.Named("frecuencia_cardiaca", triage.HeartRate),
+		sql.Named("frecuencia_respiratoria", triage.RespiratoryRate),
+		sql.Named("presion_arterial", triage.BloodPressure),
+		sql.Named("temperatura", triage.Temperature),
+		sql.Named("saturacion_oxigeno", triage.OxygenSaturation),
+		sql.Named("IdCausaExternaMorbilidad", triage.IdCausaExternaMorbilidad),
+		sql.Named("escala_dolor", triage.PainScale),
+		sql.Named("escala_glasgow", triage.GlasgowScale),
+		sql.Named("IdTipoPrioridad", triage.PriorityTypeID),
+		sql.Named("IdServicio", triage.ServiceID),
+		namedBool("EsGestante", triage.EsGestante),
+		sql.Named("EsAccidenteTransito", triage.IsTrafficAccident),
+		sql.Named("IdEstadollego", triage.ArrivalStateID),
+		namedDate("FUR", triage.FUR),
+		namedInt64Ptr("EdadGestacional", triage.EdadGestacional),
+		namedDate("FPP", triage.FPP),
+		namedInt64Ptr("NroControlesPrenatales", triage.NroControlesPrenatales),
+		namedInt64Ptr("MovimientosFetales", triage.MovimientosFetales),
+		sql.Named("Idempleado", triage.EmployeeID),
+		sql.Named("Resultado", sql.Out{Dest: &resultado}),
+	)
+	if err != nil {
+		return "", fmt.Errorf("calling usp_go_ModificarTriaje: %w", err)
+	}
+
+	return resultado, nil
+}
+
 // filtros de rango de fechas, texto de búsqueda, servicio de derivación y
 // el id de empleado del operador. Los nombres de parámetro coinciden
 // exactamente con los del SP. Las columnas que devuelve el SP son
@@ -314,6 +369,38 @@ func (r *triageRepository) GetFichaAdmision(ctx context.Context, params shared.F
 	}
 
 	m := maps[0]
+	return &m, nil
+}
+
+// GetTriajePorId invoca el procedimiento almacenado
+// usp_go_Triaje_EmergeciaPorId con el id del triaje. El SP retorna una
+// única fila con los datos del paciente y los del triaje de emergencia.
+// Devuelve nil si no hay registros. Los valores decimales que el driver
+// entrega como []byte se normalizan a string para evitar que el JSON
+// los serialice como base64.
+func (r *triageRepository) GetTriajePorId(ctx context.Context, idTriaje int) (*map[string]any, error) {
+	const procedure = `usp_go_Triaje_EmergeciaPorId`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdTriaje", idTriaje))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_Triaje_EmergeciaPorId: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading triaje by id: %w", err)
+	}
+	if len(maps) == 0 {
+		return nil, nil
+	}
+
+	m := maps[0]
+	for clave, valor := range m {
+		if bytes, ok := valor.([]byte); ok {
+			m[clave] = string(bytes)
+		}
+	}
 	return &m, nil
 }
 
