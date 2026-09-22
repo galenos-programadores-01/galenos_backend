@@ -42,6 +42,10 @@ func (s *refconService) ConsultarReferenciaDetalle(ctx context.Context, req doma
 	return s.minsa.ConsultarReferenciaDetalle(ctx, req)
 }
 
+func (s *refconService) ListarUpssMinsa(ctx context.Context, codigoRenipress string) (*domain.ListadoUpsResponse, error) {
+	return s.minsa.ListadoUpss(ctx, codigoRenipress)
+}
+
 func (s *refconService) GenerarHojaReferencia(ctx context.Context, req domain.GenerarHojaReferenciaRequest) (*domain.GenerarHojaReferenciaResult, error) {
 	return s.reports.GenerarHojaReferencia(ctx, req)
 }

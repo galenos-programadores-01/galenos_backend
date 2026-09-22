@@ -111,6 +111,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/servicios/:idTipoServicio", p.CatalogHandler.ListServicios)
 		v1.GET("/datos-institucion", p.CatalogHandler.GetDatosInstitucion)
 		v1.GET("/especialidades", p.CatalogHandler.ListEspecialidades)
+		v1.GET("/establecimientos", p.CatalogHandler.ListEstablecimientos)
 		v1.GET("/especialidades-qx", p.CatalogHandler.HandleListarEspecialidadesQx)
 		v1.GET("/especialidades-departamento/:idDepartamento", p.CatalogHandler.HandleListarEspecialidadesPorDepartamento)
 		v1.GET("/servicios-prioridad/:idPrioridad", p.CatalogHandler.HandleListarServiciosPorPrioridad)
@@ -173,6 +174,8 @@ func NewRouter(p RouterParams) *gin.Engine {
 			triaje.POST("/consulta", p.TriageHandler.CreateTriajeConsulta)
 			triaje.POST("/admision", p.TriageHandler.CreateAdmission)
 			triaje.GET("/reporte-por-empleado", p.TriageHandler.GetReporteTriaje)
+			triaje.GET("/referencias", p.TriageHandler.ListReferenciasConsultaExterna)
+			triaje.GET("/referencias/:idAtencion", p.TriageHandler.ListarDatosReferencia)
 			triaje.GET("/causas-externas-morbilidad", p.CausaExternaMorbilidadHandler.HandleListar)
 		}
 
@@ -249,6 +252,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 		{
 			dashrefcon.GET("/referencias", p.RefConHandler.HandleListarReferencias)
 			dashrefcon.GET("/ups", p.RefConHandler.HandleListarUps)
+			dashrefcon.GET("/upss/:codigoRenipress", p.RefConHandler.HandleListadoUpss)
 			dashrefcon.GET("/consulta-referencia-detalle", p.RefConHandler.HandleConsultarReferenciaDetalle)
 		}
 

@@ -159,3 +159,25 @@ func (uc *triageUseCase) ReporteTriajePorEmpleado(ctx context.Context, params sh
 	}
 	return items, nil
 }
+
+// ListReferenciasConsultaExterna delega en el repositorio (SP
+// usp_go_ListarBandejaReferencia) y devuelve la bandeja de referencias
+// hechas desde consulta externa.
+func (uc *triageUseCase) ListReferenciasConsultaExterna(ctx context.Context, params shared.ReferenciaParams) ([]map[string]any, error) {
+	items, err := uc.repo.ListReferenciasConsultaExterna(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("listing outpatient referral tray: %w", err)
+	}
+	return items, nil
+}
+
+// ListarDatosReferencia delega en el repositorio (SP
+// usp_go_ListarDatosReferencia) y devuelve los datos del destino de una
+// referencia para la atención indicada.
+func (uc *triageUseCase) ListarDatosReferencia(ctx context.Context, idAtencion int) (*map[string]any, error) {
+	item, err := uc.repo.ListarDatosReferencia(ctx, idAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting referral data: %w", err)
+	}
+	return item, nil
+}

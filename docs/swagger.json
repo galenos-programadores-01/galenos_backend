@@ -601,6 +601,52 @@
                 }
             }
         },
+        "/dashrefcon/upss/{codigoRenipress}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Consulta el listado de Unidades Productoras de Servicios (UPS) del establecimiento indicado por su código RENIPRESS en el servicio REST del MINSA",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "DashRefCon"
+                ],
+                "summary": "Listar UPS de un establecimiento en MINSA",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código RENIPRESS del establecimiento",
+                        "name": "codigoRenipress",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.ListadoUpsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/datos-institucion": {
             "get": {
                 "description": "Devuelve los datos de la institución (SP webParametrosDatosInstitucion).",
@@ -1243,6 +1289,76 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/establecimientos": {
+            "get": {
+                "description": "Devuelve establecimientos filtrados (SP usp_go_webEstablecimientosFiltrar). El filtro busca por código, nombre o departamento.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Lista establecimientos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Texto a buscar (código, nombre o departamento)",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tipo de establecimiento: 1=Referencia, 0=Contrareferencia (0/Todos por defecto)",
+                        "name": "tipo",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.EstablecimientoBusqueda"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
                         "schema": {
                             "allOf": [
                                 {
@@ -5716,6 +5832,106 @@
                 "responses": {}
             }
         },
+        "/triaje/referencias": {
+            "get": {
+                "description": "Lista las referencias hechas desde consulta externa invocando el SP usp_go_ListarBandejaReferencia",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Bandeja de referencias de consulta externa",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha inicial (YYYY-MM-DD)",
+                        "name": "fini",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha final (YYYY-MM-DD)",
+                        "name": "ffin",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Texto de búsqueda por paciente o número de cuenta",
+                        "name": "filtro",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Referencias de consulta externa",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/referencias/{idAtencion}": {
+            "get": {
+                "description": "Devuelve los datos del destino de una referencia (establecimiento, UPS y especialidad) invocando el SP usp_go_ListarDatosReferencia",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Datos de una referencia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la atención",
+                        "name": "idAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Datos de la referencia",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
         "/triaje/reporte-por-empleado": {
             "get": {
                 "description": "Cantidad de triajes de un empleado por servicio (tópico) entre fechas con hora y minuto (SP usp_go_ReporteTriaje)",
@@ -6339,6 +6555,32 @@
                 }
             }
         },
+        "domain.EstablecimientoBusqueda": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "departamento": {
+                    "type": "string"
+                },
+                "distrito": {
+                    "type": "string"
+                },
+                "idEstablecimiento": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "nombreLargo": {
+                    "type": "string"
+                },
+                "provincia": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.EstadoLlegoPaciente": {
             "type": "object",
             "properties": {
@@ -6563,6 +6805,34 @@
                     "type": "string"
                 },
                 "telefono": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ListadoUpsItem": {
+            "type": "object",
+            "properties": {
+                "codUps": {
+                    "type": "string"
+                },
+                "descripcion": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ListadoUpsResponse": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "datos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ListadoUpsItem"
+                    }
+                },
+                "mensaje": {
                     "type": "string"
                 }
             }

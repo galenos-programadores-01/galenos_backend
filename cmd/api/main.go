@@ -130,6 +130,7 @@ func run() error {
 	causaExternaMorbilidadService := usecase.NewCausaExternaMorbilidadService(causaExternaMorbilidadRepo)
 	refConService := refconusecase.NewRefConService(refConRepo, refconminsa.New(refconminsa.Config{
 		URL:                    cfg.MinsaRefConURL,
+		UpsURL:                 cfg.MinsaRefConUpsURL,
 		Username:               cfg.MinsaRefConUsername,
 		Password:               cfg.MinsaRefConPassword,
 		IPClient:               cfg.MinsaRefConIPClient,

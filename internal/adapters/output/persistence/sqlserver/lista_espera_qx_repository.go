@@ -318,9 +318,10 @@ func (r *ListaEsperaQxRepository) Reporte(ctx context.Context, fecha string, fec
 		var fechaICAnestesio sql.NullTime
 		var medico sql.NullString
 		var observacion sql.NullString
+		var telefonoLE sql.NullString
 		var diasTranscurridos sql.NullInt64
 
-		if err := rows.Scan(&id, &nroHistoriaClinica, &nroDocumento, &paciente, &edad, &telefono, &fechaOrden, &especialidad, &diagnostico, &fechaLab, &fechaICCardio, &fechaICNeumo, &fechaICAnestesio, &medico, &observacion, &diasTranscurridos); err != nil {
+		if err := rows.Scan(&id, &nroHistoriaClinica, &nroDocumento, &paciente, &edad, &telefono, &fechaOrden, &especialidad, &diagnostico, &fechaLab, &fechaICCardio, &fechaICNeumo, &fechaICAnestesio, &medico, &observacion, &telefonoLE, &diasTranscurridos); err != nil {
 			continue
 		}
 		if id.Valid {

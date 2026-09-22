@@ -78,4 +78,14 @@ type TriageRepository interface {
 	// devuelve las cantidades de triajes de un empleado por servicio
 	// (tópico) en el rango de fechas (con hora y minuto) indicado.
 	ReporteTriajePorEmpleado(ctx context.Context, params shared.ReporteTriajeParams) ([]map[string]any, error)
+
+	// ListReferenciasConsultaExterna invoca el SP
+	// usp_go_ListarBandejaReferencia y devuelve las referencias hechas
+	// desde consulta externa como mapas columna -> valor.
+	ListReferenciasConsultaExterna(ctx context.Context, params shared.ReferenciaParams) ([]map[string]any, error)
+
+	// ListarDatosReferencia invoca el SP usp_go_ListarDatosReferencia y
+	// devuelve los datos del destino de una referencia para la atención
+	// indicada. Devuelve nil si no hay registro.
+	ListarDatosReferencia(ctx context.Context, idAtencion int) (*map[string]any, error)
 }

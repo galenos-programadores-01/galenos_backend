@@ -277,3 +277,11 @@ func (uc *catalogUseCase) ListParametrosClinicos(ctx context.Context, idGrupo in
 
 	return items, nil
 }
+
+func (uc *catalogUseCase) ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error) {
+	items, err := uc.repo.ListEstablecimientos(ctx, filtro, tipo)
+	if err != nil {
+		return nil, fmt.Errorf("listing establecimientos: %w", err)
+	}
+	return items, nil
+}

@@ -312,6 +312,23 @@ definitions:
       nombre:
         type: string
     type: object
+  domain.EstablecimientoBusqueda:
+    properties:
+      codigo:
+        type: string
+      departamento:
+        type: string
+      distrito:
+        type: string
+      idEstablecimiento:
+        type: integer
+      nombre:
+        type: string
+      nombreLargo:
+        type: string
+      provincia:
+        type: string
+    type: object
   domain.EstadoLlegoPaciente:
     properties:
       descripcion:
@@ -459,6 +476,24 @@ definitions:
       paciente:
         type: string
       telefono:
+        type: string
+    type: object
+  domain.ListadoUpsItem:
+    properties:
+      codUps:
+        type: string
+      descripcion:
+        type: string
+    type: object
+  domain.ListadoUpsResponse:
+    properties:
+      codigo:
+        type: string
+      datos:
+        items:
+          $ref: '#/definitions/domain.ListadoUpsItem'
+        type: array
+      mensaje:
         type: string
     type: object
   domain.PacienteDatosAdicionales:
@@ -1886,6 +1921,34 @@ paths:
       summary: Listar UPS
       tags:
       - DashRefCon
+  /dashrefcon/upss/{codigoRenipress}:
+    get:
+      description: Consulta el listado de Unidades Productoras de Servicios (UPS)
+        del establecimiento indicado por su código RENIPRESS en el servicio REST del
+        MINSA
+      parameters:
+      - description: Código RENIPRESS del establecimiento
+        in: path
+        name: codigoRenipress
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.ListadoUpsResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Listar UPS de un establecimiento en MINSA
+      tags:
+      - DashRefCon
   /datos-institucion:
     get:
       description: Devuelve los datos de la institución (SP webParametrosDatosInstitucion).
@@ -2253,6 +2316,48 @@ paths:
                   $ref: '#/definitions/httpadapter.apiError'
               type: object
       summary: Lista especialidades quirurgicas
+      tags:
+      - Catalogos
+  /establecimientos:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve establecimientos filtrados (SP usp_go_webEstablecimientosFiltrar).
+        El filtro busca por código, nombre o departamento.
+      parameters:
+      - description: Texto a buscar (código, nombre o departamento)
+        in: query
+        name: q
+        type: string
+      - description: 'Tipo de establecimiento: 1=Referencia, 0=Contrareferencia (0/Todos
+          por defecto)'
+        in: query
+        name: tipo
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.EstablecimientoBusqueda'
+                  type: array
+              type: object
+        "500":
+          description: Error interno
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista establecimientos
       tags:
       - Catalogos
   /estados-civil:
@@ -4945,6 +5050,75 @@ paths:
       summary: Listar causas externas de morbilidad
       tags:
       - Triaje
+  /triaje/referencias:
+    get:
+      consumes:
+      - application/json
+      description: Lista las referencias hechas desde consulta externa invocando el
+        SP usp_go_ListarBandejaReferencia
+      parameters:
+      - description: Fecha inicial (YYYY-MM-DD)
+        in: query
+        name: fini
+        required: true
+        type: string
+      - description: Fecha final (YYYY-MM-DD)
+        in: query
+        name: ffin
+        required: true
+        type: string
+      - description: Texto de búsqueda por paciente o número de cuenta
+        in: query
+        name: filtro
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Referencias de consulta externa
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Bandeja de referencias de consulta externa
+  /triaje/referencias/{idAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve los datos del destino de una referencia (establecimiento,
+        UPS y especialidad) invocando el SP usp_go_ListarDatosReferencia
+      parameters:
+      - description: Id de la atención
+        in: path
+        name: idAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Datos de la referencia
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Datos de una referencia
   /triaje/reporte-por-empleado:
     get:
       consumes:

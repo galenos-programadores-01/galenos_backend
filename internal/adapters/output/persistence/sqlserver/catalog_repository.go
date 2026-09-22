@@ -729,6 +729,35 @@ func (r *catalogRepository) BuscarExamenesCatalogo(ctx context.Context, filtro s
 	return items, nil
 }
 
+// ListEstablecimientos invoca el SP usp_go_webEstablecimientosFiltrar para
+// buscar establecimientos por filtro y tipo (1=referencia, 0=contrareferencia).
+func (r *catalogRepository) ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC [dbo].[usp_go_webEstablecimientosFiltrar] @filtro = @p1, @Tipo = @p2", sql.Named("p1", filtro), sql.Named("p2", tipo))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_webEstablecimientosFiltrar: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.EstablecimientoBusqueda
+	for rows.Next() {
+		var (
+			item            domain.EstablecimientoBusqueda
+			dist, prov, dep sql.NullString
+		)
+		if err := rows.Scan(&item.IdEstablecimiento, &item.Codigo, &item.Nombre, &dist, &prov, &dep, &item.NombreLargo); err != nil {
+			return nil, fmt.Errorf("escaneando establecimiento: %w", err)
+		}
+		item.Distrito = dist.String
+		item.Provincia = prov.String
+		item.Departamento = dep.String
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (r *catalogRepository) ListParametrosClinicos(ctx context.Context, idGrupo int) ([]domain.ParametroClinico, error) {
 	rows, err := r.db.QueryContext(ctx, "EXEC dbo.usp_go_Cat_ParametroClinico_Listar @IdGrupo = @p1", sql.Named("p1", idGrupo))
 	if err != nil {

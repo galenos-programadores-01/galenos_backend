@@ -621,6 +621,33 @@ func (h *CatalogHandler) HandleListParametrosClinicos(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
+// ListEstablecimientos maneja GET /api/v1/establecimientos.
+//
+// @Summary Lista establecimientos
+// @Description Devuelve establecimientos filtrados (SP usp_go_webEstablecimientosFiltrar). El filtro busca por código, nombre o departamento.
+// @Tags Catalogos
+// @Accept json
+// @Produce json
+// @Param q query string false "Texto a buscar (código, nombre o departamento)"
+// @Param tipo query string false "Tipo de establecimiento: 1=Referencia, 0=Contrareferencia (0/Todos por defecto)"
+// @Success 200 {object} apiResponse{data=[]domain.EstablecimientoBusqueda}
+// @Failure 500 {object} apiResponse{error=apiError} "Error interno"
+// @Router /establecimientos [get]
+func (h *CatalogHandler) ListEstablecimientos(c *gin.Context) {
+	filtro := c.DefaultQuery("q", "")
+	tipo := c.Query("tipo")
+
+	items, err := h.service.ListEstablecimientos(c.Request.Context(), filtro, tipo)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.EstablecimientoBusqueda, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
 // parseID extrae y valida el path param "id" como entero.
 func parseID(c *gin.Context) (int64, bool) {
 	raw := c.Param("id")
@@ -635,3 +662,4 @@ func parseID(c *gin.Context) (int64, bool) {
 // Referencia en blanco para que swag resuelva los tipos de dominio en los
 // comentarios de los handlers.
 var _ = domain.Etnia{}
+var _ = domain.EstablecimientoBusqueda{}

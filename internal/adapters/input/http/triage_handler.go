@@ -467,6 +467,81 @@ func (h *TriageHandler) GetReporteTriaje(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
+// @Summary Bandeja de referencias de consulta externa
+// @Description Lista las referencias hechas desde consulta externa invocando el SP usp_go_ListarBandejaReferencia
+// @Accept json
+// @Produce json
+// @Param fini query string true "Fecha inicial (YYYY-MM-DD)"
+// @Param ffin query string true "Fecha final (YYYY-MM-DD)"
+// @Param filtro query string false "Texto de búsqueda por paciente o número de cuenta"
+// @Success 200 {array} map[string]interface{} "Referencias de consulta externa"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/referencias [get]
+func (h *TriageHandler) ListReferenciasConsultaExterna(c *gin.Context) {
+	params := shared.ReferenciaParams{
+		FechaInicio: c.Query("fini"),
+		FechaFin:    c.Query("ffin"),
+		Filtro:      c.Query("filtro"),
+	}
+
+	if params.FechaInicio == "" || params.FechaFin == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "fini y ffin son obligatorios (YYYY-MM-DD)")
+		return
+	}
+
+	if _, err := time.Parse("2006-01-02", params.FechaInicio); err != nil {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "fini debe ser YYYY-MM-DD")
+		return
+	}
+	if _, err := time.Parse("2006-01-02", params.FechaFin); err != nil {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "ffin debe ser YYYY-MM-DD")
+		return
+	}
+
+	items, err := h.service.ListReferenciasConsultaExterna(c.Request.Context(), params)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "REFERENCIA_LIST_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, items)
+}
+
+// @Summary Datos de una referencia
+// @Description Devuelve los datos del destino de una referencia (establecimiento, UPS y especialidad) invocando el SP usp_go_ListarDatosReferencia
+// @Accept json
+// @Produce json
+// @Param idAtencion path int true "Id de la atención"
+// @Success 200 {object} map[string]interface{} "Datos de la referencia"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/referencias/{idAtencion} [get]
+func (h *TriageHandler) ListarDatosReferencia(c *gin.Context) {
+	raw := c.Param("idAtencion")
+	if raw == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idAtencion es obligatorio")
+		return
+	}
+	idAtencion, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || idAtencion <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idAtencion debe ser un entero positivo")
+		return
+	}
+
+	item, err := h.service.ListarDatosReferencia(c.Request.Context(), int(idAtencion))
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "REFERENCIA_GET_FAILED", err.Error())
+		return
+	}
+	if item == nil {
+		respondError(c, http.StatusNotFound, "REFERENCIA_NOT_FOUND", "No se encontraron datos de la referencia")
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, *item)
+}
+
 func esFechaValida(valor string, layouts []string) bool {
 	for _, l := range layouts {
 		if _, err := time.Parse(l, valor); err == nil {

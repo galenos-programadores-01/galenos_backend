@@ -1,5 +1,6 @@
 // Package minsa implementa el adaptador de salida del servicio REST de
-// referencias y contrarreferencias del MINSA (consultaReferenciaDetalle).
+// referencias y contrarreferencias del MINSA (consultaReferenciaDetalle y
+// listadoUps).
 package minsa
 
 import (
@@ -10,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/galenos-pro/appointments-api/internal/refcon/domain"
@@ -17,6 +19,7 @@ import (
 
 const (
 	defaultURL     = "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/consultaReferenciaDetalle"
+	defaultUpsURL  = "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/listadoUps"
 	maxResponse    = 5 << 20 // 5 MB (incluye anamnesis y exámenes largos)
 	defaultTimeout = 30 * time.Second
 	defaultDestino = "7634"
@@ -27,6 +30,7 @@ const (
 // en el header y los valores por defecto de la petición.
 type Config struct {
 	URL                    string
+	UpsURL                 string
 	Username               string
 	Password               string
 	IPClient               string
@@ -47,6 +51,9 @@ type client struct {
 func New(cfg Config) *client {
 	if cfg.URL == "" {
 		cfg.URL = defaultURL
+	}
+	if cfg.UpsURL == "" {
+		cfg.UpsURL = defaultUpsURL
 	}
 	if cfg.Timeout <= 0 {
 		cfg.Timeout = defaultTimeout
@@ -125,6 +132,56 @@ func (c *client) ConsultarReferenciaDetalle(ctx context.Context, req domain.Cons
 
 	if out.Codigo != "" && out.Codigo != "0000" {
 		log.Printf("[DashRefCon] respuesta MINSA status=%d codigo=%s mensaje=%q body=%s", resp.StatusCode, out.Codigo, out.Mensaje, truncate(respBody, 500))
+	}
+
+	return &out, nil
+}
+
+// ListadoUpss consulta el listado de Unidades Productoras de Servicios (UPS)
+// del establecimiento indicado por su código RENIPRESS.
+func (c *client) ListadoUpss(ctx context.Context, codigoRenipress string) (*domain.ListadoUpsResponse, error) {
+	if c.cfg.Username == "" || c.cfg.Password == "" || c.cfg.IPClient == "" {
+		return nil, fmt.Errorf("minsa refcon credentials are required")
+	}
+	if codigoRenipress == "" {
+		return nil, fmt.Errorf("minsa refcon codigoRenipress is required")
+	}
+
+	url := strings.TrimSuffix(c.cfg.UpsURL, "/") + "/" + codigoRenipress
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("building minsa refcon listadoUps request: %w", err)
+	}
+	httpReq.Header.Set("Accept", "application/json")
+	httpReq.Header.Set("username", c.cfg.Username)
+	httpReq.Header.Set("password", c.cfg.Password)
+	httpReq.Header.Set("ipclient", c.cfg.IPClient)
+
+	log.Printf("[DashRefCon] listadoUps url=%s", url)
+
+	resp, err := c.http.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("calling minsa refcon listadoUps: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponse))
+	if err != nil {
+		return nil, fmt.Errorf("reading minsa refcon response: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("minsa refcon responded %d: %s", resp.StatusCode, truncate(respBody, 400))
+	}
+
+	var out domain.ListadoUpsResponse
+	if err := json.Unmarshal(respBody, &out); err != nil {
+		return nil, fmt.Errorf("decoding minsa refcon listadoUps response: %w", err)
+	}
+
+	if out.Codigo != "" && out.Codigo != "0000" {
+		log.Printf("[DashRefCon] respuesta MINSA listadoUps status=%d codigo=%s mensaje=%q body=%s", resp.StatusCode, out.Codigo, out.Mensaje, truncate(respBody, 500))
 	}
 
 	return &out, nil

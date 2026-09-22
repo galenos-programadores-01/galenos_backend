@@ -1,6 +1,7 @@
 package refconhttp
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -128,6 +129,31 @@ func (h *RefConHandler) HandleListarDistritosPorIdReniec(c *gin.Context) {
 	}
 
 	respondSuccess(c, http.StatusOK, distritos)
+}
+
+// @Summary Listar UPS de un establecimiento en MINSA
+// @Description Consulta el listado de Unidades Productoras de Servicios (UPS) del establecimiento indicado por su código RENIPRESS en el servicio REST del MINSA
+// @Tags DashRefCon
+// @Produce json
+// @Security BearerAuth
+// @Param codigoRenipress path string true "Código RENIPRESS del establecimiento"
+// @Success 200 {object} apiResponse{data=domain.ListadoUpsResponse}
+// @Router /dashrefcon/upss/{codigoRenipress} [get]
+func (h *RefConHandler) HandleListadoUpss(c *gin.Context) {
+	codigoRenipress := c.Param("codigoRenipress")
+	if codigoRenipress == "" {
+		respondError(c, http.StatusBadRequest, "INVALID_PARAMS", "El parámetro codigoRenipress es obligatorio")
+		return
+	}
+
+	resultado, err := h.service.ListarUpssMinsa(c.Request.Context(), codigoRenipress)
+	if err != nil {
+		log.Printf("[DashRefCon] Error consultando UPS en MINSA (codigo=%s): %v", codigoRenipress, err)
+		respondError(c, http.StatusBadGateway, "MINSA_REFCON_ERR", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, resultado)
 }
 
 func queryIntParam(c *gin.Context, name string, fallback int) int {

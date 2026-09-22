@@ -39,6 +39,7 @@ type Config struct {
 	FirmaPeruSignedDir    string
 	SevenZipPath          string
 	MinsaRefConURL        string
+	MinsaRefConUpsURL     string
 	MinsaRefConUsername   string
 	MinsaRefConPassword   string
 	MinsaRefConIPClient   string
@@ -118,6 +119,7 @@ func Load() (*Config, error) {
 		FirmaPeruSignedDir:    os.Getenv("FIRMAPERU_SIGNED_DIR"),
 		SevenZipPath:          envOrDefault("SEVENZIP_PATH", `C:\Program Files\7-Zip\7z.exe`),
 		MinsaRefConURL:        envOrDefault("MINSA_REFCON_URL", "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/consultaReferenciaDetalle"),
+		MinsaRefConUpsURL:     envOrDefault("MINSA_REFCON_UPS_URL", "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/listadoUps"),
 		MinsaRefConUsername:   os.Getenv("MINSA_REFCON_USERNAME"),
 		MinsaRefConPassword:   os.Getenv("MINSA_REFCON_PASSWORD"),
 		MinsaRefConIPClient:   os.Getenv("MINSA_REFCON_IPCLIENT"),

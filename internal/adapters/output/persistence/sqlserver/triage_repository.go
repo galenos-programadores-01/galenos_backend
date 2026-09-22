@@ -596,3 +596,59 @@ func (r *triageRepository) ReporteTriajePorEmpleado(ctx context.Context, params 
 
 	return maps, nil
 }
+
+// ListReferenciasConsultaExterna invoca el procedimiento almacenado
+// usp_go_ListarBandejaReferencia, que devuelve las referencias hechas
+// desde consulta externa en el rango de fechas indicado, con filtro
+// opcional por nombre del paciente o número de cuenta de atención. Las
+// fechas se pasan como texto YYYY-MM-DD (parámetros DATE del SP).
+func (r *triageRepository) ListReferenciasConsultaExterna(ctx context.Context, params shared.ReferenciaParams) ([]map[string]any, error) {
+	const procedure = `usp_go_ListarBandejaReferencia`
+
+	rows, err := r.db.QueryContext(ctx, procedure,
+		sql.Named("fini", params.FechaInicio),
+		sql.Named("ffin", params.FechaFin),
+		sql.Named("filtro", params.Filtro),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarBandejaReferencia: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading outpatient referral tray: %w", err)
+	}
+
+	return maps, nil
+}
+
+// ListarDatosReferencia invoca el procedimiento almacenado
+// usp_go_ListarDatosReferencia, que devuelve los datos del destino de una
+// referencia (establecimiento, UPS y especialidad) para la atención
+// indicada. Devuelve nil si no hay registro.
+func (r *triageRepository) ListarDatosReferencia(ctx context.Context, idAtencion int) (*map[string]any, error) {
+	const procedure = `usp_go_ListarDatosReferencia`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdAtencion", idAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarDatosReferencia: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading referral data: %w", err)
+	}
+	if len(maps) == 0 {
+		return nil, nil
+	}
+
+	m := maps[0]
+	for clave, valor := range m {
+		if bytes, ok := valor.([]byte); ok {
+			m[clave] = string(bytes)
+		}
+	}
+	return &m, nil
+}

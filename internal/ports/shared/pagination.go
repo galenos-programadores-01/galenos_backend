@@ -130,3 +130,13 @@ type TriajeConsultaEstadoParams struct {
 	IdTriaje int64
 	Estado   string
 }
+
+// ReferenciaParams agrupa los filtros de la bandeja de referencias hechas
+// desde consulta externa (SP usp_go_ListarBandejaReferencia). El filtro se
+// aplica sobre el nombre del paciente o el número de cuenta de atención;
+// si está vacío el SP lista todo el rango de fechas.
+type ReferenciaParams struct {
+	FechaInicio string
+	FechaFin    string
+	Filtro      string
+}

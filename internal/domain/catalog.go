@@ -178,3 +178,13 @@ type ParametroClinico struct {
 	Codigo      string `json:"codigo"`
 	Descripcion string `json:"descripcion"`
 }
+
+type EstablecimientoBusqueda struct {
+	IdEstablecimiento int    `json:"idEstablecimiento"`
+	Codigo            string `json:"codigo"`
+	Nombre            string `json:"nombre"`
+	Distrito          string `json:"distrito"`
+	Provincia         string `json:"provincia"`
+	Departamento      string `json:"departamento"`
+	NombreLargo       string `json:"nombreLargo"`
+}
