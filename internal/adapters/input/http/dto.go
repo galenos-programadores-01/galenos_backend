@@ -107,7 +107,7 @@ type updatePatientRequest struct {
 }
 
 // sisAfiliacionRequest es el cuerpo de POST /api/v1/sis/filiaciones.
-// Replica los campos del SP webSisFiliacionesGestionar; los campos
+// Replica los campos del SP usp_go_webSisFiliacionesGestionar; los campos
 // opcionales son punteros para enviar NULL cuando no se incluyen.
 type sisAfiliacionRequest struct {
 	IDSiasis                *int64     `json:"idSiasis"`

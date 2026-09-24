@@ -131,6 +131,8 @@ func run() error {
 	refConService := refconusecase.NewRefConService(refConRepo, refconminsa.New(refconminsa.Config{
 		URL:                    cfg.MinsaRefConURL,
 		UpsURL:                 cfg.MinsaRefConUpsURL,
+		EspecialidadesURL:      cfg.MinsaRefConEspURL,
+		SaveReferenciaURL:      cfg.MinsaRefConSaveURL,
 		Username:               cfg.MinsaRefConUsername,
 		Password:               cfg.MinsaRefConPassword,
 		IPClient:               cfg.MinsaRefConIPClient,
@@ -200,9 +202,9 @@ func run() error {
 	server := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
 		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 90 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	log.Printf("listening on http://%s:%s (swagger: http://%s:%s/swagger/index.html)", cfg.ServerHost, cfg.ServerPort, cfg.ServerHost, cfg.ServerPort)

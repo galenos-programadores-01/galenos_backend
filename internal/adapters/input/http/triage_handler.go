@@ -542,6 +542,131 @@ func (h *TriageHandler) ListarDatosReferencia(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, *item)
 }
 
+// @Summary Cabecera JSON de una referencia
+// @Description Devuelve la cabecera con los datos completos de una referencia (paciente, responsable, personal que registra, cita, diagnósticos y destino) invocando el SP usp_go_webReferenciaJSONCab
+// @Accept json
+// @Produce json
+// @Param idCuentaAtencion path int true "Id de la cuenta de atención"
+// @Success 200 {object} map[string]interface{} "Cabecera con los datos de la referencia"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 404 {object} object "Referencia no encontrada"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/referencias-cabecera/{idCuentaAtencion} [get]
+func (h *TriageHandler) WebReferenciaJSONCab(c *gin.Context) {
+	raw := c.Param("idCuentaAtencion")
+	if raw == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idCuentaAtencion es obligatorio")
+		return
+	}
+	idCuentaAtencion, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || idCuentaAtencion <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idCuentaAtencion debe ser un entero positivo")
+		return
+	}
+
+	item, err := h.service.WebReferenciaJSONCab(c.Request.Context(), int(idCuentaAtencion))
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "REFERENCIA_GET_FAILED", err.Error())
+		return
+	}
+	if item == nil {
+		respondError(c, http.StatusNotFound, "REFERENCIA_NOT_FOUND", "No se encontraron datos de la referencia")
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, *item)
+}
+
+// @Summary Detalle JSON de una referencia
+// @Description Devuelve el detalle de la referencia (los diagnósticos) invocando el SP usp_go_webReferenciaJSONDet
+// @Accept json
+// @Produce json
+// @Param idCuentaAtencion path int true "Id de la cuenta de atención"
+// @Success 200 {array} map[string]interface{} "Detalle con los diagnósticos de la referencia"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/referencias-detalle/{idCuentaAtencion} [get]
+func (h *TriageHandler) WebReferenciaJSONDet(c *gin.Context) {
+	raw := c.Param("idCuentaAtencion")
+	if raw == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idCuentaAtencion es obligatorio")
+		return
+	}
+	idCuentaAtencion, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || idCuentaAtencion <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idCuentaAtencion debe ser un entero positivo")
+		return
+	}
+
+	items, err := h.service.WebReferenciaJSONDet(c.Request.Context(), int(idCuentaAtencion))
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "REFERENCIA_DET_GET_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, items)
+}
+
+// @Summary Tratamiento JSON de una referencia
+// @Description Devuelve el tratamiento de la referencia invocando el SP usp_go_WebTratamientoReferenciaJSON
+// @Accept json
+// @Produce json
+// @Param idCuentaAtencion path int true "Id de la cuenta de atención"
+// @Success 200 {array} map[string]interface{} "Tratamiento de la referencia"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/referencias-tratamiento/{idCuentaAtencion} [get]
+func (h *TriageHandler) WebTratamientoReferenciaJSON(c *gin.Context) {
+	raw := c.Param("idCuentaAtencion")
+	if raw == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idCuentaAtencion es obligatorio")
+		return
+	}
+	idCuentaAtencion, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || idCuentaAtencion <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idCuentaAtencion debe ser un entero positivo")
+		return
+	}
+
+	items, err := h.service.WebTratamientoReferenciaJSON(c.Request.Context(), int(idCuentaAtencion))
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "REFERENCIA_TRATAMIENTO_GET_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, items)
+}
+
+// @Summary CPT de una referencia
+// @Description Devuelve los códigos CPT de la referencia invocando el SP usp_go_webCPTReferenciaJSON
+// @Accept json
+// @Produce json
+// @Param idCuentaAtencion path int true "Id de la cuenta de atención"
+// @Success 200 {array} map[string]interface{} "CPT de la referencia"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/referencias-cpt/{idCuentaAtencion} [get]
+func (h *TriageHandler) WebCPTReferenciaJSON(c *gin.Context) {
+	raw := c.Param("idCuentaAtencion")
+	if raw == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idCuentaAtencion es obligatorio")
+		return
+	}
+	idCuentaAtencion, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || idCuentaAtencion <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idCuentaAtencion debe ser un entero positivo")
+		return
+	}
+
+	items, err := h.service.WebCPTReferenciaJSON(c.Request.Context(), int(idCuentaAtencion))
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "REFERENCIA_CPT_GET_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, items)
+}
+
 func esFechaValida(valor string, layouts []string) bool {
 	for _, l := range layouts {
 		if _, err := time.Parse(l, valor); err == nil {

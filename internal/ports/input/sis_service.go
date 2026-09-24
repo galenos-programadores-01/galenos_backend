@@ -13,7 +13,7 @@ type SisService interface {
 	ConsultarAfiliado(ctx context.Context, params shared.SISAfiliadoParams) (domain.SisAfiliado, error)
 
 	// GestionarAfiliacion guarda o actualiza una afiliación SIS invocando
-	// el SP webSisFiliacionesGestionar.
+	// el SP usp_go_webSisFiliacionesGestionar.
 	GestionarAfiliacion(ctx context.Context, afiliacion *domain.SisAfiliacion) error
 
 	// ForzarGuardadoFua fuerza el guardado del FUA de una cuenta de

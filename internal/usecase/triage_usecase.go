@@ -181,3 +181,47 @@ func (uc *triageUseCase) ListarDatosReferencia(ctx context.Context, idAtencion i
 	}
 	return item, nil
 }
+
+// WebReferenciaJSONCab delega en el repositorio (SP
+// usp_go_webReferenciaJSONCab) y devuelve la cabecera con los datos
+// completos de la referencia para la cuenta de atención indicada.
+func (uc *triageUseCase) WebReferenciaJSONCab(ctx context.Context, idCuentaAtencion int) (*map[string]any, error) {
+	item, err := uc.repo.WebReferenciaJSONCab(ctx, idCuentaAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting web referral JSON header: %w", err)
+	}
+	return item, nil
+}
+
+// WebReferenciaJSONDet delega en el repositorio (SP
+// usp_go_webReferenciaJSONDet) y devuelve el detalle de la referencia
+// (los diagnósticos) para la cuenta de atención indicada.
+func (uc *triageUseCase) WebReferenciaJSONDet(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	items, err := uc.repo.WebReferenciaJSONDet(ctx, idCuentaAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting web referral JSON detail: %w", err)
+	}
+	return items, nil
+}
+
+// WebTratamientoReferenciaJSON delega en el repositorio (SP
+// usp_go_WebTratamientoReferenciaJSON) y devuelve el tratamiento de la
+// referencia para la cuenta de atención indicada.
+func (uc *triageUseCase) WebTratamientoReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	items, err := uc.repo.WebTratamientoReferenciaJSON(ctx, idCuentaAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting web referral JSON treatment: %w", err)
+	}
+	return items, nil
+}
+
+// WebCPTReferenciaJSON delega en el repositorio (SP
+// usp_go_webCPTReferenciaJSON) y devuelve los códigos CPT de la
+// referencia para la cuenta de atención indicada.
+func (uc *triageUseCase) WebCPTReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	items, err := uc.repo.WebCPTReferenciaJSON(ctx, idCuentaAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting web referral JSON CPT: %w", err)
+	}
+	return items, nil
+}

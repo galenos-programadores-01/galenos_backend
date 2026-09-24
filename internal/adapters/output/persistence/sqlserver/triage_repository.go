@@ -652,3 +652,116 @@ func (r *triageRepository) ListarDatosReferencia(ctx context.Context, idAtencion
 	}
 	return &m, nil
 }
+
+// WebReferenciaJSONDet invoca el procedimiento almacenado
+// usp_go_webReferenciaJSONDet, que devuelve el detalle de la referencia
+// (los diagnósticos) para la cuenta de atención indicada. Devuelve la
+// lista de registros como mapas columna -> valor.
+func (r *triageRepository) WebReferenciaJSONDet(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	const procedure = `usp_go_webReferenciaJSONDet`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdcuentaAtencion", idCuentaAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_webReferenciaJSONDet: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading web referral JSON detail: %w", err)
+	}
+	for _, m := range maps {
+		for clave, valor := range m {
+			if bytes, ok := valor.([]byte); ok {
+				m[clave] = string(bytes)
+			}
+		}
+	}
+	return maps, nil
+}
+
+// WebTratamientoReferenciaJSON invoca el procedimiento almacenado
+// usp_go_WebTratamientoReferenciaJSON, que devuelve el tratamiento de la
+// referencia para la cuenta de atención indicada. Devuelve la lista de
+// registros como mapas columna -> valor.
+func (r *triageRepository) WebTratamientoReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	const procedure = `usp_go_WebTratamientoReferenciaJSON`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdCuentaAtencion", idCuentaAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_WebTratamientoReferenciaJSON: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading web referral JSON treatment: %w", err)
+	}
+	for _, m := range maps {
+		for clave, valor := range m {
+			if bytes, ok := valor.([]byte); ok {
+				m[clave] = string(bytes)
+			}
+		}
+	}
+	return maps, nil
+}
+
+// WebCPTReferenciaJSON invoca el procedimiento almacenado
+// usp_go_webCPTReferenciaJSON, que devuelve los códigos CPT de la
+// referencia para la cuenta de atención indicada. Devuelve la lista de
+// registros como mapas columna -> valor.
+func (r *triageRepository) WebCPTReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	const procedure = `usp_go_webCPTReferenciaJSON`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdcuentaAtencion", idCuentaAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_webCPTReferenciaJSON: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading web referral JSON CPT: %w", err)
+	}
+	for _, m := range maps {
+		for clave, valor := range m {
+			if bytes, ok := valor.([]byte); ok {
+				m[clave] = string(bytes)
+			}
+		}
+	}
+	return maps, nil
+}
+
+// WebReferenciaJSONCab invoca el procedimiento almacenado
+// usp_go_webReferenciaJSONCab, que devuelve la cabecera con los datos
+// completos de la referencia (paciente, responsable de la referencia,
+// personal que registra, personal del establecimiento, tutor, cita,
+// diagnósticos y datos del destino) para la cuenta de atención indicada.
+// Devuelve nil si no hay registro.
+func (r *triageRepository) WebReferenciaJSONCab(ctx context.Context, idCuentaAtencion int) (*map[string]any, error) {
+	const procedure = `usp_go_webReferenciaJSONCab`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdcuentaAtencion", idCuentaAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_webReferenciaJSONCab: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading web referral JSON header: %w", err)
+	}
+	if len(maps) == 0 {
+		return nil, nil
+	}
+
+	m := maps[0]
+	for clave, valor := range m {
+		if bytes, ok := valor.([]byte); ok {
+			m[clave] = string(bytes)
+		}
+	}
+	return &m, nil
+}

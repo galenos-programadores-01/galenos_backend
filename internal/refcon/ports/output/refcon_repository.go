@@ -17,10 +17,13 @@ type RefConRepository interface {
 }
 
 // MinsaRefConClient consume el servicio REST de referencias del MINSA
-// (consultaReferenciaDetalle y listadoUps).
+// (consultaReferenciaDetalle, listadoUps, listadoEspecialidades y
+// saveReferencia).
 type MinsaRefConClient interface {
 	ConsultarReferenciaDetalle(ctx context.Context, req domain.ConsultaMinsaRequest) (*domain.ConsultaMinsaResponse, error)
 	ListadoUpss(ctx context.Context, codigoRenipress string) (*domain.ListadoUpsResponse, error)
+	ListadoEspecialidades(ctx context.Context) (*domain.ListadoEspecialidadesResponse, error)
+	SaveReferencia(ctx context.Context, req domain.SaveReferenciaRequest) (*domain.SaveReferenciaResponse, error)
 }
 
 // RefConReportsClient consume el portal REFCON (refcon.minsa.gob.pe) haciendo

@@ -176,6 +176,10 @@ func NewRouter(p RouterParams) *gin.Engine {
 			triaje.GET("/reporte-por-empleado", p.TriageHandler.GetReporteTriaje)
 			triaje.GET("/referencias", p.TriageHandler.ListReferenciasConsultaExterna)
 			triaje.GET("/referencias/:idAtencion", p.TriageHandler.ListarDatosReferencia)
+			triaje.GET("/referencias-cabecera/:idCuentaAtencion", p.TriageHandler.WebReferenciaJSONCab)
+			triaje.GET("/referencias-detalle/:idCuentaAtencion", p.TriageHandler.WebReferenciaJSONDet)
+			triaje.GET("/referencias-tratamiento/:idCuentaAtencion", p.TriageHandler.WebTratamientoReferenciaJSON)
+			triaje.GET("/referencias-cpt/:idCuentaAtencion", p.TriageHandler.WebCPTReferenciaJSON)
 			triaje.GET("/causas-externas-morbilidad", p.CausaExternaMorbilidadHandler.HandleListar)
 		}
 
@@ -253,7 +257,9 @@ func NewRouter(p RouterParams) *gin.Engine {
 			dashrefcon.GET("/referencias", p.RefConHandler.HandleListarReferencias)
 			dashrefcon.GET("/ups", p.RefConHandler.HandleListarUps)
 			dashrefcon.GET("/upss/:codigoRenipress", p.RefConHandler.HandleListadoUpss)
+			dashrefcon.GET("/especialidades-minsa", p.RefConHandler.HandleListadoEspecialidades)
 			dashrefcon.GET("/consulta-referencia-detalle", p.RefConHandler.HandleConsultarReferenciaDetalle)
+			dashrefcon.POST("/enviar-referencia", p.RefConHandler.HandleSaveReferencia)
 		}
 
 		refcon := v1.Group("/refcon")

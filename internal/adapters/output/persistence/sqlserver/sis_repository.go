@@ -14,18 +14,18 @@ type sisRepository struct {
 }
 
 // NewSisRepository construye el adaptador que implementa el puerto de
-// salida output.SisRepository contra el SP webSisFiliacionesGestionar.
+// salida output.SisRepository contra el SP usp_go_webSisFiliacionesGestionar.
 func NewSisRepository(db *sql.DB) output.SisRepository {
 	return &sisRepository{db: db}
 }
 
 // GestionarAfiliacion invoca el procedimiento almacenado
-// webSisFiliacionesGestionar con todos los parámetros de la afiliación SIS.
+// usp_go_webSisFiliacionesGestionar con todos los parámetros de la afiliación SIS.
 // Los parámetros van nombrados, por lo que el driver mssql los despacha
 // como llamada RPC, sin concatenar SQL. Los campos sin valor se envían
 // como NULL.
 func (r *sisRepository) GestionarAfiliacion(ctx context.Context, afiliacion *domain.SisAfiliacion) error {
-	const procedure = `webSisFiliacionesGestionar`
+	const procedure = `usp_go_webSisFiliacionesGestionar`
 
 	_, err := r.db.ExecContext(ctx, procedure,
 		sql.Named("idSiasis", afiliacion.IDSiasis),
@@ -61,7 +61,7 @@ func (r *sisRepository) GestionarAfiliacion(ctx context.Context, afiliacion *dom
 		sql.Named("IdUsuarioAuditoria", afiliacion.IdUsuarioAuditoria),
 	)
 	if err != nil {
-		return fmt.Errorf("calling webSisFiliacionesGestionar: %w", err)
+		return fmt.Errorf("calling usp_go_webSisFiliacionesGestionar: %w", err)
 	}
 
 	return nil

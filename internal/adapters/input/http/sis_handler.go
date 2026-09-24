@@ -66,7 +66,7 @@ func (h *SisHandler) ConsultarAfiliado(c *gin.Context) {
 // GestionarAfiliacion maneja POST /api/v1/sis/filiaciones.
 //
 // @Summary Registra o actualiza una afiliación SIS
-// @Description Invoca el SP webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.
+// @Description Invoca el SP usp_go_webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.
 // @Tags SIS
 // @Accept json
 // @Produce json

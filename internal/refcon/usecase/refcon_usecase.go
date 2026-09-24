@@ -46,6 +46,14 @@ func (s *refconService) ListarUpssMinsa(ctx context.Context, codigoRenipress str
 	return s.minsa.ListadoUpss(ctx, codigoRenipress)
 }
 
+func (s *refconService) ListarEspecialidadesMinsa(ctx context.Context) (*domain.ListadoEspecialidadesResponse, error) {
+	return s.minsa.ListadoEspecialidades(ctx)
+}
+
+func (s *refconService) GuardarReferenciaMinsa(ctx context.Context, req domain.SaveReferenciaRequest) (*domain.SaveReferenciaResponse, error) {
+	return s.minsa.SaveReferencia(ctx, req)
+}
+
 func (s *refconService) GenerarHojaReferencia(ctx context.Context, req domain.GenerarHojaReferenciaRequest) (*domain.GenerarHojaReferenciaResult, error) {
 	return s.reports.GenerarHojaReferencia(ctx, req)
 }

@@ -16,5 +16,7 @@ type RefConService interface {
 	ListarDistritosPorIdReniec(ctx context.Context, idReniec int) ([]domain.DistritoReniec, error)
 	ConsultarReferenciaDetalle(ctx context.Context, req domain.ConsultaMinsaRequest) (*domain.ConsultaMinsaResponse, error)
 	ListarUpssMinsa(ctx context.Context, codigoRenipress string) (*domain.ListadoUpsResponse, error)
+	ListarEspecialidadesMinsa(ctx context.Context) (*domain.ListadoEspecialidadesResponse, error)
+	GuardarReferenciaMinsa(ctx context.Context, req domain.SaveReferenciaRequest) (*domain.SaveReferenciaResponse, error)
 	GenerarHojaReferencia(ctx context.Context, req domain.GenerarHojaReferenciaRequest) (*domain.GenerarHojaReferenciaResult, error)
 }

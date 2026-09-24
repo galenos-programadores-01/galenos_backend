@@ -18,12 +18,15 @@ import (
 )
 
 const (
-	defaultURL     = "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/consultaReferenciaDetalle"
-	defaultUpsURL  = "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/listadoUps"
-	maxResponse    = 5 << 20 // 5 MB (incluye anamnesis y exámenes largos)
-	defaultTimeout = 30 * time.Second
-	defaultDestino = "7634"
-	defaultLimite  = "11"
+	defaultURL               = "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/consultaReferenciaDetalle"
+	defaultUpsURL            = "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/listadoUps"
+	defaultEspecialidadesURL = "https://servicios.minsa.gob.pe/mcs-referencia-interoperabilidad/refcon-interoperabilidad/v1.0/listadoEspecialidades"
+	defaultSaveReferenciaURL = "https://servicios.minsa.gob.pe/mcs-servicios-refcon/servicio/v1.0.0/saveReferencia"
+	maxResponse              = 5 << 20 // 5 MB (incluye anamnesis y exámenes largos)
+	defaultTimeout           = 30 * time.Second
+	defaultDestino           = "7634"
+	defaultLimite            = "11"
+	defaultUserAgent         = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 )
 
 // Config agrupa la URL del servicio, las credenciales institucionales que van
@@ -31,6 +34,8 @@ const (
 type Config struct {
 	URL                    string
 	UpsURL                 string
+	EspecialidadesURL      string
+	SaveReferenciaURL      string
 	Username               string
 	Password               string
 	IPClient               string
@@ -54,6 +59,12 @@ func New(cfg Config) *client {
 	}
 	if cfg.UpsURL == "" {
 		cfg.UpsURL = defaultUpsURL
+	}
+	if cfg.EspecialidadesURL == "" {
+		cfg.EspecialidadesURL = defaultEspecialidadesURL
+	}
+	if cfg.SaveReferenciaURL == "" {
+		cfg.SaveReferenciaURL = defaultSaveReferenciaURL
 	}
 	if cfg.Timeout <= 0 {
 		cfg.Timeout = defaultTimeout
@@ -107,6 +118,7 @@ func (c *client) ConsultarReferenciaDetalle(ctx context.Context, req domain.Cons
 	httpReq.Header.Set("username", c.cfg.Username)
 	httpReq.Header.Set("password", c.cfg.Password)
 	httpReq.Header.Set("ipclient", c.cfg.IPClient)
+	httpReq.Header.Set("User-Agent", defaultUserAgent)
 
 	log.Printf("[DashRefCon] consultaReferenciaDetalle body: %s", body)
 
@@ -157,6 +169,7 @@ func (c *client) ListadoUpss(ctx context.Context, codigoRenipress string) (*doma
 	httpReq.Header.Set("username", c.cfg.Username)
 	httpReq.Header.Set("password", c.cfg.Password)
 	httpReq.Header.Set("ipclient", c.cfg.IPClient)
+	httpReq.Header.Set("User-Agent", defaultUserAgent)
 
 	log.Printf("[DashRefCon] listadoUps url=%s", url)
 
@@ -187,10 +200,116 @@ func (c *client) ListadoUpss(ctx context.Context, codigoRenipress string) (*doma
 	return &out, nil
 }
 
+// ListadoEspecialidades consulta el listado de especialidades vigentes del
+// servicio REST de interoperabilidad del MINSA (sin parámetros).
+func (c *client) ListadoEspecialidades(ctx context.Context) (*domain.ListadoEspecialidadesResponse, error) {
+	if c.cfg.Username == "" || c.cfg.Password == "" || c.cfg.IPClient == "" {
+		return nil, fmt.Errorf("minsa refcon credentials are required")
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.cfg.EspecialidadesURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("building minsa refcon listadoEspecialidades request: %w", err)
+	}
+	httpReq.Header.Set("Accept", "application/json")
+	httpReq.Header.Set("username", c.cfg.Username)
+	httpReq.Header.Set("password", c.cfg.Password)
+	httpReq.Header.Set("ipclient", c.cfg.IPClient)
+	httpReq.Header.Set("User-Agent", defaultUserAgent)
+
+	log.Printf("[DashRefCon] listadoEspecialidades url=%s", c.cfg.EspecialidadesURL)
+
+	resp, err := c.http.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("calling minsa refcon listadoEspecialidades: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponse))
+	if err != nil {
+		return nil, fmt.Errorf("reading minsa refcon response: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("minsa refcon responded %d: %s", resp.StatusCode, truncate(respBody, 400))
+	}
+
+	var out domain.ListadoEspecialidadesResponse
+	if err := json.Unmarshal(respBody, &out); err != nil {
+		return nil, fmt.Errorf("decoding minsa refcon listadoEspecialidades response: %w", err)
+	}
+
+	if out.Codigo != "" && out.Codigo != "0000" {
+		log.Printf("[DashRefCon] respuesta MINSA listadoEspecialidades status=%d codigo=%s body=%s", resp.StatusCode, out.Codigo, truncate(respBody, 500))
+	}
+
+	return &out, nil
+}
+
 func truncate(b []byte, max int) string {
 	s := string(b)
 	if len(s) > max {
 		s = s[:max]
 	}
 	return s
+}
+
+// SaveReferencia registra una referencia en el servicio saveReferencia del
+// MINSA enviando el cuerpo JSON con las credenciales institucionales en el
+// header.
+func (c *client) SaveReferencia(ctx context.Context, req domain.SaveReferenciaRequest) (*domain.SaveReferenciaResponse, error) {
+	if c.cfg.Username == "" || c.cfg.Password == "" || c.cfg.IPClient == "" {
+		return nil, fmt.Errorf("minsa refcon credentials are required")
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling minsa refcon saveReferencia request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.SaveReferenciaURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("building minsa refcon saveReferencia request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
+	httpReq.Header.Set("username", c.cfg.Username)
+	httpReq.Header.Set("password", c.cfg.Password)
+	httpReq.Header.Set("ipclient", c.cfg.IPClient)
+	httpReq.Header.Set("User-Agent", defaultUserAgent)
+
+	log.Printf("[DashRefCon] saveReferencia url=%s", c.cfg.SaveReferenciaURL)
+
+	resp, err := c.http.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("calling minsa refcon saveReferencia: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponse))
+	if err != nil {
+		return nil, fmt.Errorf("reading minsa refcon response: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("minsa refcon responded %d: %s", resp.StatusCode, truncate(respBody, 400))
+	}
+
+	var out domain.SaveReferenciaResponse
+	if err := json.Unmarshal(respBody, &out); err != nil {
+		return nil, fmt.Errorf("decoding minsa refcon saveReferencia response: %w", err)
+	}
+
+	if out.Codigo != "" && out.Codigo != "0000" {
+		log.Printf("[DashRefCon] respuesta MINSA saveReferencia status=%d codigo=%s mensaje=%q body=%s", resp.StatusCode, out.Codigo, derefStr(out.Mensaje), truncate(respBody, 500))
+	}
+
+	return &out, nil
+}
+
+func derefStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

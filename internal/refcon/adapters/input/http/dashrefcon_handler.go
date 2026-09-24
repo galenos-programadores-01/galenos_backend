@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/galenos-pro/appointments-api/internal/refcon/domain"
 	"github.com/galenos-pro/appointments-api/internal/refcon/ports/input"
 	"github.com/gin-gonic/gin"
 )
@@ -149,6 +150,52 @@ func (h *RefConHandler) HandleListadoUpss(c *gin.Context) {
 	resultado, err := h.service.ListarUpssMinsa(c.Request.Context(), codigoRenipress)
 	if err != nil {
 		log.Printf("[DashRefCon] Error consultando UPS en MINSA (codigo=%s): %v", codigoRenipress, err)
+		respondError(c, http.StatusBadGateway, "MINSA_REFCON_ERR", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, resultado)
+}
+
+// @Summary Listar especialidades vigentes en MINSA
+// @Description Consulta el listado de especialidades vigentes en el servicio REST de interoperabilidad del MINSA (sin parámetros)
+// @Tags DashRefCon
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} apiResponse{data=domain.ListadoEspecialidadesResponse}
+// @Router /dashrefcon/especialidades-minsa [get]
+func (h *RefConHandler) HandleListadoEspecialidades(c *gin.Context) {
+	resultado, err := h.service.ListarEspecialidadesMinsa(c.Request.Context())
+	if err != nil {
+		log.Printf("[DashRefCon] Error consultando especialidades en MINSA: %v", err)
+		respondError(c, http.StatusBadGateway, "MINSA_REFCON_ERR", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, resultado)
+}
+
+// @Summary Enviar (registrar) una referencia en MINSA
+// @Description Registra una referencia en el servicio saveReferencia del MINSA enviando la estructura completa de la referencia
+// @Tags DashRefCon
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body domain.SaveReferenciaRequest true "Estructura de la referencia a registrar"
+// @Success 200 {object} apiResponse{data=domain.SaveReferenciaResponse}
+// @Failure 400 {object} apiResponse
+// @Failure 502 {object} apiResponse
+// @Router /dashrefcon/enviar-referencia [post]
+func (h *RefConHandler) HandleSaveReferencia(c *gin.Context) {
+	var req domain.SaveReferenciaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_BODY", "El cuerpo debe ser JSON con la estructura de la referencia")
+		return
+	}
+
+	resultado, err := h.service.GuardarReferenciaMinsa(c.Request.Context(), req)
+	if err != nil {
+		log.Printf("[DashRefCon] Error registrando referencia en MINSA: %v", err)
 		respondError(c, http.StatusBadGateway, "MINSA_REFCON_ERR", err.Error())
 		return
 	}

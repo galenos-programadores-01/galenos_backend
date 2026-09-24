@@ -491,6 +491,106 @@ const docTemplate = `{
                 }
             }
         },
+        "/dashrefcon/enviar-referencia": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra una referencia en el servicio saveReferencia del MINSA enviando la estructura completa de la referencia",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "DashRefCon"
+                ],
+                "summary": "Enviar (registrar) una referencia en MINSA",
+                "parameters": [
+                    {
+                        "description": "Estructura de la referencia a registrar",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SaveReferenciaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.SaveReferenciaResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/refconhttp.apiResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/refconhttp.apiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashrefcon/especialidades-minsa": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Consulta el listado de especialidades vigentes en el servicio REST de interoperabilidad del MINSA (sin parámetros)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "DashRefCon"
+                ],
+                "summary": "Listar especialidades vigentes en MINSA",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.ListadoEspecialidadesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/dashrefcon/referencias": {
             "get": {
                 "security": [
@@ -5236,7 +5336,7 @@ const docTemplate = `{
         },
         "/sis/filiaciones": {
             "post": {
-                "description": "Invoca el SP webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.",
+                "description": "Invoca el SP usp_go_webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5897,6 +5997,189 @@ const docTemplate = `{
                 }
             }
         },
+        "/triaje/referencias-cabecera/{idCuentaAtencion}": {
+            "get": {
+                "description": "Devuelve la cabecera con los datos completos de una referencia (paciente, responsable, personal que registra, cita, diagnósticos y destino) invocando el SP usp_go_webReferenciaJSONCab",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Cabecera JSON de una referencia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la cuenta de atención",
+                        "name": "idCuentaAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cabecera con los datos de la referencia",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Referencia no encontrada",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/referencias-cpt/{idCuentaAtencion}": {
+            "get": {
+                "description": "Devuelve los códigos CPT de la referencia invocando el SP usp_go_webCPTReferenciaJSON",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "CPT de una referencia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la cuenta de atención",
+                        "name": "idCuentaAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CPT de la referencia",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/referencias-detalle/{idCuentaAtencion}": {
+            "get": {
+                "description": "Devuelve el detalle de la referencia (los diagnósticos) invocando el SP usp_go_webReferenciaJSONDet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Detalle JSON de una referencia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la cuenta de atención",
+                        "name": "idCuentaAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle con los diagnósticos de la referencia",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/referencias-tratamiento/{idCuentaAtencion}": {
+            "get": {
+                "description": "Devuelve el tratamiento de la referencia invocando el SP usp_go_WebTratamientoReferenciaJSON",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Tratamiento JSON de una referencia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la cuenta de atención",
+                        "name": "idCuentaAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tratamiento de la referencia",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
         "/triaje/referencias/{idAtencion}": {
             "get": {
                 "description": "Devuelve los datos del destino de una referencia (establecimiento, UPS y especialidad) invocando el SP usp_go_ListarDatosReferencia",
@@ -6192,6 +6475,20 @@ const docTemplate = `{
                 "StatusCompleted"
             ]
         },
+        "domain.CPT": {
+            "type": "object",
+            "properties": {
+                "cpt_1": {
+                    "type": "string"
+                },
+                "cpt_2": {
+                    "type": "string"
+                },
+                "cpt_3": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.CentroPoblado": {
             "type": "object",
             "properties": {
@@ -6199,6 +6496,47 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CitaReferencia": {
+            "type": "object",
+            "properties": {
+                "fecha_vencimiento_sis": {
+                    "type": "string"
+                },
+                "frecuencia_cardiaca": {
+                    "type": "string"
+                },
+                "frecuencia_respiratoria": {
+                    "type": "string"
+                },
+                "id_financiador": {
+                    "type": "string"
+                },
+                "num_afil": {
+                    "type": "string"
+                },
+                "peso": {
+                    "type": "string"
+                },
+                "presion_arterial_diastolica": {
+                    "type": "string"
+                },
+                "presion_arterial_sistolica": {
+                    "type": "string"
+                },
+                "resumeanamnesis": {
+                    "type": "string"
+                },
+                "resumeexfisico": {
+                    "type": "string"
+                },
+                "talla": {
+                    "type": "string"
+                },
+                "temperatura": {
                     "type": "string"
                 }
             }
@@ -6324,6 +6662,59 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tipo_transporte": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DatosReferenciaSave": {
+            "type": "object",
+            "properties": {
+                "codEspecialidad": {
+                    "type": "string"
+                },
+                "condicion": {
+                    "type": "string"
+                },
+                "desc_Cartera_servicio": {
+                    "type": "string"
+                },
+                "fechaReferencia": {
+                    "type": "string"
+                },
+                "fgRegistro": {
+                    "type": "string"
+                },
+                "horaReferencia": {
+                    "type": "string"
+                },
+                "idCarteraServicio": {
+                    "type": "string"
+                },
+                "idEnvio": {
+                    "type": "string"
+                },
+                "idTipoAtencion": {
+                    "type": "string"
+                },
+                "idTipoTransporte": {
+                    "type": "string"
+                },
+                "idestabDestino": {
+                    "type": "string"
+                },
+                "idestabOrigen": {
+                    "type": "string"
+                },
+                "idupsOrigen": {
+                    "type": "string"
+                },
+                "idupsdestino": {
+                    "type": "string"
+                },
+                "motivo_referencia": {
+                    "$ref": "#/definitions/domain.MotivoReferencia"
+                },
+                "notasobs": {
                     "type": "string"
                 }
             }
@@ -6487,6 +6878,20 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.DiagnosticoReferencia": {
+            "type": "object",
+            "properties": {
+                "diagnostico": {
+                    "type": "string"
+                },
+                "nro_diagnostico": {
+                    "type": "string"
+                },
+                "tipo_diagnostico": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.DiagnosticoSimple": {
             "type": "object",
             "properties": {
@@ -6536,6 +6941,17 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.EspecialidadMinsa": {
+            "type": "object",
+            "properties": {
+                "codigo_especialidad": {
+                    "type": "string"
+                },
+                "especialidad": {
                     "type": "string"
                 }
             }
@@ -6816,6 +7232,20 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ListadoEspecialidadesResponse": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.EspecialidadMinsa"
+                    }
+                }
+            }
+        },
         "domain.ListadoUpsItem": {
             "type": "object",
             "properties": {
@@ -6840,6 +7270,17 @@ const docTemplate = `{
                     }
                 },
                 "mensaje": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.MotivoReferencia": {
+            "type": "object",
+            "properties": {
+                "idmotivoref": {
+                    "type": "string"
+                },
+                "obsmotivoref": {
                     "type": "string"
                 }
             }
@@ -6943,6 +7384,53 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ubigeo2": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PacienteReferencia": {
+            "type": "object",
+            "properties": {
+                "apelmatpac": {
+                    "type": "string"
+                },
+                "apelpatpac": {
+                    "type": "string"
+                },
+                "celularpac": {
+                    "type": "string"
+                },
+                "correopac": {
+                    "type": "string"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "fechnacpac": {
+                    "type": "string"
+                },
+                "idsexo": {
+                    "type": "string"
+                },
+                "idtipodoc": {
+                    "type": "string"
+                },
+                "nombpac": {
+                    "type": "string"
+                },
+                "nrohis": {
+                    "type": "string"
+                },
+                "numdoc": {
+                    "type": "string"
+                },
+                "telefonopac": {
+                    "type": "string"
+                },
+                "ubigeoactual": {
+                    "type": "string"
+                },
+                "ubigeoreniec": {
                     "type": "string"
                 }
             }
@@ -7230,6 +7718,102 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.PersonaAcompana": {
+            "type": "object",
+            "properties": {
+                "apelmatacomp": {
+                    "type": "string"
+                },
+                "apelpatacomp": {
+                    "type": "string"
+                },
+                "fechanacacomp": {
+                    "type": "string"
+                },
+                "idcolegioacomp": {
+                    "type": "string"
+                },
+                "idprofesionacomp": {
+                    "type": "string"
+                },
+                "idsexoacomp": {
+                    "type": "string"
+                },
+                "idtipodocacmop": {
+                    "type": "string"
+                },
+                "nombperacomp": {
+                    "type": "string"
+                },
+                "numdocacomp": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PersonaEstablecimiento": {
+            "type": "object",
+            "properties": {
+                "apelmata": {
+                    "type": "string"
+                },
+                "apelpata": {
+                    "type": "string"
+                },
+                "fechanac": {
+                    "type": "string"
+                },
+                "idcolegio": {
+                    "type": "string"
+                },
+                "idprofesion": {
+                    "type": "string"
+                },
+                "idsexo": {
+                    "type": "string"
+                },
+                "idtipodoc": {
+                    "type": "string"
+                },
+                "nombper": {
+                    "type": "string"
+                },
+                "numdoc": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PersonalRegistra": {
+            "type": "object",
+            "properties": {
+                "apellidoMaterno": {
+                    "type": "string"
+                },
+                "apellidoPaterno": {
+                    "type": "string"
+                },
+                "fechaNacimiento": {
+                    "type": "string"
+                },
+                "idcolegio": {
+                    "type": "string"
+                },
+                "idprofesion": {
+                    "type": "string"
+                },
+                "nombres": {
+                    "type": "string"
+                },
+                "nroDocumento": {
+                    "type": "string"
+                },
+                "sexo": {
+                    "type": "string"
+                },
+                "tipoDocumento": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Provincia": {
             "type": "object",
             "properties": {
@@ -7375,6 +7959,104 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ResponsableReferencia": {
+            "type": "object",
+            "properties": {
+                "apelmatrefiere": {
+                    "type": "string"
+                },
+                "apelpatrefiere": {
+                    "type": "string"
+                },
+                "fechanacrefiere": {
+                    "type": "string"
+                },
+                "idcolegioref": {
+                    "type": "string"
+                },
+                "idprofesionref": {
+                    "type": "string"
+                },
+                "idsexorefiere": {
+                    "type": "string"
+                },
+                "idtipodocref": {
+                    "type": "string"
+                },
+                "nombperrefiere": {
+                    "type": "string"
+                },
+                "numdocref": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SaveReferenciaDatos": {
+            "type": "object",
+            "properties": {
+                "desc estado": {
+                    "type": "string"
+                },
+                "fg_estado": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SaveReferenciaRequest": {
+            "type": "object",
+            "properties": {
+                "cita": {
+                    "$ref": "#/definitions/domain.CitaReferencia"
+                },
+                "cpt": {
+                    "$ref": "#/definitions/domain.CPT"
+                },
+                "datos_referencia": {
+                    "$ref": "#/definitions/domain.DatosReferenciaSave"
+                },
+                "diagnostico": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.DiagnosticoReferencia"
+                    }
+                },
+                "paciente": {
+                    "$ref": "#/definitions/domain.PacienteReferencia"
+                },
+                "persona_acompana": {
+                    "$ref": "#/definitions/domain.PersonaAcompana"
+                },
+                "persona_establecimiento": {
+                    "$ref": "#/definitions/domain.PersonaEstablecimiento"
+                },
+                "personal_registra": {
+                    "$ref": "#/definitions/domain.PersonalRegistra"
+                },
+                "responsable_referencia": {
+                    "$ref": "#/definitions/domain.ResponsableReferencia"
+                },
+                "tratamiento": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.TratamientoReferencia"
+                    }
+                }
+            }
+        },
+        "domain.SaveReferenciaResponse": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "datos": {
+                    "$ref": "#/definitions/domain.SaveReferenciaDatos"
+                },
+                "mensaje": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Servicio": {
             "type": "object",
             "properties": {
@@ -7474,6 +8156,32 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                }
+            }
+        },
+        "domain.TratamientoReferencia": {
+            "type": "object",
+            "properties": {
+                "cantidad": {
+                    "type": "string"
+                },
+                "codigo_medicamento": {
+                    "type": "string"
+                },
+                "frecuencia": {
+                    "type": "string"
+                },
+                "nro_diagnostico": {
+                    "type": "string"
+                },
+                "nro_tratamiento": {
+                    "type": "string"
+                },
+                "periodo": {
+                    "type": "string"
+                },
+                "unidad_tiempo": {
+                    "type": "string"
                 }
             }
         },

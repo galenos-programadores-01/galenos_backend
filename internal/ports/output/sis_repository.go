@@ -10,7 +10,7 @@ import (
 // de los pacientes asegurados contra la base de datos.
 type SisRepository interface {
 	// GestionarAfiliacion guarda o actualiza una afiliación SIS invocando
-	// el procedimiento almacenado webSisFiliacionesGestionar.
+	// el procedimiento almacenado usp_go_webSisFiliacionesGestionar.
 	GestionarAfiliacion(ctx context.Context, afiliacion *domain.SisAfiliacion) error
 
 	// ForzarGuardadoFua fuerza el guardado del FUA de una cuenta de

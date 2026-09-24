@@ -71,11 +71,47 @@ definitions:
     - StatusConfirmed
     - StatusCancelled
     - StatusCompleted
+  domain.CPT:
+    properties:
+      cpt_1:
+        type: string
+      cpt_2:
+        type: string
+      cpt_3:
+        type: string
+    type: object
   domain.CentroPoblado:
     properties:
       id:
         type: integer
       nombre:
+        type: string
+    type: object
+  domain.CitaReferencia:
+    properties:
+      fecha_vencimiento_sis:
+        type: string
+      frecuencia_cardiaca:
+        type: string
+      frecuencia_respiratoria:
+        type: string
+      id_financiador:
+        type: string
+      num_afil:
+        type: string
+      peso:
+        type: string
+      presion_arterial_diastolica:
+        type: string
+      presion_arterial_sistolica:
+        type: string
+      resumeanamnesis:
+        type: string
+      resumeexfisico:
+        type: string
+      talla:
+        type: string
+      temperatura:
         type: string
     type: object
   domain.ConsultaMinsaDatos:
@@ -158,6 +194,41 @@ definitions:
       tipo_financiador:
         type: string
       tipo_transporte:
+        type: string
+    type: object
+  domain.DatosReferenciaSave:
+    properties:
+      codEspecialidad:
+        type: string
+      condicion:
+        type: string
+      desc_Cartera_servicio:
+        type: string
+      fechaReferencia:
+        type: string
+      fgRegistro:
+        type: string
+      horaReferencia:
+        type: string
+      idCarteraServicio:
+        type: string
+      idEnvio:
+        type: string
+      idTipoAtencion:
+        type: string
+      idTipoTransporte:
+        type: string
+      idestabDestino:
+        type: string
+      idestabOrigen:
+        type: string
+      idupsOrigen:
+        type: string
+      idupsdestino:
+        type: string
+      motivo_referencia:
+        $ref: '#/definitions/domain.MotivoReferencia'
+      notasobs:
         type: string
     type: object
   domain.DatosTutorMinsa:
@@ -264,6 +335,15 @@ definitions:
       tipo_diagnostico:
         type: string
     type: object
+  domain.DiagnosticoReferencia:
+    properties:
+      diagnostico:
+        type: string
+      nro_diagnostico:
+        type: string
+      tipo_diagnostico:
+        type: string
+    type: object
   domain.DiagnosticoSimple:
     properties:
       codigoCIE10:
@@ -296,6 +376,13 @@ definitions:
       id:
         type: integer
       nombre:
+        type: string
+    type: object
+  domain.EspecialidadMinsa:
+    properties:
+      codigo_especialidad:
+        type: string
+      especialidad:
         type: string
     type: object
   domain.EspecialidadSimple:
@@ -478,6 +565,15 @@ definitions:
       telefono:
         type: string
     type: object
+  domain.ListadoEspecialidadesResponse:
+    properties:
+      codigo:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.EspecialidadMinsa'
+        type: array
+    type: object
   domain.ListadoUpsItem:
     properties:
       codUps:
@@ -494,6 +590,13 @@ definitions:
           $ref: '#/definitions/domain.ListadoUpsItem'
         type: array
       mensaje:
+        type: string
+    type: object
+  domain.MotivoReferencia:
+    properties:
+      idmotivoref:
+        type: string
+      obsmotivoref:
         type: string
     type: object
   domain.PacienteDatosAdicionales:
@@ -562,6 +665,37 @@ definitions:
       ubigeo1:
         type: string
       ubigeo2:
+        type: string
+    type: object
+  domain.PacienteReferencia:
+    properties:
+      apelmatpac:
+        type: string
+      apelpatpac:
+        type: string
+      celularpac:
+        type: string
+      correopac:
+        type: string
+      direccion:
+        type: string
+      fechnacpac:
+        type: string
+      idsexo:
+        type: string
+      idtipodoc:
+        type: string
+      nombpac:
+        type: string
+      nrohis:
+        type: string
+      numdoc:
+        type: string
+      telefonopac:
+        type: string
+      ubigeoactual:
+        type: string
+      ubigeoreniec:
         type: string
     type: object
   domain.Pais:
@@ -751,6 +885,69 @@ definitions:
       xrayCaseNumber:
         type: string
     type: object
+  domain.PersonaAcompana:
+    properties:
+      apelmatacomp:
+        type: string
+      apelpatacomp:
+        type: string
+      fechanacacomp:
+        type: string
+      idcolegioacomp:
+        type: string
+      idprofesionacomp:
+        type: string
+      idsexoacomp:
+        type: string
+      idtipodocacmop:
+        type: string
+      nombperacomp:
+        type: string
+      numdocacomp:
+        type: string
+    type: object
+  domain.PersonaEstablecimiento:
+    properties:
+      apelmata:
+        type: string
+      apelpata:
+        type: string
+      fechanac:
+        type: string
+      idcolegio:
+        type: string
+      idprofesion:
+        type: string
+      idsexo:
+        type: string
+      idtipodoc:
+        type: string
+      nombper:
+        type: string
+      numdoc:
+        type: string
+    type: object
+  domain.PersonalRegistra:
+    properties:
+      apellidoMaterno:
+        type: string
+      apellidoPaterno:
+        type: string
+      fechaNacimiento:
+        type: string
+      idcolegio:
+        type: string
+      idprofesion:
+        type: string
+      nombres:
+        type: string
+      nroDocumento:
+        type: string
+      sexo:
+        type: string
+      tipoDocumento:
+        type: string
+    type: object
   domain.Provincia:
     properties:
       id:
@@ -846,6 +1043,70 @@ definitions:
           type: string
         type: array
     type: object
+  domain.ResponsableReferencia:
+    properties:
+      apelmatrefiere:
+        type: string
+      apelpatrefiere:
+        type: string
+      fechanacrefiere:
+        type: string
+      idcolegioref:
+        type: string
+      idprofesionref:
+        type: string
+      idsexorefiere:
+        type: string
+      idtipodocref:
+        type: string
+      nombperrefiere:
+        type: string
+      numdocref:
+        type: string
+    type: object
+  domain.SaveReferenciaDatos:
+    properties:
+      desc estado:
+        type: string
+      fg_estado:
+        type: string
+    type: object
+  domain.SaveReferenciaRequest:
+    properties:
+      cita:
+        $ref: '#/definitions/domain.CitaReferencia'
+      cpt:
+        $ref: '#/definitions/domain.CPT'
+      datos_referencia:
+        $ref: '#/definitions/domain.DatosReferenciaSave'
+      diagnostico:
+        items:
+          $ref: '#/definitions/domain.DiagnosticoReferencia'
+        type: array
+      paciente:
+        $ref: '#/definitions/domain.PacienteReferencia'
+      persona_acompana:
+        $ref: '#/definitions/domain.PersonaAcompana'
+      persona_establecimiento:
+        $ref: '#/definitions/domain.PersonaEstablecimiento'
+      personal_registra:
+        $ref: '#/definitions/domain.PersonalRegistra'
+      responsable_referencia:
+        $ref: '#/definitions/domain.ResponsableReferencia'
+      tratamiento:
+        items:
+          $ref: '#/definitions/domain.TratamientoReferencia'
+        type: array
+    type: object
+  domain.SaveReferenciaResponse:
+    properties:
+      codigo:
+        type: string
+      datos:
+        $ref: '#/definitions/domain.SaveReferenciaDatos'
+      mensaje:
+        type: string
+    type: object
   domain.Servicio:
     properties:
       id:
@@ -910,6 +1171,23 @@ definitions:
         type: string
       id:
         type: integer
+    type: object
+  domain.TratamientoReferencia:
+    properties:
+      cantidad:
+        type: string
+      codigo_medicamento:
+        type: string
+      frecuencia:
+        type: string
+      nro_diagnostico:
+        type: string
+      nro_tratamiento:
+        type: string
+      periodo:
+        type: string
+      unidad_tiempo:
+        type: string
     type: object
   domain.Ups:
     properties:
@@ -1847,6 +2125,65 @@ paths:
       security:
       - BearerAuth: []
       summary: Consultar detalle de referencia en MINSA
+      tags:
+      - DashRefCon
+  /dashrefcon/enviar-referencia:
+    post:
+      consumes:
+      - application/json
+      description: Registra una referencia en el servicio saveReferencia del MINSA
+        enviando la estructura completa de la referencia
+      parameters:
+      - description: Estructura de la referencia a registrar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SaveReferenciaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.SaveReferenciaResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/refconhttp.apiResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/refconhttp.apiResponse'
+      security:
+      - BearerAuth: []
+      summary: Enviar (registrar) una referencia en MINSA
+      tags:
+      - DashRefCon
+  /dashrefcon/especialidades-minsa:
+    get:
+      description: Consulta el listado de especialidades vigentes en el servicio REST
+        de interoperabilidad del MINSA (sin parámetros)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.ListadoEspecialidadesResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Listar especialidades vigentes en MINSA
       tags:
       - DashRefCon
   /dashrefcon/referencias:
@@ -4650,7 +4987,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Invoca el SP webSisFiliacionesGestionar para guardar los datos
+      description: Invoca el SP usp_go_webSisFiliacionesGestionar para guardar los datos
         de afiliación de un paciente.
       parameters:
       - description: Datos de afiliación SIS
@@ -5090,6 +5427,131 @@ paths:
           schema:
             type: object
       summary: Bandeja de referencias de consulta externa
+  /triaje/referencias-cabecera/{idCuentaAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve la cabecera con los datos completos de una referencia
+        (paciente, responsable, personal que registra, cita, diagnósticos y destino)
+        invocando el SP usp_go_webReferenciaJSONCab
+      parameters:
+      - description: Id de la cuenta de atención
+        in: path
+        name: idCuentaAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cabecera con los datos de la referencia
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "404":
+          description: Referencia no encontrada
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Cabecera JSON de una referencia
+  /triaje/referencias-cpt/{idCuentaAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve los códigos CPT de la referencia invocando el SP usp_go_webCPTReferenciaJSON
+      parameters:
+      - description: Id de la cuenta de atención
+        in: path
+        name: idCuentaAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: CPT de la referencia
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: CPT de una referencia
+  /triaje/referencias-detalle/{idCuentaAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve el detalle de la referencia (los diagnósticos) invocando
+        el SP usp_go_webReferenciaJSONDet
+      parameters:
+      - description: Id de la cuenta de atención
+        in: path
+        name: idCuentaAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Detalle con los diagnósticos de la referencia
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Detalle JSON de una referencia
+  /triaje/referencias-tratamiento/{idCuentaAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve el tratamiento de la referencia invocando el SP usp_go_WebTratamientoReferenciaJSON
+      parameters:
+      - description: Id de la cuenta de atención
+        in: path
+        name: idCuentaAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tratamiento de la referencia
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Tratamiento JSON de una referencia
   /triaje/referencias/{idAtencion}:
     get:
       consumes:

@@ -88,4 +88,26 @@ type TriageRepository interface {
 	// devuelve los datos del destino de una referencia para la atención
 	// indicada. Devuelve nil si no hay registro.
 	ListarDatosReferencia(ctx context.Context, idAtencion int) (*map[string]any, error)
+
+	// WebReferenciaJSONCab invoca el SP usp_go_webReferenciaJSONCab y
+	// devuelve la cabecera con los datos completos de una referencia
+	// (paciente, responsable, personal que registra, cita y destino) para
+	// la cuenta de atención indicada. Devuelve nil si no hay registro.
+	WebReferenciaJSONCab(ctx context.Context, idCuentaAtencion int) (*map[string]any, error)
+
+	// WebReferenciaJSONDet invoca el SP usp_go_webReferenciaJSONDet y
+	// devuelve el detalle de la referencia (los diagnósticos) para la
+	// cuenta de atención indicada como mapas columna -> valor.
+	WebReferenciaJSONDet(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error)
+
+	// WebTratamientoReferenciaJSON invoca el SP
+	// usp_go_WebTratamientoReferenciaJSON y devuelve el tratamiento de la
+	// referencia para la cuenta de atención indicada como mapas columna ->
+	// valor.
+	WebTratamientoReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error)
+
+	// WebCPTReferenciaJSON invoca el SP usp_go_webCPTReferenciaJSON y
+	// devuelve los códigos CPT de la referencia para la cuenta de
+	// atención indicada como mapas columna -> valor.
+	WebCPTReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error)
 }
