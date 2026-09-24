@@ -80,6 +80,7 @@ func run() error {
 	listaEsperaQxRepo := sqlserver.NewListaEsperaQxRepository(db)
 	medicoListaEsperaRepo := sqlserver.NewMedicoListaEsperaRepository(db)
 	causaExternaMorbilidadRepo := sqlserver.NewCausaExternaMorbilidadRepository(db)
+	auditoriaRepo := sqlserver.NewAuditoriaRepository(db)
 	refConRepo := refconsql.NewRefConRepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
@@ -128,6 +129,7 @@ func run() error {
 	listaEsperaQxService := usecase.NewListaEsperaQxService(listaEsperaQxRepo)
 	medicoListaEsperaService := usecase.NewMedicoListaEsperaService(medicoListaEsperaRepo)
 	causaExternaMorbilidadService := usecase.NewCausaExternaMorbilidadService(causaExternaMorbilidadRepo)
+	auditoriaService := usecase.NewAuditoriaService(auditoriaRepo)
 	refConService := refconusecase.NewRefConService(refConRepo, refconminsa.New(refconminsa.Config{
 		URL:                    cfg.MinsaRefConURL,
 		UpsURL:                 cfg.MinsaRefConUpsURL,
@@ -173,6 +175,7 @@ func run() error {
 	listaEsperaQxHandler := httpadapter.NewListaEsperaQxHandler(listaEsperaQxService)
 	medicoListaEsperaHandler := httpadapter.NewMedicoListaEsperaHandler(medicoListaEsperaService)
 	causaExternaMorbilidadHandler := httpadapter.NewCausaExternaMorbilidadHandler(causaExternaMorbilidadService)
+	auditoriaHandler := httpadapter.NewAuditoriaHandler(auditoriaService)
 	refConHandler := refconhttp.NewRefConHandler(refConService)
 
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
@@ -194,6 +197,7 @@ func run() error {
 		ListaEsperaQxHandler:          listaEsperaQxHandler,
 		MedicoListaEsperaHandler:      medicoListaEsperaHandler,
 		CausaExternaMorbilidadHandler: causaExternaMorbilidadHandler,
+		AuditoriaHandler:              auditoriaHandler,
 		RefConHandler:                 refConHandler,
 		AuthService:                   authService,
 		AllowedOrigins:                cfg.AllowedOrigins,

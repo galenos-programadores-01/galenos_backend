@@ -33,6 +33,7 @@ type RouterParams struct {
 	ListaEsperaQxHandler          *ListaEsperaQxHandler
 	MedicoListaEsperaHandler      *MedicoListaEsperaHandler
 	CausaExternaMorbilidadHandler *CausaExternaMorbilidadHandler
+	AuditoriaHandler              *AuditoriaHandler
 	RefConHandler                 *refconhttp.RefConHandler
 	AuthService                   input.AuthService
 	AllowedOrigins                []string
@@ -268,6 +269,11 @@ func NewRouter(p RouterParams) *gin.Engine {
 			refcon.GET("/establecimientos", p.RefConHandler.HandleListarEstablecimientos)
 			refcon.GET("/distritos-reniec/:idReniec", p.RefConHandler.HandleListarDistritosPorIdReniec)
 			refcon.POST("/hoja-referencia", p.RefConHandler.HandleGenerarHojaReferencia)
+		}
+
+		auditoria := protected.Group("/auditoria")
+		{
+			auditoria.POST("", p.AuditoriaHandler.HandleRegistrar)
 		}
 	}
 

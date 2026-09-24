@@ -1196,6 +1196,21 @@ definitions:
       descripcion:
         type: string
     type: object
+  httpadapter.AgregarAuditoriaRequest:
+    properties:
+      accion:
+        type: string
+      idListItem:
+        type: integer
+      idRegistro:
+        type: integer
+      nombrePC:
+        type: string
+      observaciones:
+        type: string
+      tabla:
+        type: string
+    type: object
   httpadapter.AgregarSintomaRequest:
     properties:
       sintoma:
@@ -2006,6 +2021,26 @@ paths:
       summary: Obtiene una cita médica por id
       tags:
       - Appointments
+  /auditoria:
+    post:
+      consumes:
+      - application/json
+      description: Inserta un registro en la tabla Auditoria mediante dbo.AuditoriaAgregarV
+      parameters:
+      - description: Registro de auditoría a agregar
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpadapter.AgregarAuditoriaRequest'
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Registrar auditoría
+      tags:
+      - Auditoria
   /catalogos/parametros-clinicos/{idGrupo}:
     get:
       consumes:
@@ -4987,8 +5022,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Invoca el SP usp_go_webSisFiliacionesGestionar para guardar los datos
-        de afiliación de un paciente.
+      description: Invoca el SP usp_go_webSisFiliacionesGestionar para guardar los
+        datos de afiliación de un paciente.
       parameters:
       - description: Datos de afiliación SIS
         in: body

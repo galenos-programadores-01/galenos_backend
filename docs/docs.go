@@ -289,6 +289,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/auditoria": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Inserta un registro en la tabla Auditoria mediante dbo.AuditoriaAgregarV",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auditoria"
+                ],
+                "summary": "Registrar auditoría",
+                "parameters": [
+                    {
+                        "description": "Registro de auditoría a agregar",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.AgregarAuditoriaRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/catalogos/parametros-clinicos/{idGrupo}": {
             "get": {
                 "description": "Devuelve el catálogo de parámetros clínicos según su grupo (SP usp_go_Cat_ParametroClinico_Listar).",
@@ -8192,6 +8224,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "descripcion": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpadapter.AgregarAuditoriaRequest": {
+            "type": "object",
+            "properties": {
+                "accion": {
+                    "type": "string"
+                },
+                "idListItem": {
+                    "type": "integer"
+                },
+                "idRegistro": {
+                    "type": "integer"
+                },
+                "nombrePC": {
+                    "type": "string"
+                },
+                "observaciones": {
+                    "type": "string"
+                },
+                "tabla": {
                     "type": "string"
                 }
             }
