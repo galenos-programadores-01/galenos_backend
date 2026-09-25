@@ -59,6 +59,15 @@ func (uc *triageUseCase) ListPendingAdmission(ctx context.Context, params shared
 	return items, nil
 }
 
+// UpdateIafa delega la actualización de la IAFA (fuente de financiamiento
+// a SIS) en el repositorio (SP usp_go_Triaje_EmergeciaActualizarIAFA).
+func (uc *triageUseCase) UpdateIafa(ctx context.Context, idTriaje int) error {
+	if err := uc.repo.UpdateIafa(ctx, idTriaje); err != nil {
+		return fmt.Errorf("updating triage iafa: %w", err)
+	}
+	return nil
+}
+
 // CreateAdmission delega la admisión (SP WebCrearAtencionDesdeTriaje) en
 // el repositorio y devuelve el resultado informado por el SP.
 func (uc *triageUseCase) CreateAdmission(ctx context.Context, admision *domain.AdmisionDesdeTriaje) (string, error) {

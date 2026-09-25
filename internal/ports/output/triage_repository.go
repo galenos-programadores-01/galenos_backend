@@ -31,6 +31,10 @@ type TriageRepository interface {
 	// que devuelve los pacientes con triaje que aún no han sido admisionados.
 	ListPendingAdmission(ctx context.Context, params shared.TriageAdmisionParams) ([]map[string]any, error)
 
+	// UpdateIafa invoca el SP usp_go_Triaje_EmergeciaActualizarIAFA para
+	// actualizar la IAFA del triaje (fuente de financiamiento = SIS).
+	UpdateIafa(ctx context.Context, idTriaje int) error
+
 	// CreateAdmission crea la atención (admisión) de un paciente desde su
 	// triaje invocando el SP WebCrearAtencionDesdeTriaje. Retorna el
 	// valor del parámetro de salida @Resultado.

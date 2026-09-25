@@ -413,6 +413,31 @@ func (h *TriageHandler) UpdateEstadoTriajeConsulta(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]bool{"ok": true})
 }
 
+// @Summary Actualiza la IAFA de un triaje
+// @Description Actualiza la fuente de financiamiento (IAFA) de un triaje de emergencia a SIS invocando el SP usp_go_Triaje_EmergeciaActualizarIAFA
+// @Tags Triaje
+// @Produce json
+// @Param id path int true "Id del triaje"
+// @Success 200 {object} map[string]bool "Operación exitosa"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/{id}/iafa [put]
+func (h *TriageHandler) UpdateIafa(c *gin.Context) {
+	raw := c.Param("id")
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || id <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "id debe ser un entero positivo")
+		return
+	}
+
+	if err := h.service.UpdateIafa(c.Request.Context(), int(id)); err != nil {
+		respondError(c, http.StatusInternalServerError, "TRIAGE_IAFA_UPDATE_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, map[string]bool{"ok": true})
+}
+
 // @Summary Reporte de triajes por empleado
 // @Description Cantidad de triajes de un empleado por servicio (tópico) entre fechas con hora y minuto (SP usp_go_ReporteTriaje)
 // @Accept json

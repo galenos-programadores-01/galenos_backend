@@ -246,6 +246,20 @@ func (r *triageRepository) ListPendingAdmission(ctx context.Context, params shar
 	return maps, nil
 }
 
+// UpdateIafa invoca el procedimiento almacenado
+// usp_go_Triaje_EmergeciaActualizarIAFA, que actualiza la IAFA del triaje
+// (fuente de financiamiento = SIS) para el id indicado.
+func (r *triageRepository) UpdateIafa(ctx context.Context, idTriaje int) error {
+	const procedure = `usp_go_Triaje_EmergeciaActualizarIAFA`
+
+	_, err := r.db.ExecContext(ctx, procedure, sql.Named("IdTriaje", idTriaje))
+	if err != nil {
+		return fmt.Errorf("calling usp_go_Triaje_EmergeciaActualizarIAFA: %w", err)
+	}
+
+	return nil
+}
+
 // CreateAdmission invoca el procedimiento almacenado
 // WebCrearAtencionDesdeTriaje con los datos del paciente que se admisiona
 // desde su triaje. El parámetro @Resultado se declara con sql.Out para
