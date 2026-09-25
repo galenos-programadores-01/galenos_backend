@@ -1,6 +1,9 @@
 package domain
 
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+)
 
 // SaveReferenciaRequest es la estructura exacta que espera el servicio
 // saveReferencia del MINSA para registrar una referencia.
@@ -170,15 +173,26 @@ type SaveReferenciaDatos struct {
 }
 
 func (d *SaveReferenciaDatos) UnmarshalJSON(b []byte) error {
-	raw := string(b)
-	if raw == "null" || (len(raw) > 0 && raw[0] == '"') {
+	raw := string(bytes.TrimSpace(b))
+	if raw == "" || raw == "null" || (len(raw) > 0 && raw[0] == '"') {
 		*d = SaveReferenciaDatos{}
 		return nil
 	}
-	var v SaveReferenciaDatos
+	type alias SaveReferenciaDatos
+	if len(raw) > 0 && raw[0] == '[' {
+		var items []alias
+		if err := json.Unmarshal(b, &items); err != nil {
+			return err
+		}
+		if len(items) > 0 {
+			*d = SaveReferenciaDatos(items[0])
+		}
+		return nil
+	}
+	var v alias
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
-	*d = v
+	*d = SaveReferenciaDatos(v)
 	return nil
 }

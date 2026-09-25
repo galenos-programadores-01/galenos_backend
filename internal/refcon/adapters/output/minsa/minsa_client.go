@@ -279,6 +279,7 @@ func (c *client) SaveReferencia(ctx context.Context, req domain.SaveReferenciaRe
 	httpReq.Header.Set("User-Agent", defaultUserAgent)
 
 	log.Printf("[DashRefCon] saveReferencia url=%s", c.cfg.SaveReferenciaURL)
+	log.Printf("[DashRefCon] saveReferencia body=%s", truncate(body, 20000))
 
 	resp, err := c.http.Do(httpReq)
 	if err != nil {
@@ -297,11 +298,12 @@ func (c *client) SaveReferencia(ctx context.Context, req domain.SaveReferenciaRe
 
 	var out domain.SaveReferenciaResponse
 	if err := json.Unmarshal(respBody, &out); err != nil {
+		log.Printf("[DashRefCon] saveReferencia: no se pudo decodificar la respuesta de MINSA status=%d body=%s", resp.StatusCode, truncate(respBody, 1000))
 		return nil, fmt.Errorf("decoding minsa refcon saveReferencia response: %w", err)
 	}
 
 	if out.Codigo != "" && out.Codigo != "0000" {
-		log.Printf("[DashRefCon] respuesta MINSA saveReferencia status=%d codigo=%s mensaje=%q body=%s", resp.StatusCode, out.Codigo, derefStr(out.Mensaje), truncate(respBody, 500))
+		log.Printf("[DashRefCon] respuesta MINSA saveReferencia status=%d codigo=%s mensaje=%q body=%s", resp.StatusCode, out.Codigo, derefStr(out.Mensaje), truncate(respBody, 4000))
 	}
 
 	return &out, nil
