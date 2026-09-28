@@ -298,6 +298,28 @@ func (r *triageRepository) CreateAdmission(ctx context.Context, admision *domain
 	return resultado, nil
 }
 
+// EliminarTriaje invoca el procedimiento almacenado
+// usp_go_Triaje_EmergenciaEliminar, que realiza la baja lógica del triaje
+// (IdEstado = 0). El SP no elimina nada si el triaje ya tiene ficha de
+// admisión y lo informa por medio del parámetro de salida @Resultado,
+// declarado con sql.Out para capturar su valor.
+func (r *triageRepository) EliminarTriaje(ctx context.Context, idTriaje, idEmpleado int) (string, error) {
+	const procedure = `usp_go_Triaje_EmergenciaEliminar`
+
+	var resultado string
+
+	_, err := r.db.ExecContext(ctx, procedure,
+		sql.Named("IdTriaje", idTriaje),
+		sql.Named("IdEmpleado", idEmpleado),
+		sql.Named("Resultado", sql.Out{Dest: &resultado}),
+	)
+	if err != nil {
+		return "", fmt.Errorf("calling usp_go_Triaje_EmergenciaEliminar: %w", err)
+	}
+
+	return resultado, nil
+}
+
 // GetReporte invoca el procedimiento almacenado WebSelectReporteTriaje con
 // los filtros por id de triaje e id de paciente. Se envía -100 en ambos
 // filtros cuando no se quieren aplicar. Las columnas se mapean a

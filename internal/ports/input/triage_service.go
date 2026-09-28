@@ -35,6 +35,13 @@ type TriageService interface {
 	// SP WebCrearAtencionDesdeTriaje y retorna el @Resultado del SP.
 	CreateAdmission(ctx context.Context, admision *domain.AdmisionDesdeTriaje) (string, error)
 
+	// EliminarTriaje elimina (baja lógica) un triaje de emergencia
+	// invocando el SP usp_go_Triaje_EmergenciaEliminar y retorna el
+	// @Resultado del SP. Si el triaje ya cuenta con ficha de admisión el SP
+	// no elimina nada y lo informa con un mensaje de error. idEmpleado es
+	// el empleado que ejecuta la eliminación.
+	EliminarTriaje(ctx context.Context, idTriaje, idEmpleado int) (string, error)
+
 	// GetReporte genera el reporte de triaje invocando el SP
 	// WebSelectReporteTriaje con los filtros por id de triaje e id de
 	// paciente (-100 para ignorar el filtro).

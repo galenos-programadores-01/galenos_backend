@@ -78,6 +78,21 @@ func (uc *triageUseCase) CreateAdmission(ctx context.Context, admision *domain.A
 	return result, nil
 }
 
+// EliminarTriaje delega la baja lógica del triaje (SP
+// usp_go_Triaje_EmergenciaEliminar) en el repositorio y devuelve el
+// resultado informado por el SP.
+func (uc *triageUseCase) EliminarTriaje(ctx context.Context, idTriaje, idEmpleado int) (string, error) {
+	if idTriaje <= 0 {
+		return "", fmt.Errorf("el id del triaje debe ser un entero positivo")
+	}
+
+	result, err := uc.repo.EliminarTriaje(ctx, idTriaje, idEmpleado)
+	if err != nil {
+		return "", fmt.Errorf("deleting triage: %w", err)
+	}
+	return result, nil
+}
+
 // GetReporte delega en el repositorio (SP WebSelectReporteTriaje) y
 // devuelve los registros crudos del reporte.
 func (uc *triageUseCase) GetReporte(ctx context.Context, params shared.TriageReporteParams) ([]map[string]any, error) {

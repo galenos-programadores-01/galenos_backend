@@ -172,6 +172,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			triaje.PUT("/consulta/:id/estado", p.TriageHandler.UpdateEstadoTriajeConsulta)
 			triaje.PUT("/:id/iafa", p.TriageHandler.UpdateIafa)
 			triaje.PUT("/:id", p.TriageHandler.UpdateTriaje)
+			triaje.DELETE("/:id", p.TriageHandler.Delete)
 			triaje.POST("", p.TriageHandler.Create)
 			triaje.POST("/consulta", p.TriageHandler.CreateTriajeConsulta)
 			triaje.POST("/admision", p.TriageHandler.CreateAdmission)

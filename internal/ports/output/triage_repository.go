@@ -40,6 +40,13 @@ type TriageRepository interface {
 	// valor del parámetro de salida @Resultado.
 	CreateAdmission(ctx context.Context, admision *domain.AdmisionDesdeTriaje) (string, error)
 
+	// EliminarTriaje elimina (baja lógica) un triaje de emergencia
+	// invocando el SP usp_go_Triaje_EmergenciaEliminar. El SP impide la
+	// baja si el triaje ya tiene ficha de admisión y lo informa en el
+	// parámetro de salida @Resultado. idEmpleado es el empleado que
+	// ejecuta la eliminación.
+	EliminarTriaje(ctx context.Context, idTriaje, idEmpleado int) (string, error)
+
 	// GetReporte invoca el SP WebSelectReporteTriaje con los filtros por
 	// id de triaje e id de paciente. Devuelve los registros como mapas
 	// columna -> valor.

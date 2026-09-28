@@ -343,6 +343,14 @@ type createAdmissionFromTriageRequest struct {
 	Observacion         *string `json:"observacion"`
 }
 
+// deleteTriajeRequest es el cuerpo (opcional) de DELETE
+// /api/v1/triaje/{id}. El id del triaje viaja en la ruta y el empleado que
+// ejecuta la eliminación en el cuerpo; si el cuerpo no lo trae, el handler
+// usa el id del empleado del token JWT.
+type deleteTriajeRequest struct {
+	IDEmpleado *int64 `json:"idEmpleado"`
+}
+
 // toDomain mapea el request HTTP al objeto de dominio para el SP.
 func (r createAdmissionFromTriageRequest) toDomain() *domain.AdmisionDesdeTriaje {
 	return &domain.AdmisionDesdeTriaje{

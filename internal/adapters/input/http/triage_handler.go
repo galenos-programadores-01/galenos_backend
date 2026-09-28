@@ -438,6 +438,44 @@ func (h *TriageHandler) UpdateIafa(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]bool{"ok": true})
 }
 
+// @Summary Elimina un triaje de emergencia
+// @Description Elimina (baja lógica: IdEstado = 0) un triaje de emergencia invocando el SP usp_go_Triaje_EmergenciaEliminar. Si el triaje ya cuenta con ficha de admisión el SP no lo elimina y devuelve un mensaje de error
+// @Tags Triaje
+// @Accept json
+// @Produce json
+// @Param id path int true "Id del triaje"
+// @Param triaje body deleteTriajeRequest false "Empleado que ejecuta la eliminación"
+// @Success 200 {object} map[string]string "Mensaje de resultado del SP"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/{id} [delete]
+func (h *TriageHandler) Delete(c *gin.Context) {
+	raw := c.Param("id")
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || id <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "id debe ser un entero positivo")
+		return
+	}
+
+	// El cuerpo es opcional: si no se envía o no trae idEmpleado se usa el
+	// empleado del token JWT.
+	var req deleteTriajeRequest
+	_ = c.ShouldBindJSON(&req)
+
+	idEmpleado := c.GetInt("idEmpleado")
+	if req.IDEmpleado != nil {
+		idEmpleado = int(*req.IDEmpleado)
+	}
+
+	result, err := h.service.EliminarTriaje(c.Request.Context(), int(id), idEmpleado)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "TRIAGE_DELETE_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, map[string]string{"resultado": result})
+}
+
 // @Summary Reporte de triajes por empleado
 // @Description Cantidad de triajes de un empleado por servicio (tópico) entre fechas con hora y minuto (SP usp_go_ReporteTriaje)
 // @Accept json
