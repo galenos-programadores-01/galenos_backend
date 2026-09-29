@@ -43,4 +43,9 @@ type SisService interface {
 	// ListConsumo consulta el detalle de consumo (orden de servicio) de una
 	// cuenta de atención invocando el SP webFactOrdenServicioDetaDesFinaListarIdcuenta.
 	ListConsumo(ctx context.Context, idCuentaAtencion int64) ([]map[string]any, error)
+
+	// ListFiliaciones lista las afiliaciones SIS ya registradas en la base de
+	// datos local para un documento, invocando el SP
+	// usp_go_SisFiliacionesConsultar.
+	ListFiliaciones(ctx context.Context, nroDocumento string, idTipoDoc int) ([]map[string]any, error)
 }

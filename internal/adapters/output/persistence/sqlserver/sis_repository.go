@@ -175,3 +175,14 @@ func (r *sisRepository) ListConsumo(ctx context.Context, idCuentaAtencion int64)
 		sql.Named("IdUsuario", 2937),
 	)
 }
+
+// ListFiliaciones invoca el SP usp_go_SisFiliacionesConsultar, que lee de la
+// tabla SisFiliaciones (base SIGH_EXTERNA) las afiliaciones ya registradas
+// para un tipo y número de documento. No consulta al SIS por SOAP, a diferencia
+// de ConsultarAfiliado: solo lee lo que está almacenado localmente.
+func (r *sisRepository) ListFiliaciones(ctx context.Context, nroDocumento string, idTipoDoc int) ([]map[string]any, error) {
+	return r.listRows(ctx, `usp_go_SisFiliacionesConsultar`,
+		sql.Named("NroDocumento", nroDocumento),
+		sql.Named("IdTipoDoc", idTipoDoc),
+	)
+}

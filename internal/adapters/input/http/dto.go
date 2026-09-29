@@ -201,6 +201,14 @@ type sisCuentaAtencionParams struct {
 	IdCuentaAtencion int64 `form:"idCuentaAtencion" binding:"required"`
 }
 
+// sisFiliacionesParams son los parámetros de GET /api/v1/sis/filiaciones.
+// El tipo de documento se valida a mano en el handler porque el SP acepta
+// cualquier entero y el 0 no corresponde a un tipo válido.
+type sisFiliacionesParams struct {
+	NroDocumento string `form:"nroDocumento" binding:"required"`
+	IdTipoDoc    int    `form:"idTipoDoc"`
+}
+
 // sisFuaAgregarRequest es el cuerpo de POST /api/v1/sis/fua/agregar.
 type sisFuaAgregarRequest struct {
 	IdCuentaAtencion int64  `json:"idCuentaAtencion" binding:"required"`

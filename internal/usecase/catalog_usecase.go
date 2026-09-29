@@ -278,6 +278,26 @@ func (uc *catalogUseCase) ListParametrosClinicos(ctx context.Context, idGrupo in
 	return items, nil
 }
 
+// ActualizarParametroValorTexto marca el parámetro con ValorTexto = 'N' (SP
+// usp_go_ActualizarParametroValorTextoPorId) e invalida la cache de parámetros
+// clínicos. La cache está indexada por grupo, y el SP no devuelve a qué grupo
+// pertenece el parámetro, así que se purgan los cinco grupos conocidos.
+func (uc *catalogUseCase) ActualizarParametroValorTexto(ctx context.Context, idParametro int) error {
+	if err := uc.repo.ActualizarParametroValorTexto(ctx, idParametro); err != nil {
+		return err
+	}
+
+	if uc.cache != nil {
+		keys := make([]string, 0, 5)
+		for idGrupo := 1; idGrupo <= 5; idGrupo++ {
+			keys = append(keys, fmt.Sprintf("cache:param_clinicos:grupo:%d", idGrupo))
+		}
+		uc.cache.Delete(ctx, keys...)
+	}
+
+	return nil
+}
+
 func (uc *catalogUseCase) ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error) {
 	items, err := uc.repo.ListEstablecimientos(ctx, filtro, tipo)
 	if err != nil {

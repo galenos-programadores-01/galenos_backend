@@ -125,6 +125,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/receta/medicamentos", p.CatalogHandler.BuscarMedicamentosReceta)
 		v1.GET("/catalogos/examenes", p.CatalogHandler.BuscarExamenesCatalogo)
 		v1.GET("/catalogos/parametros-clinicos/:idGrupo", p.CatalogHandler.HandleListParametrosClinicos)
+		v1.PATCH("/catalogos/parametros/:idParametro/valor-texto", p.CatalogHandler.ActualizarParametroValorTexto)
 
 		reniec := v1.Group("/reniec")
 		{
@@ -135,6 +136,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 		{
 			sis.GET("/afiliado/:nrodoc", p.SisHandler.ConsultarAfiliado)
 			sis.POST("/filiaciones", p.SisHandler.GestionarAfiliacion)
+			sis.GET("/filiaciones", p.SisHandler.ListFiliaciones)
 			sis.POST("/fua", p.SisHandler.ForzarGuardadoFua)
 			sis.POST("/fua/agregar", p.SisHandler.AgregarFua)
 			sis.GET("/fua/imprimir", p.SisHandler.GetFuaImprimir)

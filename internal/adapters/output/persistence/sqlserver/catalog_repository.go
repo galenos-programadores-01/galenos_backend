@@ -731,6 +731,16 @@ func (r *catalogRepository) BuscarExamenesCatalogo(ctx context.Context, filtro s
 
 // ListEstablecimientos invoca el SP usp_go_webEstablecimientosFiltrar para
 // buscar establecimientos por filtro y tipo (1=referencia, 0=contrareferencia).
+// ActualizarParametroValorTexto invoca el SP usp_go_ActualizarParametroValorTextoPorId,
+// que deja ValorTexto = 'N' para el parámetro recibido.
+func (r *catalogRepository) ActualizarParametroValorTexto(ctx context.Context, idParametro int) error {
+	const procedure = `EXEC dbo.usp_go_ActualizarParametroValorTextoPorId @IdParametro = @p1`
+	if _, err := r.db.ExecContext(ctx, procedure, sql.Named("p1", idParametro)); err != nil {
+		return fmt.Errorf("calling usp_go_ActualizarParametroValorTextoPorId: %w", err)
+	}
+	return nil
+}
+
 func (r *catalogRepository) ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error) {
 	rows, err := r.db.QueryContext(ctx, "EXEC [dbo].[usp_go_webEstablecimientosFiltrar] @filtro = @p1, @Tipo = @p2", sql.Named("p1", filtro), sql.Named("p2", tipo))
 	if err != nil {

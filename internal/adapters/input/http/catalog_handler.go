@@ -621,6 +621,34 @@ func (h *CatalogHandler) HandleListParametrosClinicos(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
+// ActualizarParametroValorTexto maneja PATCH /api/v1/catalogos/parametros/:idParametro/valor-texto.
+//
+// @Summary Actualiza el ValorTexto de un parámetro
+// @Description Marca el parámetro con ValorTexto = 'N' (SP usp_go_ActualizarParametroValorTextoPorId). Invalida la cache de parámetros clínicos.
+// @Tags Catalogos
+// @Accept json
+// @Produce json
+// @Param idParametro path int true "ID del parámetro"
+// @Success 200 {object} apiResponse{message=string}
+// @Failure 400 {object} apiResponse{error=apiError} "ID inválido"
+// @Failure 500 {object} apiResponse{error=apiError} "Error interno"
+// @Router /catalogos/parametros/{idParametro}/valor-texto [patch]
+func (h *CatalogHandler) ActualizarParametroValorTexto(c *gin.Context) {
+	raw := c.Param("idParametro")
+	idParametro, err := strconv.Atoi(raw)
+	if err != nil || idParametro <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_PARAMETRO_ID", "ID de parámetro inválido")
+		return
+	}
+
+	if err := h.service.ActualizarParametroValorTexto(c.Request.Context(), idParametro); err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, gin.H{"message": "Parámetro actualizado"})
+}
+
 // ListEstablecimientos maneja GET /api/v1/establecimientos.
 //
 // @Summary Lista establecimientos

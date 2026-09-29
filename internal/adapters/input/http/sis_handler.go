@@ -306,6 +306,51 @@ func (h *SisHandler) ListProcedimientos(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
+// ListFiliaciones maneja GET /api/v1/sis/filiaciones.
+//
+// @Summary Lista las afiliaciones SIS registradas en la base de datos
+// @Description Invoca el SP usp_go_SisFiliacionesConsultar, que lee de la tabla SisFiliaciones las afiliaciones guardadas para un tipo y número de documento. A diferencia de /sis/afiliado, no consulta al SIS por SOAP.
+// @Tags SIS
+// @Accept json
+// @Produce json
+// @Param nroDocumento query string true "Número de documento (DNI)"
+// @Param idTipoDoc query int true "Tipo de documento (1=DNI, 3=CE)"
+// @Success 200 {object} apiResponse{data=[]object} "Lista de afiliaciones"
+// @Failure 400 {object} apiResponse{error=apiError} "Parámetros inválidos"
+// @Failure 500 {object} apiResponse{error=apiError} "Error al consultar las afiliaciones"
+// @Router /sis/filiaciones [get]
+func (h *SisHandler) ListFiliaciones(c *gin.Context) {
+	var params sisFiliacionesParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+
+	if params.NroDocumento == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "nroDocumento es obligatorio")
+		return
+	}
+	if params.IdTipoDoc <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idTipoDoc debe ser un entero positivo")
+		return
+	}
+
+	items, err := h.service.ListFiliaciones(c.Request.Context(), params.NroDocumento, params.IdTipoDoc)
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidDocumentNumber) {
+			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+			return
+		}
+		respondError(c, http.StatusInternalServerError, "SIS_AFILIACIONES_LIST_FAILED", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]map[string]any, 0)
+	}
+
+	respondSuccess(c, http.StatusOK, items)
+}
+
 func parseSisAfiliadoParams(c *gin.Context) (shared.SISAfiliadoParams, error) {
 	params := shared.SISAfiliadoParams{
 		DocumentNumber: c.Param("nrodoc"),

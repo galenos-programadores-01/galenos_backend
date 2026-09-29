@@ -2076,6 +2076,51 @@ paths:
       summary: Listar parámetros clínicos por grupo
       tags:
       - Catálogos
+  /catalogos/parametros/{idParametro}/valor-texto:
+    patch:
+      consumes:
+      - application/json
+      description: Marca el parámetro con ValorTexto = 'N' (SP usp_go_ActualizarParametroValorTextoPorId).
+        Invalida la cache de parámetros clínicos.
+      parameters:
+      - description: ID del parámetro
+        in: path
+        name: idParametro
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: ID inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error interno
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Actualiza el ValorTexto de un parámetro
+      tags:
+      - Catalogos
   /centros-poblados/{idDistrito}:
     get:
       description: Devuelve los centros poblados de un distrito (SP usp_go_ListarCentrosPoblados).
