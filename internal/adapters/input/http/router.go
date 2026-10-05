@@ -71,6 +71,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			pacientes := protected.Group("/pacientes")
 			pacientes.GET("", p.PatientHandler.List)
 			pacientes.POST("", p.PatientHandler.Create)
+			pacientes.POST("/historia-clinica", p.PatientHandler.CreateWithHistory)
 			pacientes.GET("/buscar", p.PatientHandler.Search)
 			pacientes.GET("/por-documento", p.PatientHandler.GetByDocumentAndType)
 			pacientes.GET("/:idOrDoc/datos-adicionales", p.PatientHandler.GetDatosAdicionales)

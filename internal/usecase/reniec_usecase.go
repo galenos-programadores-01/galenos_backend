@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/input"
@@ -25,6 +26,9 @@ func (uc *reniecUseCase) Consultar(ctx context.Context, dni string, operacion st
 	if operacion == "" {
 		operacion = "completo"
 	}
+	// El cliente solo acepta "basico" o "completo" en minúsculas: normalizamos
+	// para no fallar por mayúsculas o espacios en el parámetro de la URL.
+	operacion = strings.ToLower(strings.TrimSpace(operacion))
 
 	result, err := uc.client.Consultar(ctx, dni, operacion)
 	if err != nil {

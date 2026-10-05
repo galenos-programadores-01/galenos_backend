@@ -1396,6 +1396,45 @@ definitions:
       telefono:
         type: string
     type: object
+  httpadapter.createPatientWithHistoryRequest:
+    properties:
+      apellidoMaterno:
+        type: string
+      apellidoPaterno:
+        type: string
+      direccionPaciente:
+        type: string
+      discapacidad:
+        type: integer
+      fechaNacimiento:
+        type: string
+      idDistrito:
+        type: integer
+      idDocIdentidad:
+        type: integer
+      idEstadoCivil:
+        type: integer
+      idFuenteFinanciamiento:
+        type: integer
+      idGradoInstruccion:
+        type: integer
+      idOcupacion:
+        type: integer
+      idPais:
+        type: integer
+      idTipoSexo:
+        type: integer
+      incapacidad:
+        type: integer
+      nroDocumento:
+        type: string
+      primerNombre:
+        type: string
+      segundoNombre:
+        type: string
+      telefono:
+        type: string
+    type: object
   httpadapter.createTriajeRequest:
     properties:
       apellidoMaterno:
@@ -4392,6 +4431,65 @@ paths:
       summary: Busca pacientes aplicando filtros opcionales
       tags:
       - Pacientes
+  /pacientes/historia-clinica:
+    post:
+      consumes:
+      - application/json
+      description: Genera el número de historia clínica, inserta el paciente y da
+        de alta la historia invocando el SP usp_go_PacienteHistoriaClinicaAgregar,
+        y devuelve el detalle del paciente creado. Requiere token y usa el claim idEmpleado
+        del JWT como @IdEmpleado del SP.
+      parameters:
+      - description: Datos del paciente a registrar
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpadapter.createPatientWithHistoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Paciente creado
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/httpadapter.patientDetailResponse'
+              type: object
+        "400":
+          description: Cuerpo inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "401":
+          description: Token inválido o sin claim idEmpleado
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error al registrar el paciente
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Registra un paciente con su historia clínica
+      tags:
+      - Pacientes
   /pacientes/por-documento:
     get:
       description: Invoca el SP usp_go_ListarPacientePorNroDocyTipo con el número
@@ -5079,6 +5177,58 @@ paths:
       tags:
       - SIS
   /sis/filiaciones:
+    get:
+      consumes:
+      - application/json
+      description: Invoca el SP usp_go_SisFiliacionesConsultar, que lee de la tabla
+        SisFiliaciones las afiliaciones guardadas para un tipo y número de documento.
+        A diferencia de /sis/afiliado, no consulta al SIS por SOAP.
+      parameters:
+      - description: Número de documento (DNI)
+        in: query
+        name: nroDocumento
+        required: true
+        type: string
+      - description: Tipo de documento (1=DNI, 3=CE)
+        in: query
+        name: idTipoDoc
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de afiliaciones
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    type: object
+                  type: array
+              type: object
+        "400":
+          description: Parámetros inválidos
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error al consultar las afiliaciones
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista las afiliaciones SIS registradas en la base de datos
+      tags:
+      - SIS
     post:
       consumes:
       - application/json

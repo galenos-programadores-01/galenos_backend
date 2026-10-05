@@ -41,6 +41,12 @@ type PatientRepository interface {
 	// WebPacienteAgregar_E_H y retorna el IdPaciente generado (SCOPE_IDENTITY).
 	Create(ctx context.Context, create domain.PatientCreate) (int64, error)
 
+	// CreateWithHistory registra un paciente nuevo invocando el procedimiento
+	// almacenado usp_go_PacienteHistoriaClinicaAgregar, que genera su historia
+	// clinica. Retorna el IdPaciente y el NroHistoriaClinica generados, que el
+	// SP declara como OUTPUT y devuelve en un SELECT final.
+	CreateWithHistory(ctx context.Context, create domain.PatientCreateHistoria) (int64, int, error)
+
 	// Delete elimina un paciente invocando PacientesSePuedeEliminar primero;
 	// si el paciente tiene registros asociados retorna
 	// domain.ErrPatientCannotBeDeleted y no elimina nada.

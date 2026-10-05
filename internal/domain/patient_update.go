@@ -41,5 +41,12 @@ type PatientUpdate struct {
 	Email             *string
 	DisabilityID      *int64
 	IncapacityID      *int64
-	AuditUserID       *int64
+	// Datos de la madre tutor. Ojo: MotherName es el campo legacy
+	// @NombreMadre; estos cinco son los campos desnormalizados @Madre*.
+	MotherDocumentNumber  *string
+	MotherPaternalSurname *string
+	MotherMaternalSurname *string
+	MotherFirstName       *string
+	MotherSecondName      *string
+	AuditUserID           *int64
 }

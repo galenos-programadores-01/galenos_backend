@@ -24,4 +24,5 @@ var (
 	ErrInvalidReniecOperation            = errors.New("invalid reniec operation")
 	ErrInvalidCredentials                = errors.New("invalid credentials")
 	ErrInvalidToken                      = errors.New("invalid token")
+	ErrMissingEmployeeID                 = errors.New("the authenticated employee id is required")
 )

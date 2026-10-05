@@ -368,6 +368,86 @@ const docTemplate = `{
                 }
             }
         },
+        "/catalogos/parametros/{idParametro}/valor-texto": {
+            "patch": {
+                "description": "Marca el parámetro con ValorTexto = 'N' (SP usp_go_ActualizarParametroValorTextoPorId). Invalida la cache de parámetros clínicos.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Actualiza el ValorTexto de un parámetro",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del parámetro",
+                        "name": "idParametro",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/centros-poblados/{idDistrito}": {
             "get": {
                 "description": "Devuelve los centros poblados de un distrito (SP usp_go_ListarCentrosPoblados).",
@@ -3810,6 +3890,111 @@ const docTemplate = `{
                 }
             }
         },
+        "/pacientes/historia-clinica": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Genera el número de historia clínica, inserta el paciente y da de alta la historia invocando el SP usp_go_PacienteHistoriaClinicaAgregar, y devuelve el detalle del paciente creado. Requiere token y usa el claim idEmpleado del JWT como @IdEmpleado del SP.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pacientes"
+                ],
+                "summary": "Registra un paciente con su historia clínica",
+                "parameters": [
+                    {
+                        "description": "Datos del paciente a registrar",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.createPatientWithHistoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Paciente creado",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/httpadapter.patientDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Token inválido o sin claim idEmpleado",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error al registrar el paciente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/pacientes/por-documento": {
             "get": {
                 "description": "Invoca el SP usp_go_ListarPacientePorNroDocyTipo con el número y el tipo de documento.",
@@ -5379,6 +5564,94 @@ const docTemplate = `{
             }
         },
         "/sis/filiaciones": {
+            "get": {
+                "description": "Invoca el SP usp_go_SisFiliacionesConsultar, que lee de la tabla SisFiliaciones las afiliaciones guardadas para un tipo y número de documento. A diferencia de /sis/afiliado, no consulta al SIS por SOAP.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SIS"
+                ],
+                "summary": "Lista las afiliaciones SIS registradas en la base de datos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Número de documento (DNI)",
+                        "name": "nroDocumento",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tipo de documento (1=DNI, 3=CE)",
+                        "name": "idTipoDoc",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de afiliaciones",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error al consultar las afiliaciones",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Invoca el SP usp_go_webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.",
                 "consumes": [
@@ -8625,6 +8898,65 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "nroHistoriaClinica": {
+                    "type": "string"
+                },
+                "primerNombre": {
+                    "type": "string"
+                },
+                "segundoNombre": {
+                    "type": "string"
+                },
+                "telefono": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpadapter.createPatientWithHistoryRequest": {
+            "type": "object",
+            "properties": {
+                "apellidoMaterno": {
+                    "type": "string"
+                },
+                "apellidoPaterno": {
+                    "type": "string"
+                },
+                "direccionPaciente": {
+                    "type": "string"
+                },
+                "discapacidad": {
+                    "type": "integer"
+                },
+                "fechaNacimiento": {
+                    "type": "string"
+                },
+                "idDistrito": {
+                    "type": "integer"
+                },
+                "idDocIdentidad": {
+                    "type": "integer"
+                },
+                "idEstadoCivil": {
+                    "type": "integer"
+                },
+                "idFuenteFinanciamiento": {
+                    "type": "integer"
+                },
+                "idGradoInstruccion": {
+                    "type": "integer"
+                },
+                "idOcupacion": {
+                    "type": "integer"
+                },
+                "idPais": {
+                    "type": "integer"
+                },
+                "idTipoSexo": {
+                    "type": "integer"
+                },
+                "incapacidad": {
+                    "type": "integer"
+                },
+                "nroDocumento": {
                     "type": "string"
                 },
                 "primerNombre": {

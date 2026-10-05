@@ -34,6 +34,11 @@ type PatientService interface {
 	// y devuelve el detalle del paciente creado.
 	Create(ctx context.Context, create domain.PatientCreate) (domain.PatientDetail, error)
 
+	// CreateWithHistory registra un paciente junto con su historia clinica
+	// invocando el SP usp_go_PacienteHistoriaClinicaAgregar y devuelve el
+	// detalle del paciente creado, localizado por documento.
+	CreateWithHistory(ctx context.Context, create domain.PatientCreateHistoria) (domain.PatientDetail, error)
+
 	// Delete elimina un paciente si no tiene registros asociados (SP
 	// PacientesSePuedeEliminar + PacientesEliminarPorIdPaciente).
 	Delete(ctx context.Context, id int64) error

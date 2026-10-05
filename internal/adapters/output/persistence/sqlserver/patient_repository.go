@@ -403,6 +403,11 @@ func (r *patientRepository) Update(ctx context.Context, id int64, update domain.
 		sql.Named("Email", update.Email),
 		sql.Named("Dispacidad", update.DisabilityID),
 		sql.Named("Incapacidad", update.IncapacityID),
+		sql.Named("MadreDocumento", update.MotherDocumentNumber),
+		sql.Named("MadreApellidoPaterno", update.MotherPaternalSurname),
+		sql.Named("MadreApellidoMaterno", update.MotherMaternalSurname),
+		sql.Named("MadrePrimerNombre", update.MotherFirstName),
+		sql.Named("MadreSegundoNombre", update.MotherSecondName),
 		sql.Named("IdUsuarioAuditoria", update.AuditUserID),
 	)
 	if err != nil {
@@ -473,6 +478,59 @@ func (r *patientRepository) Create(ctx context.Context, create domain.PatientCre
 	}
 
 	return id, nil
+}
+
+// CreateWithHistory invoca el procedimiento almacenado
+// usp_go_PacienteHistoriaClinicaAgregar, que genera el numero de historia
+// clinica, inserta el paciente y da de alta la historia.
+//
+// El driver mssql exige que se especifiquen TODOS los parametros declarados,
+// incluidos los OUTPUT, asi que @IdPaciente y @NroHistoriaClinica van como
+// sql.Out. El SP tambien cierra con un SELECT de esos valores, pero el
+// ExecContext descarta el conjunto de resultados y los ids se leen de los
+// parametros de salida, igual que hace Create con WebPacienteAgregar_E_H.
+func (r *patientRepository) CreateWithHistory(ctx context.Context, create domain.PatientCreateHistoria) (int64, int, error) {
+	const procedure = `usp_go_PacienteHistoriaClinicaAgregar`
+
+	var (
+		patientID     int64
+		historyNumber int
+	)
+	_, err := r.db.ExecContext(ctx, procedure,
+		sql.Named("ApellidoPaterno", create.PaternalSurname),
+		sql.Named("ApellidoMaterno", create.MaternalSurname),
+		sql.Named("PrimerNombre", create.FirstName),
+		sql.Named("SegundoNombre", create.SecondName),
+		sql.Named("FechaNacimiento", create.DateOfBirth),
+		sql.Named("IdDocIdentidad", create.DocIdentityID),
+		sql.Named("NroDocumento", create.DocumentNumber),
+		sql.Named("Telefono", create.Phone),
+		sql.Named("DireccionPaciente", create.HomeAddress),
+		sql.Named("IdTipoSexo", create.SexTypeID),
+		sql.Named("IdEstadoCivil", create.MaritalStatusID),
+		sql.Named("IdDistrito", create.HomeDistrictID),
+		sql.Named("IdPais", create.HomeCountryID),
+		sql.Named("IdEtnia", create.EthnicityID),
+		sql.Named("IdIdioma", create.LanguageID),
+		sql.Named("IdOcupacion", create.OccupationID),
+		sql.Named("IdGradoInstruccion", create.EducationDegreeID),
+		sql.Named("MadreNroDocumento", create.MotherDocumentNumber),
+		sql.Named("MadreApellidoPaterno", create.MotherPaternalSurname),
+		sql.Named("MadreApellidoMaterno", create.MotherMaternalSurname),
+		sql.Named("MadrePrimerNombre", create.MotherFirstName),
+		sql.Named("MadreSegundoNombre", create.MotherSecondName),
+		sql.Named("IdFuenteFinanciamiento", create.InsuranceTypeID),
+		sql.Named("Discapacidad", create.DisabilityID),
+		sql.Named("Incapacidad", create.IncapacityID),
+		sql.Named("IdEmpleado", create.EmployeeID),
+		sql.Named("IdPaciente", sql.Out{Dest: &patientID}),
+		sql.Named("NroHistoriaClinica", sql.Out{Dest: &historyNumber}),
+	)
+	if err != nil {
+		return 0, 0, fmt.Errorf("calling usp_go_PacienteHistoriaClinicaAgregar: %w", err)
+	}
+
+	return patientID, historyNumber, nil
 }
 
 // Delete verifica primero con PacientesSePuedeEliminar que el paciente no

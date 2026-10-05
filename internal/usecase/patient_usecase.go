@@ -120,6 +120,27 @@ func (uc *patientUseCase) Create(ctx context.Context, create domain.PatientCreat
 	return *patient, nil
 }
 
+// CreateWithHistory registra un paciente junto con su historia clinica. El SP
+// devuelve el IdPaciente y el NroHistoriaClinica generados, asi que el detalle
+// se recupera con una sola llamada adicional por id.
+func (uc *patientUseCase) CreateWithHistory(ctx context.Context, create domain.PatientCreateHistoria) (domain.PatientDetail, error) {
+	if create.EmployeeID <= 0 {
+		return domain.PatientDetail{}, domain.ErrMissingEmployeeID
+	}
+
+	id, _, err := uc.repo.CreateWithHistory(ctx, create)
+	if err != nil {
+		return domain.PatientDetail{}, fmt.Errorf("creating patient with history: %w", err)
+	}
+
+	detail, err := uc.repo.GetByID(ctx, id)
+	if err != nil {
+		return domain.PatientDetail{}, fmt.Errorf("getting created patient detail: %w", err)
+	}
+
+	return *detail, nil
+}
+
 func (uc *patientUseCase) Delete(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return domain.ErrInvalidPatientID
