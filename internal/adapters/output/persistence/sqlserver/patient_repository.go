@@ -22,63 +22,57 @@ func NewPatientRepository(db *sql.DB) output.PatientRepository {
 }
 
 func (r *patientRepository) List(ctx context.Context, page shared.PageRequest) ([]domain.Patient, int, error) {
-	const countQuery = `SELECT COUNT(1) FROM pacientes`
-
-	var total int
-	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&total); err != nil {
-		return nil, 0, fmt.Errorf("counting patients: %w", err)
-	}
-
-	const listQuery = `
-		SELECT IdPaciente, NroDocumento, NroHistoriaClinica, ApellidoPaterno,
-		       ApellidoMaterno, PrimerNombre, SegundoNombre, TercerNombre, FechaNacimiento, IdTipoSexo
-		FROM pacientes 
-		WHERE ISNULL(NroDocumento, '') <> '' 
-		ORDER BY NroDocumento
-		OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY`
-
-	rows, err := r.db.QueryContext(ctx, listQuery,
-		sql.Named("Offset", page.Offset()),
-		sql.Named("PageSize", page.PageSize),
+	rows, err := r.db.QueryContext(ctx, "EXEC dbo.usp_go_Pacientes_ListarPaginado @Offset = @p1, @PageSize = @p2",
+		sql.Named("p1", page.Offset()),
+		sql.Named("p2", page.PageSize),
 	)
 	if err != nil {
-		return nil, 0, fmt.Errorf("querying patients: %w", err)
+		return nil, 0, fmt.Errorf("calling usp_go_Pacientes_ListarPaginado: %w", err)
 	}
 	defer rows.Close()
 
+	var total int
+	if rows.Next() {
+		if err := rows.Scan(&total); err != nil {
+			return nil, 0, fmt.Errorf("scanning total patients: %w", err)
+		}
+	}
+
 	patients := make([]domain.Patient, 0, page.PageSize)
-	for rows.Next() {
-		var (
-			patient         domain.Patient
-			historyNumber   sql.NullString
-			maternalSurname sql.NullString
-			secondName      sql.NullString
-			thirdName       sql.NullString
-			birthDate       sql.NullTime
-		)
-		if err := rows.Scan(
-			&patient.PatientID,
-			&patient.DocumentNumber,
-			&historyNumber,
-			&patient.PaternalSurname,
-			&maternalSurname,
-			&patient.FirstName,
-			&secondName,
-			&thirdName,
-			&birthDate,
-			&patient.SexTypeID,
-		); err != nil {
-			return nil, 0, fmt.Errorf("scanning patient row: %w", err)
+	if rows.NextResultSet() {
+		for rows.Next() {
+			var (
+				patient         domain.Patient
+				historyNumber   sql.NullString
+				maternalSurname sql.NullString
+				secondName      sql.NullString
+				thirdName       sql.NullString
+				birthDate       sql.NullTime
+			)
+			if err := rows.Scan(
+				&patient.PatientID,
+				&patient.DocumentNumber,
+				&historyNumber,
+				&patient.PaternalSurname,
+				&maternalSurname,
+				&patient.FirstName,
+				&secondName,
+				&thirdName,
+				&birthDate,
+				&patient.SexTypeID,
+			); err != nil {
+				return nil, 0, fmt.Errorf("scanning patient row: %w", err)
+			}
+			patient.HistoryNumber = historyNumber.String
+			patient.MaternalSurname = maternalSurname.String
+			patient.SecondName = secondName.String
+			patient.ThirdName = thirdName.String
+			if birthDate.Valid {
+				d := birthDate.Time
+				patient.DateOfBirth = &d
+			}
+			patients = append(patients, patient)
 		}
-		patient.HistoryNumber = historyNumber.String
-		patient.MaternalSurname = maternalSurname.String
-		patient.SecondName = secondName.String
-		patient.ThirdName = thirdName.String
-		if birthDate.Valid {
-			d := birthDate.Time
-			patient.DateOfBirth = &d
-		}
-		patients = append(patients, patient)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, 0, fmt.Errorf("iterating patient rows: %w", err)
@@ -576,10 +570,10 @@ func (r *patientRepository) GetDatosAdicionales(ctx context.Context, idPaciente 
 
 	// Resolver IdPaciente real si el identificador recibido corresponde a un IdAtencion / IdEpisodio
 	resolvedId := idPaciente
-	var idPacFromAtencion int64
-	errAtencion := r.db.QueryRowContext(ctx, "SELECT IdPaciente FROM dbo.Atenciones WHERE IdAtencion = @p1", sql.Named("p1", idPaciente)).Scan(&idPacFromAtencion)
+	var idAt, idPacFromAtencion, idCta, idServ, idTipo int
+	errAtencion := r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1", sql.Named("p1", idPaciente)).Scan(&idAt, &idPacFromAtencion, &idCta, &idServ, &idTipo)
 	if errAtencion == nil && idPacFromAtencion > 0 {
-		resolvedId = idPacFromAtencion
+		resolvedId = int64(idPacFromAtencion)
 	}
 
 	rows, err := r.db.QueryContext(
@@ -648,10 +642,10 @@ func (r *patientRepository) GetDatosAdicionales(ctx context.Context, idPaciente 
 // la fila, usp_go_PacientesDatosAdicionalesAgregar) y usp_go_PacientesDatosAdicionalesActualizarComorbilidades.
 func (r *patientRepository) UpdateDatosAdicionales(ctx context.Context, idPaciente int64, datos domain.PacienteDatosAdicionales, idUsuario int) error {
 	resolvedId := idPaciente
-	var idPacFromAtencion int64
-	errAtencion := r.db.QueryRowContext(ctx, "SELECT IdPaciente FROM dbo.Atenciones WHERE IdAtencion = @p1", sql.Named("p1", idPaciente)).Scan(&idPacFromAtencion)
+	var idAt, idPacFromAtencion, idCta, idServ, idTipo int
+	errAtencion := r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1", sql.Named("p1", idPaciente)).Scan(&idAt, &idPacFromAtencion, &idCta, &idServ, &idTipo)
 	if errAtencion == nil && idPacFromAtencion > 0 {
-		resolvedId = idPacFromAtencion
+		resolvedId = int64(idPacFromAtencion)
 	}
 
 	result, err := r.db.ExecContext(

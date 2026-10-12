@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-// rowsToMaps convierte todas las filas de un result set en mapas
-// columna -> valor. Resulta útil para procedimientos almacenados cuyo
-// nombre de columnas se conoce solo en runtime, replicando el
-// dict(zip(columns, row)) del proyecto FastAPI.
 func rowsToMaps(rows *sql.Rows) ([]map[string]any, error) {
 	columns, err := rows.Columns()
 	if err != nil {
@@ -32,7 +28,12 @@ func rowsToMaps(rows *sql.Rows) ([]map[string]any, error) {
 
 		row := make(map[string]any, len(columns))
 		for i, col := range columns {
-			row[col] = values[i]
+			val := values[i]
+			if b, ok := val.([]byte); ok {
+				row[col] = string(b)
+			} else {
+				row[col] = val
+			}
 		}
 		results = append(results, row)
 	}

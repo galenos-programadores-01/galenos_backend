@@ -198,7 +198,7 @@ func (r *ListaEsperaQxRepository) ObtenerPorId(ctx context.Context, id int) (dom
 
 func (r *ListaEsperaQxRepository) obtenerTelefonoListaEspera(ctx context.Context, id int) *string {
 	var telefono sql.NullString
-	if err := r.db.QueryRowContext(ctx, "SELECT Telefono FROM ListaEsperaQx WHERE Id = @p1", sql.Named("p1", id)).Scan(&telefono); err != nil {
+	if err := r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_ListaEsperaQx_ObtenerTelefonoPorId @Id = @p1", sql.Named("p1", id)).Scan(&telefono); err != nil {
 		return nil
 	}
 	if !telefono.Valid || strings.TrimSpace(telefono.String) == "" {
@@ -211,14 +211,12 @@ func (r *ListaEsperaQxRepository) actualizarTelefonosListaEspera(ctx context.Con
 	if len(lista) == 0 {
 		return lista
 	}
-	placeholders := make([]string, len(lista))
-	args := make([]interface{}, len(lista))
+	idStrs := make([]string, len(lista))
 	for i, item := range lista {
-		placeholders[i] = fmt.Sprintf("@p%d", i+1)
-		args[i] = sql.Named(fmt.Sprintf("p%d", i+1), item.Id)
+		idStrs[i] = fmt.Sprintf("%d", item.Id)
 	}
-	query := "SELECT Id, Telefono FROM ListaEsperaQx WHERE Id IN (" + strings.Join(placeholders, ",") + ")"
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	query := "EXEC dbo.usp_go_ListaEsperaQx_ListarTelefonosPorIds @Ids = @p1"
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", strings.Join(idStrs, ",")))
 	if err != nil {
 		return lista
 	}

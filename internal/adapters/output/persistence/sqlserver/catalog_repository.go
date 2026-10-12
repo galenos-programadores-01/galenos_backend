@@ -432,11 +432,11 @@ func (r *catalogRepository) GetDatosInstitucion(ctx context.Context) (*domain.Da
 }
 
 func (r *catalogRepository) ListEspecialidades(ctx context.Context) ([]domain.Especialidad, error) {
-	const procedure = `usp_go_ListarEspecialidades`
+	const procedure = `usp_go_Especialidades_Listar`
 
 	rows, err := r.db.QueryContext(ctx, procedure)
 	if err != nil {
-		return nil, fmt.Errorf("calling usp_go_ListarEspecialidades: %w", err)
+		return nil, fmt.Errorf("calling usp_go_Especialidades_Listar: %w", err)
 	}
 	defer rows.Close()
 
@@ -447,9 +447,14 @@ func (r *catalogRepository) ListEspecialidades(ctx context.Context) ([]domain.Es
 
 	items := make([]domain.Especialidad, 0, len(maps))
 	for _, m := range maps {
+		idVal := rowInt64(m, "IdEspecialidad", "id", "ID")
+		var id int64
+		if idVal != nil {
+			id = *idVal
+		}
 		items = append(items, domain.Especialidad{
-			ID:     *rowInt64(m, "id"),
-			Nombre: rowString(m, "descripcion"),
+			ID:     id,
+			Nombre: rowString(m, "Nombre", "descripcion", "Descripcion"),
 		})
 	}
 
@@ -795,3 +800,36 @@ func (r *catalogRepository) ListParametrosClinicos(ctx context.Context, idGrupo 
 	}
 	return items, nil
 }
+
+func (r *catalogRepository) ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC dbo.usp_go_SubclasificacionDiagnosticos_Select @IdTipoServicio = @p1, @IdClasificacionDx = @p2",
+		sql.Named("p1", idTipoServicio),
+		sql.Named("p2", idClasificacionDx),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_SubclasificacionDiagnosticos_Select: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.SubclasificacionDxItem
+	for rows.Next() {
+		var (
+			idSubDx int
+			corta   string
+			larga   string
+		)
+		if err := rows.Scan(&idSubDx, &corta, &larga); err != nil {
+			return nil, fmt.Errorf("escaneando subclasificacion dx: %w", err)
+		}
+		items = append(items, domain.SubclasificacionDxItem{
+			IdSubclasificacionDx: idSubDx,
+			DescripcionCorta:     corta,
+			DescripcionLarga:     larga,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+

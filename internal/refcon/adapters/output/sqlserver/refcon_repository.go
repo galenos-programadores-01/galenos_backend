@@ -24,7 +24,7 @@ func NewRefConRepository(db *sql.DB) *RefConRepository {
 // 5 columnas para opcion 2, 3 y 4 (estado, conteo, mes, nombre mes, cantidad);
 // por eso el mapeo se hace por posición según la cantidad de columnas.
 func (r *RefConRepository) ListarReferenciasPorMes(ctx context.Context, mes, anio, estado, opcion int, ups string) ([]domain.ReferenciaPorMes, error) {
-	query := "EXEC usp_go_ListarReferenciasPorMesyAnio @mes = @p1, @año = @p2, @estado = @p3, @ups = @p4, @opcion = @p5"
+	query := "EXEC dbo.usp_go_ListarReferenciasPorMesyAnio @mes = @p1, @anio = @p2, @estado = @p3, @ups = @p4, @opcion = @p5"
 	rows, err := r.db.QueryContext(ctx, query,
 		sql.Named("p1", mes),
 		sql.Named("p2", anio),
@@ -258,7 +258,12 @@ func rowsToMaps(rows *sql.Rows) ([]map[string]any, error) {
 
 		row := make(map[string]any, len(columns))
 		for i, col := range columns {
-			row[col] = values[i]
+			val := values[i]
+			if b, ok := val.([]byte); ok {
+				row[col] = string(b)
+			} else {
+				row[col] = val
+			}
 		}
 		lista = append(lista, row)
 	}

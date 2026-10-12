@@ -13,6 +13,7 @@ go build ./...          # verificar compilación
 ```
 
 - **No hay** tests, linter ni CI. Verifica con `go build ./...`. Formatea con `gofmt -w .`.
+- **Arranque en Windows / WatchGuard EDR**: Si `go run ./cmd/api` falla con `fork/exec ...\AppData\...\api.exe: Acceso denegado`, compilar localmente con `go build -o api.exe ./cmd/api` y ejecutar `./api.exe` (en Git Bash) o `.\api.exe` (en PowerShell). Limpiar caché si es necesario con `go clean -cache`.
 - `go.mod` declara `go 1.27rc2` (toolchain release candidate); si `go build` falla por versión, revisa hay que tener instalada esa toolchain, no bajar el go.mod.
 - **Swagger**: `docs/docs.go` es **generado** por swaggo ("DO NOT EDIT"). Al cambiar anotaciones `@Summary`/`@Router`/etc. de los handlers, regenéralo con `swag init` (los handlers ya usan `@Router` en comentarios). UI en `/swagger/index.html`.
 - El código y los comentarios **están en español** (identificadores en inglés). Mantén ese estilo.
@@ -42,10 +43,17 @@ Requeridas (si faltan, `config.Load` corta la app): `SQLSERVER_DSN`, `JWT_SECRET
 - Servicios externos SOAP (con timeout, pueden no estar alcanzables en dev): RENIEC (`RENIEC_APP`, `RENIEC_USUARIO`, `RENIEC_CLAVE`, `RENIEC_URL`, `RENIEC_TIMEOUT`) y SIS (`SIS_USUARIO`, `SIS_CLAVE`, `SIS_URL`, `SIS_DNI_AUTORIZADO`, `SIS_TIMEOUT`).
 - Al arrancar `main.go` abre el pool y hace **PING con timeout de 5s**: sin red/VPN al host SQL Server o credenciales mal, la API falla al inicio (quick fail).
 
-## SQL / persistencia
+## SQL / Persistencia — REGLA ESTRICTA E INVIOLABLE: 0 CONSULTAS SQL DIRECTAS
 
-- Los repositorios llaman stored procedures (`sp_listarPaciente`, `usp_go_*`, etc.) y algunos consultan tablas directo (ej. `pacientes` en `patient_repository.go`). Si el esquema cambia, ajusta query y columnas que espera el SP.
-- `appointment_repository.go` usa transacción `SERIALIZABLE` con `WITH (UPDLOCK, HOLDLOCK)` para evitar dobles reservas concurrentes. No cambies ese patrón sin revisarlo.
+- **0 Consultas SQL Directas en Código Go**: Está **estrictamente prohibido** escribir consultas `SELECT`, `INSERT`, `UPDATE` o `DELETE` directas/inline en los repositorios de Go.
+- **Uso Exclusivo de Stored Procedures (SPs)**: Toda interacción con SQL Server debe realizarse únicamente mediante llamadas a Stored Procedures existentes (`EXEC dbo.<nombre_sp> ...`).
+- **Prohibido crear SPs por cuenta propia**: La IA no debe crear nuevos Stored Procedures en la base de datos ni inventarlos. Solo se usan los SPs que ya existen en el motor del hospital.
+- **SPs Faltantes**: Si para una funcionalidad, métrica o reporte no existe un Stored Procedure disponible en la base de datos:
+  1. **NO escribir consultas SQL directas como sustituto**.
+  2. **NO crear el SP en la base de datos**.
+  3. **Documentar y listar los SPs requeridos** con sus parámetros de entrada y columnas esperadas de salida, para que el usuario pueda solicitarlos formalmente al equipo de Base de Datos (DBA).
+- Los repositorios deben mapear únicamente llamadas a SPs (`EXEC dbo.farmAlmacenSeleccionarTodosMenosExternos`, `EXEC dbo.FarmDevuelveMovimientosDeProducto_Kardex`, etc.).
+
 
 ## Router / HTTP
 

@@ -90,13 +90,7 @@ func (r *OrdenRepository) ListarPorCuenta(ctx context.Context, idRegAtencion int
 }
 
 func (r *OrdenRepository) completarCabeceras(ctx context.Context, idCuentaAtencion int, ordenes []domain.OrdenMedica) {
-	rows, err := r.db.QueryContext(ctx, `
-		SELECT rc.idReceta, CONVERT(varchar(19), rc.FechaReceta, 120),
-		       RTRIM(ISNULL(em.ApellidoPaterno,'')) + ' ' + RTRIM(ISNULL(em.ApellidoMaterno,'')) + ' ' + RTRIM(ISNULL(em.Nombres,''))
-		FROM RecetaCabecera rc
-		LEFT JOIN Medicos m ON m.IdMedico = rc.idMedicoReceta
-		LEFT JOIN Empleados em ON em.IdEmpleado = m.IdEmpleado
-		WHERE rc.idCuentaAtencion = @p1`,
+	rows, err := r.db.QueryContext(ctx, "EXEC dbo.usp_go_Recetas_ListarCabecerasPorCuenta @IdCuentaAtencion = @p1",
 		sql.Named("p1", idCuentaAtencion),
 	)
 	if err != nil {
@@ -133,21 +127,15 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 
 	// 1. Resolver la atención real
 	var (
+		idAtencionScan        sql.NullInt64
 		idPacienteScan        sql.NullInt64
-		idServicioIngresoScan sql.NullInt64
 		idCuentaAtencion      sql.NullInt64
+		idServicioIngresoScan sql.NullInt64
 		idTipoServicioScan    sql.NullInt64
 	)
-	err = tx.QueryRowContext(ctx, `
-		SELECT 
-			ISNULL(IdCuentaAtencion, 0),
-			ISNULL(IdPaciente, 0),
-			ISNULL(IdServicioIngreso, 0),
-			ISNULL(IdTipoServicio, 0)
-		FROM dbo.Atenciones WITH (NOLOCK)
-		WHERE IdAtencion = @p1`,
+	err = tx.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1",
 		sql.Named("p1", orden.IdRegAtencion),
-	).Scan(&idCuentaAtencion, &idPacienteScan, &idServicioIngresoScan, &idTipoServicioScan)
+	).Scan(&idAtencionScan, &idPacienteScan, &idCuentaAtencion, &idServicioIngresoScan, &idTipoServicioScan)
 	if err != nil {
 		return fmt.Errorf("resolviendo atención %d: %w", orden.IdRegAtencion, err)
 	}
@@ -306,13 +294,10 @@ func (r *OrdenRepository) BuscarProductos(ctx context.Context, filtro string, li
 }
 
 func (r *OrdenRepository) resolverIdCuenta(ctx context.Context, idRegAtencion int) (int, error) {
-	var idCuenta int
-	err := r.db.QueryRowContext(ctx, `
-		SELECT ISNULL(IdCuentaAtencion, 0)
-		FROM dbo.Atenciones WITH (NOLOCK)
-		WHERE IdAtencion = @p1`,
+	var idAt, idPac, idCuenta, idServ, idTipo int
+	err := r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1",
 		sql.Named("p1", idRegAtencion),
-	).Scan(&idCuenta)
+	).Scan(&idAt, &idPac, &idCuenta, &idServ, &idTipo)
 	if err == nil && idCuenta > 0 {
 		return idCuenta, nil
 	}
@@ -324,17 +309,14 @@ func (r *OrdenRepository) resolverIdCuenta(ctx context.Context, idRegAtencion in
 
 func (r *OrdenRepository) precioProducto(ctx context.Context, tx *sql.Tx, idProducto int) (float64, error) {
 	var precio float64
-	err := tx.QueryRowContext(ctx, `
-		SELECT ISNULL(PrecioDistribucion, 0)
-		FROM dbo.FactCatalogoBienesInsumos WITH (NOLOCK)
-		WHERE IdProducto = @p1`,
+	err := tx.QueryRowContext(ctx, "EXEC dbo.usp_go_FactCatalogoBienesInsumos_ObtenerPrecioDistribucion @IdProducto = @p1",
 		sql.Named("p1", idProducto),
 	).Scan(&precio)
 	if err == sql.ErrNoRows {
 		return 0, nil
 	}
 	if err != nil {
-		return 0, fmt.Errorf("obteniendo precio del producto %d: %w", idProducto, err)
+		return 0, fmt.Errorf("obteniendo precio del producto %d mediante SP: %w", idProducto, err)
 	}
 	return precio, nil
 }

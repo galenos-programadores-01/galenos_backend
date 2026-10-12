@@ -23,7 +23,7 @@ func NewSqlServerEvolucionRepository(db *sql.DB) output.EvolucionRepository {
 	return &sqlServerEvolucionRepository{db: db}
 }
 
-func (r *sqlServerEvolucionRepository) ListPatients(ctx context.Context, fini, ffin string, idUsuario int) ([]domain.PatientListItem, error) {
+func (r *sqlServerEvolucionRepository) ListPatients(ctx context.Context, fini, ffin, filtro string, idUsuario int) ([]domain.PatientListItem, error) {
 	fecha, err := time.Parse("2006-01-02", fini)
 	if err != nil {
 		return nil, fmt.Errorf("fini inválido: %w", err)
@@ -32,7 +32,7 @@ func (r *sqlServerEvolucionRepository) ListPatients(ctx context.Context, fini, f
 	rows, err := r.db.QueryContext(ctx, query,
 		sql.Named("p1", 2),
 		sql.Named("p2", fecha),
-		sql.Named("p3", ""),
+		sql.Named("p3", filtro),
 		sql.Named("p4", idUsuario),
 	)
 	if err != nil {
@@ -115,20 +115,10 @@ func getSexoFallback(m map[string]any) string {
 }
 
 func (r *sqlServerEvolucionRepository) ListEvoluciones(ctx context.Context, idRegAtencion int) ([]domain.EvolucionFirma, error) {
-	// 1. Obtener IdPaciente de la atención con fallbacks robustos
-	var idPaciente int
-	_ = r.db.QueryRowContext(ctx, "SELECT ISNULL(IdPaciente, 0) FROM dbo.Atenciones WITH (NOLOCK) WHERE IdAtencion = @p1", sql.Named("p1", idRegAtencion)).Scan(&idPaciente)
-	if idPaciente == 0 {
-		_ = r.db.QueryRowContext(ctx, "SELECT TOP 1 ISNULL(IdEpisodio, 0) FROM dbo.Tab_EvolucionesMedicas_H_E WITH (NOLOCK) WHERE NroAtencion = @p1 AND IdEpisodio > 0", sql.Named("p1", idRegAtencion)).Scan(&idPaciente)
-	}
-	if idPaciente == 0 {
-		var count int
-		_ = r.db.QueryRowContext(ctx, "SELECT COUNT(1) FROM dbo.Pacientes WITH (NOLOCK) WHERE IdPaciente = @p1", sql.Named("p1", idRegAtencion)).Scan(&count)
-		if count > 0 {
-			idPaciente = idRegAtencion
-		}
-	}
-	log.Printf("[ListEvoluciones] idRegAtencion=%d, resolved idPaciente=%d", idRegAtencion, idPaciente)
+	// 1. Obtener IdPaciente de la atención con fallbacks robustos mediante SP
+	var idAt, idPaciente, idCuenta, idServ, idTipo int
+	_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1", sql.Named("p1", idRegAtencion)).Scan(&idAt, &idPaciente, &idCuenta, &idServ, &idTipo)
+	log.Printf("[ListEvoluciones] idRegAtencion=%d, resolved idPaciente=%d, idCuenta=%d", idRegAtencion, idPaciente, idCuenta)
 
 	// 2. Obtener antecedentes del paciente con el SP moderno
 	var antecedentesMap map[string]any
@@ -231,8 +221,10 @@ func (r *sqlServerEvolucionRepository) ListEvoluciones(ctx context.Context, idRe
 	log.Printf("[ListEvoluciones] sintomas encontrados: %d -> %v", len(sintomasList), sintomasList)
 
 	// 5. Obtener IdCuentaAtencion para consultar recetas por evolución
-	var idCuenta int
-	_ = r.db.QueryRowContext(ctx, "SELECT ISNULL(IdCuentaAtencion, 0) FROM dbo.Atenciones WITH (NOLOCK) WHERE IdAtencion = @p1", sql.Named("p1", idRegAtencion)).Scan(&idCuenta)
+	if idCuenta <= 0 {
+		var dummyAt, dummyPac, dummyServ, dummyTipo int
+		_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1", sql.Named("p1", idRegAtencion)).Scan(&dummyAt, &dummyPac, &idCuenta, &dummyServ, &dummyTipo)
+	}
 
 	// 6. Obtener interconsultas solicitadas para la atención con el SP moderno
 	var interconsultasList []map[string]any
@@ -241,17 +233,15 @@ func (r *sqlServerEvolucionRepository) ListEvoluciones(ctx context.Context, idRe
 	if errIc == nil {
 		for icRows.Next() {
 			var idIc, idAt, idEsp, idMedDest int
-			var mot string
+			var mot, espNombre string
 			var fSol sql.NullTime
 			var est sql.NullString
-			if err := icRows.Scan(&idIc, &idAt, &idEsp, &idMedDest, &mot, &fSol, &est); err == nil {
-				var espNombre sql.NullString
-				_ = r.db.QueryRowContext(ctx, "SELECT ISNULL(Nombre, '') FROM dbo.Especialidades WITH (NOLOCK) WHERE IdEspecialidad = @p1", sql.Named("p1", idEsp)).Scan(&espNombre)
-				nomEsp := espNombre.String
+			if err := icRows.Scan(&idIc, &idAt, &idEsp, &idMedDest, &mot, &fSol, &est, &espNombre); err == nil {
+				nomEsp := strings.TrimSpace(espNombre)
 				if nomEsp == "" {
 					nomEsp = fmt.Sprintf("Especialidad #%d", idEsp)
 				}
-				key := strings.ToUpper(strings.TrimSpace(nomEsp)) + "|" + strings.ToUpper(strings.TrimSpace(mot))
+				key := strings.ToUpper(nomEsp) + "|" + strings.ToUpper(strings.TrimSpace(mot))
 				if !seenIc[key] {
 					seenIc[key] = true
 					interconsultasList = append(interconsultasList, map[string]any{
@@ -265,51 +255,8 @@ func (r *sqlServerEvolucionRepository) ListEvoluciones(ctx context.Context, idRe
 		icRows.Close()
 	}
 
-	// 7. Consultar las notas de evolución clínica de la tabla moderna Tab_EvolucionesMedicas_H_E
-	queryModerna := `
-		SELECT 
-			e.IdEvolucion,
-			e.NroAtencion,
-			ISNULL(e.UbicacionArchivo, ''),
-			ISNULL(e.UsuarioCreacion, 0),
-			CONVERT(varchar(19), e.FechaAtencion, 120),
-			ISNULL(e.EstadoFirma, 1),
-			ISNULL(RTRIM(LTRIM(CONCAT(emp.ApellidoPaterno, ' ', emp.ApellidoMaterno, ' ', emp.Nombres))), ''),
-			ISNULL(e.Motivo, ''),
-			ISNULL(e.Subjetivo, ''),
-			ISNULL(e.EscalaDolor, 0),
-			ISNULL(e.PASistolica, 0),
-			ISNULL(e.PADiastolica, 0),
-			ISNULL(e.FrecuenciaCardiaca, 0),
-			ISNULL(e.FrecuenciaRespiratoria, 0),
-			ISNULL(e.Temperatura, 0.0),
-			ISNULL(e.SaturacionOxigeno, 0),
-			ISNULL(e.Peso, 0.0),
-			ISNULL(e.Talla, 0.0),
-			ISNULL(e.IMC, 0.0),
-			ISNULL(e.Glicemia, 0.0),
-			ISNULL(e.ExamenFisicoGeneral, ''),
-			ISNULL(e.ExamenFisicoPiel, ''),
-			ISNULL(e.ExamenFisicoCabezaCuello, ''),
-			ISNULL(e.ExamenFisicoToraxPulmon, ''),
-			ISNULL(e.ExamenFisicoCorazon, ''),
-			ISNULL(e.ExamenFisicoAbdomen, ''),
-			ISNULL(e.ExamenFisicoGenitourinario, ''),
-			ISNULL(e.ExamenFisicoExtremidadesOsteomuscular, ''),
-			ISNULL(e.ExamenFisicoNeurologicoMental, ''),
-			ISNULL(e.IdEstadoClinico, 0),
-			ISNULL(e.IdPronostico, 0),
-			ISNULL(e.IndicacionDieta, ''),
-			ISNULL(e.IndicacionReposo, ''),
-			ISNULL(e.IndicacionHidratacion, ''),
-			ISNULL(e.IndicacionOxigeno, ''),
-			ISNULL(e.IndicacionRestriccion, ''),
-			ISNULL(e.Sugerencia, '')
-		FROM dbo.Tab_EvolucionesMedicas_H_E e WITH (NOLOCK)
-		LEFT JOIN dbo.Empleados emp WITH (NOLOCK) ON emp.IdEmpleado = e.UsuarioCreacion
-		WHERE e.NroAtencion = @p1
-		ORDER BY e.FechaAtencion DESC, e.IdEvolucion DESC
-	`
+	// 7. Consultar las notas de evolución clínica con el SP moderno
+	queryModerna := "EXEC dbo.usp_go_EvolucionesMedicas_ListarNotasPorAtencion @NroAtencion = @p1"
 	rowsMod, err := r.db.QueryContext(ctx, queryModerna, sql.Named("p1", idRegAtencion))
 	if err != nil {
 		return nil, fmt.Errorf("error querying evoluciones: %w", err)
@@ -381,21 +328,10 @@ func (r *sqlServerEvolucionRepository) ListEvoluciones(ctx context.Context, idRe
 				})
 			}
 
-			// Consultar recetas farmacológicas específicas de ESTA evolución
+			// Consultar recetas farmacológicas específicas de ESTA evolución mediante SP
 			var farmacosEvolucion []map[string]any
 			if idEvol > 0 && idCuenta > 0 {
-				farmRows, errFarm := r.db.QueryContext(ctx, `
-					SELECT DISTINCT
-						ISNULL(p.Nombre, ''),
-						ISNULL(rd.DescripcionAdicional, ''),
-						ISNULL(rd.Cantidad, 0),
-						ISNULL(rd.Duracion, '')
-					FROM dbo.RecetaDetalle rd WITH (NOLOCK)
-					INNER JOIN dbo.RecetaCabecera rc WITH (NOLOCK) ON rc.IdReceta = rd.IdReceta
-					INNER JOIN dbo.Producto p WITH (NOLOCK) ON p.IdProducto = rd.IdProducto
-					WHERE rc.IdEvolucion = @p1
-					  AND rc.IdCuentaAtencion = @p2
-				`, sql.Named("p1", idEvol), sql.Named("p2", idCuenta))
+				farmRows, errFarm := r.db.QueryContext(ctx, "EXEC dbo.usp_go_Recetas_ListarDetallesPorEvolucion @IdEvolucion = @p1, @IdCuentaAtencion = @p2", sql.Named("p1", idEvol), sql.Named("p2", idCuenta))
 				if errFarm == nil {
 					for farmRows.Next() {
 						var nombreMed, descAdicional, duracion string

@@ -38,4 +38,5 @@ type CatalogService interface {
 	ListParametrosClinicos(ctx context.Context, idGrupo int) ([]domain.ParametroClinico, error)
 	ActualizarParametroValorTexto(ctx context.Context, idParametro int) error
 	ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error)
+	ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error)
 }

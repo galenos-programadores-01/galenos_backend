@@ -198,10 +198,8 @@ func (r *ResultadoRepository) ObtenerDetalleImagen(ctx context.Context, idOrden,
 	}{
 		{"EXEC dbo.usp_go_SelectInformeImagenes @IdMovimiento = @p1, @IdProducto = @p2", idOrden, idProducto},
 		{"EXEC dbo.usp_go_SelectInformeImagenes @IdOrden = @p1, @IdProducto = @p2", idOrden, idProducto},
-		{"EXEC dbo.usp_go_SelectInformeImagenes @p1, @p2", idOrden, idProducto},
-		{"EXEC dbo.usp_go_SelectInformeImagenes @IdMovimiento = @p1", idOrden, 0},
-		{"EXEC dbo.usp_go_SelectInformeImagenes @IdOrden = @p1", idOrden, 0},
-		{"EXEC dbo.usp_go_SelectInformeImagenes @p1", idOrden, 0},
+		{"EXEC dbo.usp_go_SelectInformeImagenes @IdMovimiento = @p1, @IdProducto = 0", idOrden, 0},
+		{"EXEC dbo.usp_go_SelectInformeImagenes @IdOrden = @p1, @IdProducto = 0", idOrden, 0},
 	}
 
 	for _, q := range queries {

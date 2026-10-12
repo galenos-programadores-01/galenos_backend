@@ -1,6 +1,10 @@
 package httpadapter
 
 import (
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
@@ -549,6 +553,94 @@ type createTriajeConsultaRequest struct {
 	Observacion       *string `json:"observacion"`
 	IMC               *string `json:"imc"`
 	Gestante          *string `json:"gestante"`
+}
+
+func (r createTriajeConsultaRequest) Validate() error {
+	if r.IdAtencion <= 0 {
+		return errors.New("idAtencion debe ser un entero positivo")
+	}
+	if r.IdPaciente <= 0 {
+		return errors.New("idPaciente debe ser un entero positivo")
+	}
+
+	tieneSignos := false
+	validarSigno := func(nombre string, val *string, min, max float64) error {
+		if val == nil || strings.TrimSpace(*val) == "" {
+			return nil
+		}
+		tieneSignos = true
+		s := strings.TrimSpace(*val)
+		if len(s) > 10 {
+			return fmt.Errorf("%s excede la longitud máxima permitida de 10 caracteres", nombre)
+		}
+		num, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return fmt.Errorf("%s debe ser un valor numérico válido", nombre)
+		}
+		if num < min || num > max {
+			return fmt.Errorf("%s fuera de rango biológico permitido (%.1f a %.1f)", nombre, min, max)
+		}
+		return nil
+	}
+
+	if err := validarSigno("temperatura", r.Temperatura, 32.0, 43.0); err != nil {
+		return err
+	}
+	if err := validarSigno("pulso", r.Pulso, 30.0, 250.0); err != nil {
+		return err
+	}
+	if err := validarSigno("frecCardiaca", r.FrecCardiaca, 30.0, 250.0); err != nil {
+		return err
+	}
+	if err := validarSigno("frecRespiratoria", r.FrecRespiratoria, 6.0, 60.0); err != nil {
+		return err
+	}
+	if err := validarSigno("sat02", r.SAT02, 40.0, 100.0); err != nil {
+		return err
+	}
+	if err := validarSigno("peso", r.Peso, 1.0, 300.0); err != nil {
+		return err
+	}
+	if err := validarSigno("talla", r.Talla, 20.0, 250.0); err != nil {
+		return err
+	}
+	if err := validarSigno("hemoglobina", r.Hemoglobina, 3.0, 25.0); err != nil {
+		return err
+	}
+
+	if r.PresionArterial != nil && strings.TrimSpace(*r.PresionArterial) != "" {
+		tieneSignos = true
+		pa := strings.TrimSpace(*r.PresionArterial)
+		if len(pa) > 10 {
+			return errors.New("presionArterial excede la longitud máxima de 10 caracteres")
+		}
+		if strings.Contains(pa, "/") {
+			partes := strings.Split(pa, "/")
+			if len(partes) == 2 {
+				sis, errSis := strconv.ParseFloat(strings.TrimSpace(partes[0]), 64)
+				dia, errDia := strconv.ParseFloat(strings.TrimSpace(partes[1]), 64)
+				if errSis != nil || errDia != nil {
+					return errors.New("presionArterial con formato numérico inválido")
+				}
+				if sis < 40 || sis > 260 || dia < 30 || dia > 160 {
+					return errors.New("presionArterial fuera de rango fisiológico permitido (sistólica 40-260, diastólica 30-160)")
+				}
+				if sis <= dia {
+					return errors.New("la presión sistólica debe ser mayor que la diastólica")
+				}
+			}
+		}
+	}
+
+	if r.Observacion != nil && len(*r.Observacion) > 500 {
+		return errors.New("observacion excede la longitud máxima de 500 caracteres")
+	}
+
+	if !tieneSignos {
+		return errors.New("debe registrar al menos una función vital válida (temperatura, pulso, presión arterial, etc.)")
+	}
+
+	return nil
 }
 
 // toDomain mapea el request HTTP al objeto de dominio para el SP

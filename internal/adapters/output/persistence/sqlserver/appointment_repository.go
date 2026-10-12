@@ -27,69 +27,47 @@ func NewAppointmentRepository(db *sql.DB) output.AppointmentRepository {
 // como parámetros nombrados (@Nombre), nunca concatenados, para prevenir
 // inyección SQL.
 func (r *appointmentRepository) Create(ctx context.Context, appointment *domain.Appointment) error {
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
-	if err != nil {
-		return fmt.Errorf("beginning transaction: %w", err)
-	}
-	defer tx.Rollback() //nolint:errcheck // no-op si ya hubo Commit
+	query := `EXEC dbo.usp_go_Appointments_Crear
+		@ID = @p1,
+		@PatientID = @p2,
+		@DoctorID = @p3,
+		@StartsAt = @p4,
+		@EndsAt = @p5,
+		@Status = @p6,
+		@Reason = @p7,
+		@CreatedAt = @p8,
+		@UpdatedAt = @p9`
 
-	const conflictQuery = `
-		SELECT COUNT(1)
-		FROM dbo.appointments WITH (UPDLOCK, HOLDLOCK)
-		WHERE doctor_id = @DoctorID
-		  AND status <> 'CANCELLED'
-		  AND starts_at < @EndsAt
-		  AND ends_at > @StartsAt`
+	var codigoResultado int
+	var mensaje string
+	err := r.db.QueryRowContext(ctx, query,
+		sql.Named("p1", string(appointment.ID)),
+		sql.Named("p2", string(appointment.PatientID)),
+		sql.Named("p3", string(appointment.DoctorID)),
+		sql.Named("p4", appointment.Slot.StartsAt),
+		sql.Named("p5", appointment.Slot.EndsAt),
+		sql.Named("p6", string(appointment.Status)),
+		sql.Named("p7", appointment.Reason),
+		sql.Named("p8", appointment.CreatedAt),
+		sql.Named("p9", appointment.UpdatedAt),
+	).Scan(&codigoResultado, &mensaje)
 
-	var conflicts int
-	err = tx.QueryRowContext(ctx, conflictQuery,
-		sql.Named("DoctorID", string(appointment.DoctorID)),
-		sql.Named("StartsAt", appointment.Slot.StartsAt),
-		sql.Named("EndsAt", appointment.Slot.EndsAt),
-	).Scan(&conflicts)
 	if err != nil {
-		return fmt.Errorf("checking schedule conflicts: %w", err)
+		return fmt.Errorf("calling usp_go_Appointments_Crear: %w", err)
 	}
-	if conflicts > 0 {
+
+	if codigoResultado == -1 {
 		return domain.ErrDoctorNotAvailable
-	}
-
-	const insertQuery = `
-		INSERT INTO dbo.appointments
-			(id, patient_id, doctor_id, starts_at, ends_at, status, reason, created_at, updated_at)
-		VALUES
-			(@ID, @PatientID, @DoctorID, @StartsAt, @EndsAt, @Status, @Reason, @CreatedAt, @UpdatedAt)`
-
-	_, err = tx.ExecContext(ctx, insertQuery,
-		sql.Named("ID", string(appointment.ID)),
-		sql.Named("PatientID", string(appointment.PatientID)),
-		sql.Named("DoctorID", string(appointment.DoctorID)),
-		sql.Named("StartsAt", appointment.Slot.StartsAt),
-		sql.Named("EndsAt", appointment.Slot.EndsAt),
-		sql.Named("Status", string(appointment.Status)),
-		sql.Named("Reason", appointment.Reason),
-		sql.Named("CreatedAt", appointment.CreatedAt),
-		sql.Named("UpdatedAt", appointment.UpdatedAt),
-	)
-	if err != nil {
-		return fmt.Errorf("inserting appointment: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
 	}
 
 	return nil
 }
 
-// GetByID recupera una cita por id usando una consulta parametrizada.
+// GetByID recupera una cita por id usando el procedimiento almacenado correspondiente.
 func (r *appointmentRepository) GetByID(ctx context.Context, id domain.AppointmentID) (*domain.Appointment, error) {
-	const query = `
-		SELECT id, patient_id, doctor_id, starts_at, ends_at, status, reason, created_at, updated_at
-		FROM dbo.appointments
-		WHERE id = @ID`
+	const query = `EXEC dbo.usp_go_Appointments_ObtenerPorId @ID = @p1`
 
-	row := r.db.QueryRowContext(ctx, query, sql.Named("ID", string(id)))
+	row := r.db.QueryRowContext(ctx, query, sql.Named("p1", string(id)))
 
 	var (
 		appointment domain.Appointment

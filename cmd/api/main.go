@@ -82,6 +82,10 @@ func run() error {
 	causaExternaMorbilidadRepo := sqlserver.NewCausaExternaMorbilidadRepository(db)
 	auditoriaRepo := sqlserver.NewAuditoriaRepository(db)
 	refConRepo := refconsql.NewRefConRepository(db)
+	bienesInsumosRepo := sqlserver.NewSqlServerBienesInsumosRepository(db)
+	serviciosCatalogoRepo := sqlserver.NewSqlServerServiciosCatalogoRepository(db)
+	farmaciaDisponibilidadRepo := sqlserver.NewFarmaciaDisponibilidadRepository(db)
+	atencionCERepo := sqlserver.NewAtencionCERepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
 	reniecClient := reniec.New(reniec.Config{
@@ -147,6 +151,9 @@ func run() error {
 		PasswordWeb: cfg.RefConReportsPassword,
 		Timeout:     cfg.RefConReportsTimeout,
 	}))
+	bienesInsumosService := usecase.NewBienesInsumosUseCase(bienesInsumosRepo)
+	serviciosCatalogoService := usecase.NewServiciosCatalogoUseCase(serviciosCatalogoRepo)
+	farmaciaDisponibilidadService := usecase.NewFarmaciaDisponibilidadUseCase(farmaciaDisponibilidadRepo)
 
 	authRepo := sqlserver.NewAuthRepository(db)
 	authService := usecase.NewAuthUseCase(authRepo, cfg.AuthSecret, cfg.AuthTTL)
@@ -177,6 +184,11 @@ func run() error {
 	causaExternaMorbilidadHandler := httpadapter.NewCausaExternaMorbilidadHandler(causaExternaMorbilidadService)
 	auditoriaHandler := httpadapter.NewAuditoriaHandler(auditoriaService)
 	refConHandler := refconhttp.NewRefConHandler(refConService)
+	bienesInsumosHandler := httpadapter.NewBienesInsumosHandler(bienesInsumosService)
+	serviciosCatalogoHandler := httpadapter.NewServiciosCatalogoHandler(serviciosCatalogoService)
+	farmaciaDisponibilidadHandler := httpadapter.NewFarmaciaDisponibilidadHandler(farmaciaDisponibilidadService)
+	atencionCEService := usecase.NewAtencionCEUseCase(atencionCERepo)
+	atencionCEHandler := httpadapter.NewAtencionCEHandler(atencionCEService)
 
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
 		AppointmentHandler:            appointmentHandler,
@@ -199,6 +211,10 @@ func run() error {
 		CausaExternaMorbilidadHandler: causaExternaMorbilidadHandler,
 		AuditoriaHandler:              auditoriaHandler,
 		RefConHandler:                 refConHandler,
+		BienesInsumosHandler:          bienesInsumosHandler,
+		ServiciosCatalogoHandler:      serviciosCatalogoHandler,
+		FarmaciaDisponibilidadHandler: farmaciaDisponibilidadHandler,
+		AtencionCEHandler:             atencionCEHandler,
 		AuthService:                   authService,
 		AllowedOrigins:                cfg.AllowedOrigins,
 	})

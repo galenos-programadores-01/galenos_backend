@@ -54,7 +54,9 @@ func (h *EvolucionHandler) HandleListPatients(c *gin.Context) {
 		}
 	}
 
-	patients, err := h.service.GetPatientTray(c.Request.Context(), fini, c.Query("ffin"), idUsuario)
+	filtro := c.DefaultQuery("filtro", c.Query("q"))
+
+	patients, err := h.service.GetPatientTray(c.Request.Context(), fini, c.Query("ffin"), filtro, idUsuario)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "EVOL_PATIENTS_ERR", "Error obteniendo pacientes")
 		return

@@ -188,3 +188,9 @@ type EstablecimientoBusqueda struct {
 	Departamento      string `json:"departamento"`
 	NombreLargo       string `json:"nombreLargo"`
 }
+
+type SubclasificacionDxItem struct {
+	IdSubclasificacionDx int    `json:"idSubclasificacionDx"`
+	DescripcionCorta     string `json:"descripcionCorta"`
+	DescripcionLarga     string `json:"descripcionLarga"`
+}

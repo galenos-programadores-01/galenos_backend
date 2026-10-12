@@ -95,6 +95,9 @@ func (r *sqlServerDiagnosticoRepository) SearchDiagnosticos(ctx context.Context,
 		}
 
 		results = append(results, d)
+		if len(results) >= 50 {
+			break
+		}
 	}
 
 	if err := rows.Err(); err != nil {
@@ -218,12 +221,13 @@ func (r *sqlServerDiagnosticoRepository) ObtenerDiagnosticosAtencion(ctx context
 func (r *sqlServerDiagnosticoRepository) AgregarDiagnosticoAtencion(ctx context.Context, req domain.AgregarDiagnosticoAtencionRequest) (*domain.AgregarDiagnosticoAtencionResponse, error) {
 	idDx := req.IdDiagnostico
 	if idDx <= 0 && req.CodigoCIE10 != "" {
-		_ = r.db.QueryRowContext(ctx, "SELECT TOP 1 IdDiagnostico FROM dbo.Diagnosticos WITH (NOLOCK) WHERE CodigoCIE10 = @p1", sql.Named("p1", strings.TrimSpace(req.CodigoCIE10))).Scan(&idDx)
+		_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Diagnosticos_ObtenerIdPorCodigoCIE10 @CodigoCIE10 = @p1", sql.Named("p1", strings.TrimSpace(req.CodigoCIE10))).Scan(&idDx)
 	}
 
 	idPac := req.IdPaciente
 	if idPac <= 0 && req.IdAtencion > 0 {
-		_ = r.db.QueryRowContext(ctx, "SELECT ISNULL(IdPaciente, 0) FROM dbo.Atenciones WITH (NOLOCK) WHERE IdAtencion = @p1", sql.Named("p1", req.IdAtencion)).Scan(&idPac)
+		var idAt, idCta, idServ, idTipo int
+		_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1", sql.Named("p1", req.IdAtencion)).Scan(&idAt, &idPac, &idCta, &idServ, &idTipo)
 	}
 
 	idSubclasificacion := req.IdSubclasificacionDiagnostico

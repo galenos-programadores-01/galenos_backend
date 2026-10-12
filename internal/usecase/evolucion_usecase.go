@@ -18,8 +18,8 @@ func NewEvolucionUseCase(repo output.EvolucionRepository) input.EvolucionService
 	}
 }
 
-func (uc *evolucionUseCase) GetPatientTray(ctx context.Context, fini, ffin string, idUsuario int) ([]domain.PatientListItem, error) {
-	return uc.repo.ListPatients(ctx, fini, ffin, idUsuario)
+func (uc *evolucionUseCase) GetPatientTray(ctx context.Context, fini, ffin, filtro string, idUsuario int) ([]domain.PatientListItem, error) {
+	return uc.repo.ListPatients(ctx, fini, ffin, filtro, idUsuario)
 }
 
 func (uc *evolucionUseCase) GetEvoluciones(ctx context.Context, idRegAtencion int) ([]domain.EvolucionFirma, error) {

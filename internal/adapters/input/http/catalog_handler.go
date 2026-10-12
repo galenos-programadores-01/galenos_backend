@@ -676,6 +676,32 @@ func (h *CatalogHandler) ListEstablecimientos(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
+// HandleListSubclasificacionesDiagnostico maneja GET /api/v1/catalogos/subclasificaciones-diagnosticos.
+//
+// @Summary Lista subclasificaciones de diagnóstico
+// @Tags Catalogos
+// @Accept json
+// @Produce json
+// @Param idTipoServicio query int false "ID tipo de servicio" default(3)
+// @Param idClasificacionDx query int false "ID clasificación diagnóstico" default(9)
+// @Success 200 {object} apiResponse{data=[]domain.SubclasificacionDxItem}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /catalogos/subclasificaciones-diagnosticos [get]
+func (h *CatalogHandler) HandleListSubclasificacionesDiagnostico(c *gin.Context) {
+	idTipoServicio, _ := strconv.Atoi(c.DefaultQuery("idTipoServicio", "3"))
+	idClasificacionDx, _ := strconv.Atoi(c.DefaultQuery("idClasificacionDx", "9"))
+
+	items, err := h.service.ListSubclasificacionesDiagnostico(c.Request.Context(), idTipoServicio, idClasificacionDx)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.SubclasificacionDxItem, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
 // parseID extrae y valida el path param "id" como entero.
 func parseID(c *gin.Context) (int64, bool) {
 	raw := c.Param("id")

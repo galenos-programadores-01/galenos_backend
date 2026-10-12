@@ -558,11 +558,11 @@ func (r *triageRepository) CreateTriajeConsulta(ctx context.Context, triaje *dom
 	return resultado, nil
 }
 
-// GetTriajeConsultaPorAtencion consulta directamente la tabla
-// AtencionesTriaje para devolver el triaje de consulta externa vigente
+// GetTriajeConsultaPorAtencion invoca el procedimiento almacenado
+// dbo.usp_go_AtencionesTriaje_ObtenerVigentePorAtencion para devolver el triaje vigente
 // (UltimoTriaje = 1) de la atención indicada. Devuelve nil si no existe.
 func (r *triageRepository) GetTriajeConsultaPorAtencion(ctx context.Context, idAtencion int64) (*map[string]any, error) {
-	const query = `SELECT * FROM dbo.AtencionesTriaje WHERE IdAtencion = @p1 AND UltimoTriaje = 1`
+	const query = `EXEC dbo.usp_go_AtencionesTriaje_ObtenerVigentePorAtencion @IdAtencion = @p1`
 
 	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idAtencion))
 	if err != nil {

@@ -278,10 +278,6 @@ func (uc *catalogUseCase) ListParametrosClinicos(ctx context.Context, idGrupo in
 	return items, nil
 }
 
-// ActualizarParametroValorTexto marca el parámetro con ValorTexto = 'N' (SP
-// usp_go_ActualizarParametroValorTextoPorId) e invalida la cache de parámetros
-// clínicos. La cache está indexada por grupo, y el SP no devuelve a qué grupo
-// pertenece el parámetro, así que se purgan los cinco grupos conocidos.
 func (uc *catalogUseCase) ActualizarParametroValorTexto(ctx context.Context, idParametro int) error {
 	if err := uc.repo.ActualizarParametroValorTexto(ctx, idParametro); err != nil {
 		return err
@@ -303,5 +299,26 @@ func (uc *catalogUseCase) ListEstablecimientos(ctx context.Context, filtro strin
 	if err != nil {
 		return nil, fmt.Errorf("listing establecimientos: %w", err)
 	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error) {
+	cacheKey := fmt.Sprintf("cache:subclasif_dx:%d:%d", idTipoServicio, idClasificacionDx)
+	if uc.cache != nil {
+		var cached []domain.SubclasificacionDxItem
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			return cached, nil
+		}
+	}
+
+	items, err := uc.repo.ListSubclasificacionesDiagnostico(ctx, idTipoServicio, idClasificacionDx)
+	if err != nil {
+		return nil, err
+	}
+
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 24*time.Hour)
+	}
+
 	return items, nil
 }

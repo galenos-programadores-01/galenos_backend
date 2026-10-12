@@ -18,16 +18,7 @@ func NewMotivoRepository(db *sql.DB) *MotivoRepository {
 
 func (r *MotivoRepository) ListarPorAtencion(ctx context.Context, idRegAtencion int) ([]domain.MotivoAtencion, error) {
 	// 1. Buscar en las evoluciones médicas modernas (Tab_EvolucionesMedicas_H_E)
-	queryEvol := `
-		SELECT TOP 5 
-			IdEvolucion AS IdMotivo, 
-			NroAtencion AS IdRegAtencion, 
-			ISNULL(Motivo, '') AS Motivo, 
-			FechaAtencion AS FechaRegistro
-		FROM dbo.Tab_EvolucionesMedicas_H_E WITH (NOLOCK)
-		WHERE NroAtencion = @p1 AND ISNULL(Motivo, '') <> ''
-		ORDER BY FechaAtencion DESC, IdEvolucion DESC
-	`
+	queryEvol := "EXEC dbo.usp_go_EvolucionesMedicas_ListarMotivosPorAtencion @NroAtencion = @p1"
 	rows, err := r.db.QueryContext(ctx, queryEvol, sql.Named("p1", idRegAtencion))
 	if err == nil {
 		defer rows.Close()

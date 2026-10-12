@@ -343,6 +343,10 @@ func (h *TriageHandler) CreateTriajeConsulta(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
 		return
 	}
+	if err := req.Validate(); err != nil {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
 
 	domainObj := req.toDomain()
 	if idEmpleado := c.GetInt("idEmpleado"); idEmpleado != 0 {

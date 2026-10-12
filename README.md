@@ -53,10 +53,49 @@ Copia `.env.example` a `.env` y ajusta los valores (el `.env` real con credencia
 
 ```bash
 go mod tidy
-go run ./cmd/api
 ```
 
-Al arrancar, la API hace `PING` a SQL Server; si el host no es alcanzable (red/VPN) o la contraseña es incorrecta, falla rápido con el error correspondiente en el log.
+### En PowerShell / CMD:
+```powershell
+go run ./cmd/api
+# O bien compilar y ejecutar directamente el binario:
+go build -o api.exe ./cmd/api
+.\api.exe
+```
+
+### En Git Bash / Linux:
+```bash
+go run ./cmd/api
+# O bien compilar y ejecutar directamente el binario:
+go build -o api.exe ./cmd/api
+./api.exe
+```
+
+> [!NOTE]
+> Al arrancar, la API hace `PING` a SQL Server; si el host no es alcanzable (red/VPN) o la contraseña es incorrecta, falla rápido con el error correspondiente en el log.
+
+### Solución de Problemas Frecuentes
+
+#### 1. Error `fork/exec ...\AppData\Local\go-build\...\api.exe: Acceso denegado` al usar `go run`
+* **Causa:** Antivirus o EDR corporativos (como WatchGuard Endpoint Security 360 o Windows Defender) bloquean por directiva de seguridad la ejecución de binarios recién generados en directorios temporales de usuario (`%LocalAppData%\go-build`).
+* **Solución recomendada:** Compilar el binario localmente en la carpeta del proyecto y ejecutarlo directo:
+  ```bash
+  go build -o api.exe ./cmd/api
+  ./api.exe    # Git Bash
+  # .\api.exe  # PowerShell
+  ```
+* **Limpiar caché de Go si quedó corrupta o bloqueada:**
+  ```bash
+  go clean -cache
+  ```
+
+#### 2. Error `bash: .api.exe: command not found`
+* **Causa:** En Git Bash, la barra invertida `\` actúa como carácter de escape, transformando `.\api.exe` en `.api.exe`.
+* **Solución:** En Git Bash debes utilizar siempre la barra diagonal hacia adelante:
+  ```bash
+  ./api.exe
+  ```
+
 
 ### Formato y Linter (Validación de código)
 
