@@ -29,6 +29,16 @@ func (uc *triageUseCase) CreateTriage(ctx context.Context, triage *domain.Triage
 	return result, nil
 }
 
+// UpdateTriage delega la modificación en el repositorio y devuelve el
+// resultado informado por el procedimiento almacenado usp_go_ModificarTriaje.
+func (uc *triageUseCase) UpdateTriage(ctx context.Context, triage *domain.Triage) (string, error) {
+	result, err := uc.repo.UpdateTriaje(ctx, triage)
+	if err != nil {
+		return "", fmt.Errorf("updating triage: %w", err)
+	}
+	return result, nil
+}
+
 // ListTriage delega el listado (SP ListarTriaje_Emergencia) en el
 // repositorio y devuelve los registros crudos.
 func (uc *triageUseCase) ListTriage(ctx context.Context, params shared.TriageListParams) ([]map[string]any, error) {
@@ -49,12 +59,36 @@ func (uc *triageUseCase) ListPendingAdmission(ctx context.Context, params shared
 	return items, nil
 }
 
+// UpdateIafa delega la actualización de la IAFA (fuente de financiamiento
+// a SIS) en el repositorio (SP usp_go_Triaje_EmergeciaActualizarIAFA).
+func (uc *triageUseCase) UpdateIafa(ctx context.Context, idTriaje int) error {
+	if err := uc.repo.UpdateIafa(ctx, idTriaje); err != nil {
+		return fmt.Errorf("updating triage iafa: %w", err)
+	}
+	return nil
+}
+
 // CreateAdmission delega la admisión (SP WebCrearAtencionDesdeTriaje) en
 // el repositorio y devuelve el resultado informado por el SP.
 func (uc *triageUseCase) CreateAdmission(ctx context.Context, admision *domain.AdmisionDesdeTriaje) (string, error) {
 	result, err := uc.repo.CreateAdmission(ctx, admision)
 	if err != nil {
 		return "", fmt.Errorf("creating admission from triage: %w", err)
+	}
+	return result, nil
+}
+
+// EliminarTriaje delega la baja lógica del triaje (SP
+// usp_go_Triaje_EmergenciaEliminar) en el repositorio y devuelve el
+// resultado informado por el SP.
+func (uc *triageUseCase) EliminarTriaje(ctx context.Context, idTriaje, idEmpleado int) (string, error) {
+	if idTriaje <= 0 {
+		return "", fmt.Errorf("el id del triaje debe ser un entero positivo")
+	}
+
+	result, err := uc.repo.EliminarTriaje(ctx, idTriaje, idEmpleado)
+	if err != nil {
+		return "", fmt.Errorf("deleting triage: %w", err)
 	}
 	return result, nil
 }
@@ -75,6 +109,16 @@ func (uc *triageUseCase) GetFichaAdmision(ctx context.Context, params shared.Fic
 	item, err := uc.repo.GetFichaAdmision(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("getting admission record: %w", err)
+	}
+	return item, nil
+}
+
+// GetTriajePorId delega en el repositorio (SP
+// usp_go_Triaje_EmergeciaPorId) y devuelve los datos crudos del triaje.
+func (uc *triageUseCase) GetTriajePorId(ctx context.Context, idTriaje int) (*map[string]any, error) {
+	item, err := uc.repo.GetTriajePorId(ctx, idTriaje)
+	if err != nil {
+		return nil, fmt.Errorf("getting triaje by id: %w", err)
 	}
 	return item, nil
 }
@@ -127,4 +171,81 @@ func (uc *triageUseCase) UpdateEstadoTriajeConsulta(ctx context.Context, params 
 		return fmt.Errorf("updating outpatient triage state: %w", err)
 	}
 	return nil
+}
+
+// ReporteTriajePorEmpleado delega en el repositorio (SP
+// usp_go_ReporteTriaje) y devuelve las cantidades de triajes del empleado
+// por servicio (tópico) en el rango de fechas indicado.
+func (uc *triageUseCase) ReporteTriajePorEmpleado(ctx context.Context, params shared.ReporteTriajeParams) ([]map[string]any, error) {
+	items, err := uc.repo.ReporteTriajePorEmpleado(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("reporting triage by employee: %w", err)
+	}
+	return items, nil
+}
+
+// ListReferenciasConsultaExterna delega en el repositorio (SP
+// usp_go_ListarBandejaReferencia) y devuelve la bandeja de referencias
+// hechas desde consulta externa.
+func (uc *triageUseCase) ListReferenciasConsultaExterna(ctx context.Context, params shared.ReferenciaParams) ([]map[string]any, error) {
+	items, err := uc.repo.ListReferenciasConsultaExterna(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("listing outpatient referral tray: %w", err)
+	}
+	return items, nil
+}
+
+// ListarDatosReferencia delega en el repositorio (SP
+// usp_go_ListarDatosReferencia) y devuelve los datos del destino de una
+// referencia para la atención indicada.
+func (uc *triageUseCase) ListarDatosReferencia(ctx context.Context, idAtencion int) (*map[string]any, error) {
+	item, err := uc.repo.ListarDatosReferencia(ctx, idAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting referral data: %w", err)
+	}
+	return item, nil
+}
+
+// WebReferenciaJSONCab delega en el repositorio (SP
+// usp_go_webReferenciaJSONCab) y devuelve la cabecera con los datos
+// completos de la referencia para la cuenta de atención indicada.
+func (uc *triageUseCase) WebReferenciaJSONCab(ctx context.Context, idCuentaAtencion int) (*map[string]any, error) {
+	item, err := uc.repo.WebReferenciaJSONCab(ctx, idCuentaAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting web referral JSON header: %w", err)
+	}
+	return item, nil
+}
+
+// WebReferenciaJSONDet delega en el repositorio (SP
+// usp_go_webReferenciaJSONDet) y devuelve el detalle de la referencia
+// (los diagnósticos) para la cuenta de atención indicada.
+func (uc *triageUseCase) WebReferenciaJSONDet(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	items, err := uc.repo.WebReferenciaJSONDet(ctx, idCuentaAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting web referral JSON detail: %w", err)
+	}
+	return items, nil
+}
+
+// WebTratamientoReferenciaJSON delega en el repositorio (SP
+// usp_go_WebTratamientoReferenciaJSON) y devuelve el tratamiento de la
+// referencia para la cuenta de atención indicada.
+func (uc *triageUseCase) WebTratamientoReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	items, err := uc.repo.WebTratamientoReferenciaJSON(ctx, idCuentaAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting web referral JSON treatment: %w", err)
+	}
+	return items, nil
+}
+
+// WebCPTReferenciaJSON delega en el repositorio (SP
+// usp_go_webCPTReferenciaJSON) y devuelve los códigos CPT de la
+// referencia para la cuenta de atención indicada.
+func (uc *triageUseCase) WebCPTReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	items, err := uc.repo.WebCPTReferenciaJSON(ctx, idCuentaAtencion)
+	if err != nil {
+		return nil, fmt.Errorf("getting web referral JSON CPT: %w", err)
+	}
+	return items, nil
 }

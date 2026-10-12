@@ -66,27 +66,16 @@ func (r *SintomaRepository) GuardarEvolucionSintomas(ctx context.Context, idRegA
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "DELETE FROM dbo.Tab_Atencion_Sintomas WHERE IdRegAtencion = @p1", sql.Named("p1", idRegAtencion))
+	_, err = tx.ExecContext(ctx, "EXEC dbo.usp_go_AtencionSintomas_EliminarPorAtencion @IdRegAtencion = @p1", sql.Named("p1", idRegAtencion))
 	if err != nil {
-		return fmt.Errorf("error limpiando síntomas previos: %w", err)
+		return fmt.Errorf("error limpiando síntomas previos mediante SP: %w", err)
 	}
 
 	if len(sintomas) == 0 {
 		return tx.Commit()
 	}
 
-	insertQuery := `
-		INSERT INTO dbo.Tab_Atencion_Sintomas
-			(IdRegAtencion, Sistema, Sintoma, EsPredefinido, SG_LOG_CRE_FECH, SG_LOG_CRE_USUARIO)
-		VALUES
-			(@p1, @p2, @p3, 1, GETDATE(), @p4)
-	`
-	stmt, err := tx.PrepareContext(ctx, insertQuery)
-	if err != nil {
-		return fmt.Errorf("error preparando inserción de síntomas: %w", err)
-	}
-	defer stmt.Close()
-
+	insertSP := "EXEC dbo.usp_go_AtencionSintomas_Insertar @IdRegAtencion = @p1, @Sistema = @p2, @Sintoma = @p3, @IdUsuarioAuditoria = @p4"
 	for _, s := range sintomas {
 		sintTexto := strings.TrimSpace(s.Sintoma)
 		if sintTexto == "" {
@@ -96,14 +85,14 @@ func (r *SintomaRepository) GuardarEvolucionSintomas(ctx context.Context, idRegA
 		if sistemaTexto == "" {
 			sistemaTexto = "General"
 		}
-		_, err = stmt.ExecContext(ctx,
+		_, err = tx.ExecContext(ctx, insertSP,
 			sql.Named("p1", idRegAtencion),
 			sql.Named("p2", sistemaTexto),
 			sql.Named("p3", sintTexto),
 			sql.Named("p4", usr),
 		)
 		if err != nil {
-			return fmt.Errorf("error insertando síntoma '%s': %w", sintTexto, err)
+			return fmt.Errorf("error insertando síntoma '%s' mediante SP: %w", sintTexto, err)
 		}
 	}
 

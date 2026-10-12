@@ -73,6 +73,15 @@ func (r *InterconsultaRepository) ObtenerPorId(ctx context.Context, id int) (*do
 			ic.Motivo = v
 		}
 	}
+	if idx, ok := colMap["ResumenClinico"]; ok && vals[idx] != nil {
+		if v, ok := vals[idx].(string); ok {
+			ic.ResumenHC = v
+		}
+	} else if idx, ok := colMap["ResumenHC"]; ok && vals[idx] != nil {
+		if v, ok := vals[idx].(string); ok {
+			ic.ResumenHC = v
+		}
+	}
 	if idx, ok := colMap["FechaSolicitud"]; ok && vals[idx] != nil {
 		if t, ok := vals[idx].(time.Time); ok {
 			ic.FechaSolicitud = t.Format("2006-01-02T15:04:05")
@@ -155,13 +164,25 @@ func (r *InterconsultaRepository) ejecutarConsultaInterconsultas(ctx context.Con
 	}
 	defer rows.Close()
 
-	var lista []domain.Interconsulta
+	lista := make([]domain.Interconsulta, 0)
 	for rows.Next() {
 		var ic domain.Interconsulta
 		var fecha sql.NullTime
 		var estado sql.NullString
+		var especialidad sql.NullString
+		var resumenHC sql.NullString
 
-		if err := rows.Scan(&ic.IdInterconsulta, &ic.IdAtencionOrigen, &ic.IdEspecialidad, &ic.IdMedicoDestino, &ic.Motivo, &fecha, &estado); err != nil {
+		if err := rows.Scan(
+			&ic.IdInterconsulta,
+			&ic.IdAtencionOrigen,
+			&ic.IdEspecialidad,
+			&ic.IdMedicoDestino,
+			&ic.Motivo,
+			&fecha,
+			&estado,
+			&especialidad,
+			&resumenHC,
+		); err != nil {
 			log.Printf("escaneando interconsulta: %v", err)
 			continue
 		}
@@ -171,14 +192,20 @@ func (r *InterconsultaRepository) ejecutarConsultaInterconsultas(ctx context.Con
 		if estado.Valid {
 			ic.Estado = estado.String
 		}
+		if especialidad.Valid {
+			ic.Especialidad = especialidad.String
+		}
+		if resumenHC.Valid {
+			ic.ResumenHC = resumenHC.String
+		}
 		lista = append(lista, ic)
 	}
 	return lista, rows.Err()
 }
 
 func (r *InterconsultaRepository) Guardar(ctx context.Context, ic domain.Interconsulta) error {
-	query := "EXEC dbo.usp_go_InterconsultaCrear @IdAtencionOrigen = @p1, @IdEspecialidad = @p2, @IdMedicoDestino = @p3, @Motivo = @p4"
-	_, err := r.db.ExecContext(ctx, query, sql.Named("p1", ic.IdAtencionOrigen), sql.Named("p2", ic.IdEspecialidad), sql.Named("p3", ic.IdMedicoDestino), sql.Named("p4", ic.Motivo))
+	query := "EXEC dbo.usp_go_InterconsultaCrear @IdAtencionOrigen = @p1, @IdEspecialidad = @p2, @IdMedicoDestino = @p3, @Motivo = @p4, @ResumenHC = @p5"
+	_, err := r.db.ExecContext(ctx, query, sql.Named("p1", ic.IdAtencionOrigen), sql.Named("p2", ic.IdEspecialidad), sql.Named("p3", ic.IdMedicoDestino), sql.Named("p4", ic.Motivo), sql.Named("p5", ic.ResumenHC))
 	return err
 }
 

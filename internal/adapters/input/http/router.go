@@ -11,29 +11,41 @@ import (
 
 	_ "github.com/galenos-pro/appointments-api/docs"
 	"github.com/galenos-pro/appointments-api/internal/ports/input"
+	refconhttp "github.com/galenos-pro/appointments-api/internal/refcon/adapters/input/http"
+)
+
+const (
+	pathIdOrDoc      = "/:idOrDoc"
+	pathDiagnosticos = "/diagnosticos"
 )
 
 type RouterParams struct {
-	AppointmentHandler       *AppointmentHandler
-	PatientHandler           *PatientHandler
-	CatalogHandler           *CatalogHandler
-	ReniecHandler            *ReniecHandler
-	SisHandler               *SisHandler
-	TriageHandler            *TriageHandler
-	AuthHandler              *AuthHandler
-	EvolucionHandler         *EvolucionHandler
-	MotivoHandler            *MotivoHandler
-	OrdenHandler             *OrdenHandler
-	ResultadoHandler         *ResultadoHandler
-	InterconsultaHandler     *InterconsultaHandler
-	SintomaHandler           *SintomaHandler
-	FirmaPeruHandler         *FirmaPeruHandler
-	DiagnosticoHandler       *DiagnosticoHandler
-	ListaEsperaQxHandler     *ListaEsperaQxHandler
-	MedicoListaEsperaHandler *MedicoListaEsperaHandler
-	RefConHandler            *RefConHandler
-	AuthService              input.AuthService
-	AllowedOrigins           []string
+	AppointmentHandler            *AppointmentHandler
+	PatientHandler                *PatientHandler
+	CatalogHandler                *CatalogHandler
+	ReniecHandler                 *ReniecHandler
+	SisHandler                    *SisHandler
+	TriageHandler                 *TriageHandler
+	AuthHandler                   *AuthHandler
+	EvolucionHandler              *EvolucionHandler
+	MotivoHandler                 *MotivoHandler
+	OrdenHandler                  *OrdenHandler
+	ResultadoHandler              *ResultadoHandler
+	InterconsultaHandler          *InterconsultaHandler
+	SintomaHandler                *SintomaHandler
+	FirmaPeruHandler              *FirmaPeruHandler
+	DiagnosticoHandler            *DiagnosticoHandler
+	ListaEsperaQxHandler          *ListaEsperaQxHandler
+	MedicoListaEsperaHandler      *MedicoListaEsperaHandler
+	CausaExternaMorbilidadHandler *CausaExternaMorbilidadHandler
+	AuditoriaHandler              *AuditoriaHandler
+	RefConHandler                 *refconhttp.RefConHandler
+	BienesInsumosHandler          *BienesInsumosHandler
+	ServiciosCatalogoHandler      *ServiciosCatalogoHandler
+	FarmaciaDisponibilidadHandler *FarmaciaDisponibilidadHandler
+	AtencionCEHandler             *AtencionCEHandler
+	AuthService                   input.AuthService
+	AllowedOrigins                []string
 }
 
 func NewRouter(p RouterParams) *gin.Engine {
@@ -68,13 +80,14 @@ func NewRouter(p RouterParams) *gin.Engine {
 			pacientes := protected.Group("/pacientes")
 			pacientes.GET("", p.PatientHandler.List)
 			pacientes.POST("", p.PatientHandler.Create)
+			pacientes.POST("/historia-clinica", p.PatientHandler.CreateWithHistory)
 			pacientes.GET("/buscar", p.PatientHandler.Search)
 			pacientes.GET("/por-documento", p.PatientHandler.GetByDocumentAndType)
 			pacientes.GET("/:idOrDoc/datos-adicionales", p.PatientHandler.GetDatosAdicionales)
 			pacientes.PUT("/:idOrDoc/datos-adicionales", p.PatientHandler.UpdateDatosAdicionales)
-			pacientes.GET("/:idOrDoc", p.PatientHandler.Get)
-			pacientes.PUT("/:idOrDoc", p.PatientHandler.Update)
-			pacientes.DELETE("/:idOrDoc", p.PatientHandler.Delete)
+			pacientes.GET(pathIdOrDoc, p.PatientHandler.Get)
+			pacientes.PUT(pathIdOrDoc, p.PatientHandler.Update)
+			pacientes.DELETE(pathIdOrDoc, p.PatientHandler.Delete)
 
 			appointments := protected.Group("/appointments")
 			{
@@ -109,8 +122,11 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/servicios/:idTipoServicio", p.CatalogHandler.ListServicios)
 		v1.GET("/datos-institucion", p.CatalogHandler.GetDatosInstitucion)
 		v1.GET("/especialidades", p.CatalogHandler.ListEspecialidades)
+		v1.GET("/establecimientos", p.CatalogHandler.ListEstablecimientos)
 		v1.GET("/especialidades-qx", p.CatalogHandler.HandleListarEspecialidadesQx)
 		v1.GET("/especialidades-departamento/:idDepartamento", p.CatalogHandler.HandleListarEspecialidadesPorDepartamento)
+		v1.GET("/servicios-prioridad/:idPrioridad", p.CatalogHandler.HandleListarServiciosPorPrioridad)
+		v1.GET("/servicios-prioridad/:idPrioridad/:fechaNac", p.CatalogHandler.HandleListarServiciosPorPrioridad)
 		v1.GET("/parametros/:idParametro", p.CatalogHandler.GetParametro)
 
 		v1.GET("/receta/frecuencias", p.CatalogHandler.ListRecetaFrecuencias)
@@ -119,6 +135,53 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/receta/medicamentos", p.CatalogHandler.BuscarMedicamentosReceta)
 		v1.GET("/catalogos/examenes", p.CatalogHandler.BuscarExamenesCatalogo)
 		v1.GET("/catalogos/parametros-clinicos/:idGrupo", p.CatalogHandler.HandleListParametrosClinicos)
+		v1.PATCH("/catalogos/parametros/:idParametro/valor-texto", p.CatalogHandler.ActualizarParametroValorTexto)
+		v1.GET("/catalogos/subclasificaciones-diagnosticos", p.CatalogHandler.HandleListSubclasificacionesDiagnostico)
+
+		bienesInsumos := v1.Group("/bienes-insumos")
+		{
+			bienesInsumos.GET("", p.BienesInsumosHandler.Listar)
+			bienesInsumos.GET("/auxiliares", p.BienesInsumosHandler.ObtenerAuxiliares)
+			bienesInsumos.GET("/grupos", p.BienesInsumosHandler.ListarGrupos)
+			bienesInsumos.GET("/subgrupos/:idGrupo", p.BienesInsumosHandler.ListarSubGrupos)
+			bienesInsumos.GET("/:id", p.BienesInsumosHandler.ObtenerPorID)
+			bienesInsumos.GET("/:id/precios", p.BienesInsumosHandler.ListarPrecios)
+			bienesInsumos.PUT("/:id/precios", p.BienesInsumosHandler.GuardarPrecios)
+			bienesInsumos.POST("", p.BienesInsumosHandler.Crear)
+			bienesInsumos.PUT("/:id", p.BienesInsumosHandler.Actualizar)
+			bienesInsumos.DELETE("/:id", p.BienesInsumosHandler.Eliminar)
+		}
+
+		serviciosCatalogo := v1.Group("/servicios-catalogo")
+		{
+			serviciosCatalogo.GET("", p.ServiciosCatalogoHandler.Listar)
+			serviciosCatalogo.GET("/grupos", p.ServiciosCatalogoHandler.ListarGrupos)
+			serviciosCatalogo.GET("/:id", p.ServiciosCatalogoHandler.ObtenerPorID)
+			serviciosCatalogo.POST("", p.ServiciosCatalogoHandler.Crear)
+			serviciosCatalogo.PUT("/:id", p.ServiciosCatalogoHandler.Actualizar)
+			serviciosCatalogo.DELETE("/:id", p.ServiciosCatalogoHandler.Eliminar)
+		}
+
+		farmacia := v1.Group("/farmacia")
+		{
+			farmacia.GET("/almacenes", p.FarmaciaDisponibilidadHandler.ListarAlmacenes)
+			farmacia.GET("/kpis", p.FarmaciaDisponibilidadHandler.ObtenerKpis)
+			farmacia.GET("/disponibilidad", p.FarmaciaDisponibilidadHandler.ListarDisponibilidad)
+			farmacia.GET("/productos/:id/lotes", p.FarmaciaDisponibilidadHandler.ListarLotesPorProducto)
+			farmacia.GET("/productos/:id/kardex", p.FarmaciaDisponibilidadHandler.ConsultarKardex)
+			farmacia.GET("/tendencias-salidas", p.FarmaciaDisponibilidadHandler.ObtenerTendenciasSalidas)
+			farmacia.GET("/estadisticas", p.FarmaciaDisponibilidadHandler.ObtenerEstadisticas)
+			farmacia.GET("/lotes-por-vencer", p.FarmaciaDisponibilidadHandler.ListarLotesPorVencer)
+		}
+
+		atencionCE := protected.Group("/atencion-ce")
+		{
+			atencionCE.GET("/cola", p.AtencionCEHandler.ListarCola)
+			atencionCE.GET("/destinos", p.AtencionCEHandler.ListarDestinos)
+			atencionCE.GET("/catalogo-labs", p.AtencionCEHandler.ListarCatalogoLabs)
+			atencionCE.GET("/:id", p.AtencionCEHandler.ObtenerFicha)
+			atencionCE.POST("", p.AtencionCEHandler.GuardarFicha)
+		}
 
 		reniec := v1.Group("/reniec")
 		{
@@ -129,10 +192,11 @@ func NewRouter(p RouterParams) *gin.Engine {
 		{
 			sis.GET("/afiliado/:nrodoc", p.SisHandler.ConsultarAfiliado)
 			sis.POST("/filiaciones", p.SisHandler.GestionarAfiliacion)
+			sis.GET("/filiaciones", p.SisHandler.ListFiliaciones)
 			sis.POST("/fua", p.SisHandler.ForzarGuardadoFua)
 			sis.POST("/fua/agregar", p.SisHandler.AgregarFua)
 			sis.GET("/fua/imprimir", p.SisHandler.GetFuaImprimir)
-			sis.GET("/diagnosticos", p.SisHandler.ListDiagnosticos)
+			sis.GET(pathDiagnosticos, p.SisHandler.ListDiagnosticos)
 			sis.GET("/medicamentos", p.SisHandler.ListMedicamentos)
 			sis.GET("/procedimientos", p.SisHandler.ListProcedimientos)
 			sis.GET("/consumo", p.SisHandler.ListConsumo)
@@ -159,13 +223,25 @@ func NewRouter(p RouterParams) *gin.Engine {
 			triaje.GET("/pendientes-admision", p.TriageHandler.ListPendingAdmission)
 			triaje.GET("/reporte", p.TriageHandler.GetReporte)
 			triaje.GET("/ficha-admision", p.TriageHandler.GetFichaAdmision)
+			triaje.GET("/:id", p.TriageHandler.GetTriajePorId)
 			triaje.GET("/medicos/:IdEspecialidad", p.TriageHandler.ListMedicosPorEspecialidad)
 			triaje.GET("/consulta", p.TriageHandler.ListTriajeConsulta)
 			triaje.GET("/consulta/atencion/:idAtencion", p.TriageHandler.GetTriajeConsultaPorAtencion)
 			triaje.PUT("/consulta/:id/estado", p.TriageHandler.UpdateEstadoTriajeConsulta)
+			triaje.PUT("/:id/iafa", p.TriageHandler.UpdateIafa)
+			triaje.PUT("/:id", p.TriageHandler.UpdateTriaje)
+			triaje.DELETE("/:id", p.TriageHandler.Delete)
 			triaje.POST("", p.TriageHandler.Create)
 			triaje.POST("/consulta", p.TriageHandler.CreateTriajeConsulta)
 			triaje.POST("/admision", p.TriageHandler.CreateAdmission)
+			triaje.GET("/reporte-por-empleado", p.TriageHandler.GetReporteTriaje)
+			triaje.GET("/referencias", p.TriageHandler.ListReferenciasConsultaExterna)
+			triaje.GET("/referencias/:idAtencion", p.TriageHandler.ListarDatosReferencia)
+			triaje.GET("/referencias-cabecera/:idCuentaAtencion", p.TriageHandler.WebReferenciaJSONCab)
+			triaje.GET("/referencias-detalle/:idCuentaAtencion", p.TriageHandler.WebReferenciaJSONDet)
+			triaje.GET("/referencias-tratamiento/:idCuentaAtencion", p.TriageHandler.WebTratamientoReferenciaJSON)
+			triaje.GET("/referencias-cpt/:idCuentaAtencion", p.TriageHandler.WebCPTReferenciaJSON)
+			triaje.GET("/causas-externas-morbilidad", p.CausaExternaMorbilidadHandler.HandleListar)
 		}
 
 		evoluciones := protected.Group("/evoluciones")
@@ -214,14 +290,14 @@ func NewRouter(p RouterParams) *gin.Engine {
 			sintomas.POST("/catalogo", p.SintomaHandler.HandleAgregarCatalogo)
 		}
 
-		diagnosticos := v1.Group("/diagnosticos")
+		diagnosticos := v1.Group(pathDiagnosticos)
 		{
 			diagnosticos.GET("/search", p.DiagnosticoHandler.SearchDiagnosticos)
 			diagnosticos.GET("/listar", p.DiagnosticoHandler.HandleListarDiagnosticos)
 			diagnosticos.GET("/atencion/:idAtencion", p.DiagnosticoHandler.HandleObtenerDiagnosticosAtencion)
 		}
 
-		diagnosticosProtected := protected.Group("/diagnosticos")
+		diagnosticosProtected := protected.Group(pathDiagnosticos)
 		{
 			diagnosticosProtected.POST("/atencion", p.DiagnosticoHandler.HandleAgregarDiagnosticoAtencion)
 		}
@@ -241,6 +317,23 @@ func NewRouter(p RouterParams) *gin.Engine {
 		{
 			dashrefcon.GET("/referencias", p.RefConHandler.HandleListarReferencias)
 			dashrefcon.GET("/ups", p.RefConHandler.HandleListarUps)
+			dashrefcon.GET("/upss/:codigoRenipress", p.RefConHandler.HandleListadoUpss)
+			dashrefcon.GET("/especialidades-minsa", p.RefConHandler.HandleListadoEspecialidades)
+			dashrefcon.GET("/consulta-referencia-detalle", p.RefConHandler.HandleConsultarReferenciaDetalle)
+			dashrefcon.POST("/enviar-referencia", p.RefConHandler.HandleSaveReferencia)
+		}
+
+		refcon := v1.Group("/refcon")
+		{
+			refcon.GET("/ups", p.RefConHandler.HandleListarTodasLasUps)
+			refcon.GET("/establecimientos", p.RefConHandler.HandleListarEstablecimientos)
+			refcon.GET("/distritos-reniec/:idReniec", p.RefConHandler.HandleListarDistritosPorIdReniec)
+			refcon.POST("/hoja-referencia", p.RefConHandler.HandleGenerarHojaReferencia)
+		}
+
+		auditoria := protected.Group("/auditoria")
+		{
+			auditoria.POST("", p.AuditoriaHandler.HandleRegistrar)
 		}
 	}
 

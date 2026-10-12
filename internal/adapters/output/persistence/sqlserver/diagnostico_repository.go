@@ -95,6 +95,9 @@ func (r *sqlServerDiagnosticoRepository) SearchDiagnosticos(ctx context.Context,
 		}
 
 		results = append(results, d)
+		if len(results) >= 50 {
+			break
+		}
 	}
 
 	if err := rows.Err(); err != nil {
@@ -105,23 +108,29 @@ func (r *sqlServerDiagnosticoRepository) SearchDiagnosticos(ctx context.Context,
 	return results, nil
 }
 
-func (r *sqlServerDiagnosticoRepository) ListarDiagnosticos(ctx context.Context, filtro string) ([]domain.DiagnosticoSimple, error) {
-	query := "EXEC usp_go_ListarDiagnosticos @Filtro = @p1"
-	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", filtro))
+// ListarDiagnosticos invoca el SP usp_go_SelectDiagnosticos, que recibe el
+// filtro de búsqueda y, de forma opcional, el id de atención y el de paciente
+// para acotar el catálogo CIE-10. Por defecto ambos se envían en 0 (sin
+// acotar), que es el valor que espera el SP cuando no se filtran.
+//
+// El SP devuelve el set completo de columnas del buscador predictivo, así que
+// se reutiliza SearchDiagnosticos y se proyecta el resultado a la vista
+// simple que consume este endpoint.
+func (r *sqlServerDiagnosticoRepository) ListarDiagnosticos(ctx context.Context, filtro string, idAtencion, idPaciente int) ([]domain.DiagnosticoSimple, error) {
+	busqueda, err := r.SearchDiagnosticos(ctx, filtro, idAtencion, idPaciente)
 	if err != nil {
-		return nil, fmt.Errorf("error listing diagnosticos: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
 
-	var results []domain.DiagnosticoSimple
-	for rows.Next() {
-		var d domain.DiagnosticoSimple
-		if err := rows.Scan(&d.IdDiagnostico, &d.CodigoCIE10, &d.Descripcion); err != nil {
-			return nil, fmt.Errorf("error scanning diagnostico simple: %w", err)
-		}
-		results = append(results, d)
+	results := make([]domain.DiagnosticoSimple, 0, len(busqueda))
+	for _, d := range busqueda {
+		results = append(results, domain.DiagnosticoSimple{
+			IdDiagnostico: d.IdDiagnostico,
+			CodigoCIE10:   d.CodigoCIE10,
+			Descripcion:   d.Descripcion,
+		})
 	}
-	return results, rows.Err()
+	return results, nil
 }
 
 func (r *sqlServerDiagnosticoRepository) ObtenerDiagnosticosAtencion(ctx context.Context, idAtencion int, idPrimeraAtencion *int, idEvolucion *int) ([]domain.DiagnosticoAtencion, error) {
@@ -212,12 +221,13 @@ func (r *sqlServerDiagnosticoRepository) ObtenerDiagnosticosAtencion(ctx context
 func (r *sqlServerDiagnosticoRepository) AgregarDiagnosticoAtencion(ctx context.Context, req domain.AgregarDiagnosticoAtencionRequest) (*domain.AgregarDiagnosticoAtencionResponse, error) {
 	idDx := req.IdDiagnostico
 	if idDx <= 0 && req.CodigoCIE10 != "" {
-		_ = r.db.QueryRowContext(ctx, "SELECT TOP 1 IdDiagnostico FROM dbo.Diagnosticos WITH (NOLOCK) WHERE CodigoCIE10 = @p1", sql.Named("p1", strings.TrimSpace(req.CodigoCIE10))).Scan(&idDx)
+		_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Diagnosticos_ObtenerIdPorCodigoCIE10 @CodigoCIE10 = @p1", sql.Named("p1", strings.TrimSpace(req.CodigoCIE10))).Scan(&idDx)
 	}
 
 	idPac := req.IdPaciente
 	if idPac <= 0 && req.IdAtencion > 0 {
-		_ = r.db.QueryRowContext(ctx, "SELECT ISNULL(IdPaciente, 0) FROM dbo.Atenciones WITH (NOLOCK) WHERE IdAtencion = @p1", sql.Named("p1", req.IdAtencion)).Scan(&idPac)
+		var idAt, idCta, idServ, idTipo int
+		_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1", sql.Named("p1", req.IdAtencion)).Scan(&idAt, &idPac, &idCta, &idServ, &idTipo)
 	}
 
 	idSubclasificacion := req.IdSubclasificacionDiagnostico

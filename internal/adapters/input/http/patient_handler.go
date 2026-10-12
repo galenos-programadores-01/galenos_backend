@@ -264,6 +264,75 @@ func (h *PatientHandler) Create(c *gin.Context) {
 	respondSuccess(c, http.StatusCreated, toPatientDetailResponse(detail))
 }
 
+// employeeIDFromContext extrae el claim idEmpleado que deja el middleware
+// RequireBearerToken. Devuelve 0 si el claim no existe o no es numerico, para
+// que el caso de uso lo rechace con ErrMissingEmployeeID en vez de registrar la
+// operacion como un empleado ficticio.
+func employeeIDFromContext(c *gin.Context) int64 {
+	val, exists := c.Get("idEmpleado")
+	if !exists {
+		return 0
+	}
+	switch v := val.(type) {
+	case int:
+		return int64(v)
+	case int64:
+		return v
+	case float64:
+		return int64(v)
+	case string:
+		parsed, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return 0
+		}
+		return parsed
+	}
+	return 0
+}
+
+// CreateWithHistory maneja POST /api/v1/pacientes/historia-clinica.
+//
+// @Summary Registra un paciente con su historia clínica
+// @Description Genera el número de historia clínica, inserta el paciente y da de alta la historia invocando el SP usp_go_PacienteHistoriaClinicaAgregar, y devuelve el detalle del paciente creado. Requiere token y usa el claim idEmpleado del JWT como @IdEmpleado del SP.
+// @Tags Pacientes
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body createPatientWithHistoryRequest true "Datos del paciente a registrar"
+// @Success 201 {object} apiResponse{data=patientDetailResponse} "Paciente creado"
+// @Failure 400 {object} apiResponse{error=apiError} "Cuerpo inválido"
+// @Failure 401 {object} apiResponse{error=apiError} "Token inválido o sin claim idEmpleado"
+// @Failure 500 {object} apiResponse{error=apiError} "Error al registrar el paciente"
+// @Router /pacientes/historia-clinica [post]
+func (h *PatientHandler) CreateWithHistory(c *gin.Context) {
+	var req createPatientWithHistoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+
+	employeeID := employeeIDFromContext(c)
+	if employeeID <= 0 {
+		respondError(c, http.StatusUnauthorized, "MISSING_EMPLOYEE_ID", domain.ErrMissingEmployeeID.Error())
+		return
+	}
+
+	detail, err := h.service.CreateWithHistory(c.Request.Context(), req.toDomain(employeeID))
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrMissingEmployeeID):
+			respondError(c, http.StatusUnauthorized, "MISSING_EMPLOYEE_ID", err.Error())
+		case errors.Is(err, domain.ErrPatientNotFound):
+			respondError(c, http.StatusNotFound, "PATIENT_NOT_FOUND", err.Error())
+		default:
+			respondError(c, http.StatusInternalServerError, "PATIENT_CREATE_FAILED", err.Error())
+		}
+		return
+	}
+
+	respondSuccess(c, http.StatusCreated, toPatientDetailResponse(detail))
+}
+
 // Delete maneja DELETE /api/v1/pacientes/:id.
 //
 // @Summary Elimina un paciente

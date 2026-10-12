@@ -14,6 +14,11 @@ type TriageService interface {
 	// webTab_PacienteTriajeAgregar y retorna el @Resultado del SP.
 	CreateTriage(ctx context.Context, triage *domain.Triage) (string, error)
 
+	// UpdateTriage modifica los datos clínicos de un triaje invocando el
+	// procedimiento almacenado usp_go_ModificarTriaje y retorna el
+	// @Resultado del SP.
+	UpdateTriage(ctx context.Context, triage *domain.Triage) (string, error)
+
 	// ListTriage lista los triajes invocando el SP ListarTriaje_Emergencia
 	// con los filtros recibidos.
 	ListTriage(ctx context.Context, params shared.TriageListParams) ([]map[string]any, error)
@@ -22,9 +27,20 @@ type TriageService interface {
 	// invocando el SP webGestionAtencion_E_H_BusquedaFiltrar.
 	ListPendingAdmission(ctx context.Context, params shared.TriageAdmisionParams) ([]map[string]any, error)
 
+	// UpdateIafa actualiza la IAFA de un triaje (fuente de financiamiento =
+	// SIS) invocando el SP usp_go_Triaje_EmergeciaActualizarIAFA.
+	UpdateIafa(ctx context.Context, idTriaje int) error
+
 	// CreateAdmission admisiona un paciente desde su triaje invocando el
 	// SP WebCrearAtencionDesdeTriaje y retorna el @Resultado del SP.
 	CreateAdmission(ctx context.Context, admision *domain.AdmisionDesdeTriaje) (string, error)
+
+	// EliminarTriaje elimina (baja lógica) un triaje de emergencia
+	// invocando el SP usp_go_Triaje_EmergenciaEliminar y retorna el
+	// @Resultado del SP. Si el triaje ya cuenta con ficha de admisión el SP
+	// no elimina nada y lo informa con un mensaje de error. idEmpleado es
+	// el empleado que ejecuta la eliminación.
+	EliminarTriaje(ctx context.Context, idTriaje, idEmpleado int) (string, error)
 
 	// GetReporte genera el reporte de triaje invocando el SP
 	// WebSelectReporteTriaje con los filtros por id de triaje e id de
@@ -34,6 +50,11 @@ type TriageService interface {
 	// GetFichaAdmision genera la ficha de admisión invocando el SP
 	// webFichaEmergencia para la cuenta de atención indicada.
 	GetFichaAdmision(ctx context.Context, params shared.FichaAdmisionParams) (*map[string]any, error)
+
+	// GetTriajePorId devuelve los datos del paciente y del triaje de
+	// emergencia del id indicado invocando el SP
+	// usp_go_Triaje_EmergeciaPorId. Devuelve nil si no existe.
+	GetTriajePorId(ctx context.Context, idTriaje int) (*map[string]any, error)
 
 	// ListarMedicosPorEspecialidad lista los médicos de una especialidad
 	// invocando el SP usp_go_MedicosFiltrarPorIdEspecialidad.
@@ -55,4 +76,41 @@ type TriageService interface {
 	// UpdateEstadoTriajeConsulta actualiza el estado de un triaje de
 	// consulta externa invocando el SP AtencionesTriajeEstado.
 	UpdateEstadoTriajeConsulta(ctx context.Context, params shared.TriajeConsultaEstadoParams) error
+
+	// ReporteTriajePorEmpleado devuelve las cantidades de triajes de un
+	// empleado por servicio (tópico) en un rango de fechas (con hora y
+	// minuto) invocando el SP usp_go_ReporteTriaje.
+	ReporteTriajePorEmpleado(ctx context.Context, params shared.ReporteTriajeParams) ([]map[string]any, error)
+
+	// ListReferenciasConsultaExterna lista la bandeja de referencias
+	// hechas desde consulta externa invocando el SP
+	// usp_go_ListarBandejaReferencia.
+	ListReferenciasConsultaExterna(ctx context.Context, params shared.ReferenciaParams) ([]map[string]any, error)
+
+	// ListarDatosReferencia devuelve los datos del destino de una
+	// referencia (establecimiento, UPS y especialidad) para la atención
+	// indicada invocando el SP usp_go_ListarDatosReferencia. Devuelve nil
+	// si no hay registro.
+	ListarDatosReferencia(ctx context.Context, idAtencion int) (*map[string]any, error)
+
+	// WebReferenciaJSONCab devuelve la cabecera con los datos completos
+	// de una referencia (paciente, responsable, personal que registra,
+	// cita y destino) para la cuenta de atención indicada invocando el SP
+	// usp_go_webReferenciaJSONCab. Devuelve nil si no existe.
+	WebReferenciaJSONCab(ctx context.Context, idCuentaAtencion int) (*map[string]any, error)
+
+	// WebReferenciaJSONDet devuelve el detalle de la referencia (los
+	// diagnósticos) para la cuenta de atención indicada invocando el SP
+	// usp_go_webReferenciaJSONDet.
+	WebReferenciaJSONDet(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error)
+
+	// WebTratamientoReferenciaJSON devuelve el tratamiento de la
+	// referencia para la cuenta de atención indicada invocando el SP
+	// usp_go_WebTratamientoReferenciaJSON.
+	WebTratamientoReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error)
+
+	// WebCPTReferenciaJSON devuelve los códigos CPT de la referencia para
+	// la cuenta de atención indicada invocando el SP
+	// usp_go_webCPTReferenciaJSON.
+	WebCPTReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error)
 }

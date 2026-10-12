@@ -60,6 +60,15 @@ func namedInt64Ptr(name string, n *int64) sql.NamedArg {
 	}
 	return sql.Named(name, *n)
 }
+
+// namedIntFromFloat convierte un *float64 al entero SQL que espera un
+// parámetro declarado como INT; si el puntero es nil devuelve NULL.
+func namedIntFromFloat(name string, f *float64) sql.NamedArg {
+	if f == nil {
+		return sql.Named(name, nil)
+	}
+	return sql.Named(name, int64(*f))
+}
 func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (string, error) {
 	const procedure = `webTab_PacienteTriajeAgregar`
 
@@ -112,6 +121,7 @@ func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (s
 		namedInt64Ptr("MovimientosFetales", triage.MovimientosFetales),
 		sql.Named("Foto", triage.Photo),
 		sql.Named("Idempleado", triage.EmployeeID),
+		namedInt64Ptr("IdCausaExternaMorbilidad", triage.IdCausaExternaMorbilidad),
 		sql.Named("Resultado", sql.Out{Dest: &resultado}),
 	)
 	if err != nil {
@@ -121,7 +131,52 @@ func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (s
 	return resultado, nil
 }
 
-// List invoca el procedimiento almacenado ListarTriaje_Emergencia con los
+// UpdateTriaje invoca el procedimiento almacenado usp_go_ModificarTriaje
+// con los datos clínicos editables del triaje. El parámetro @Resultado se
+// declara con sql.Out para capturar el mensaje que el SP devuelve
+// (OK;... o ERROR;...). El SP también comprueba que el triaje no tenga
+// ficha de atención antes de modificar.
+func (r *triageRepository) UpdateTriaje(ctx context.Context, triage *domain.Triage) (string, error) {
+	const procedure = `usp_go_ModificarTriaje`
+
+	var resultado string
+
+	_, err := r.db.ExecContext(ctx, procedure,
+		sql.Named("IdTriaje", triage.IDTriaje),
+		sql.Named("motivo", triage.Motivo),
+		sql.Named("tiempo_evolucion_cantidad", triage.EvolutionTimeQuantity),
+		sql.Named("tiempo_evolucion_unidad", triage.EvolutionTimeQuantityUnit),
+		sql.Named("peso", triage.Weight),
+		namedIntFromFloat("talla", triage.Height),
+		sql.Named("IMC", triage.BMI),
+		sql.Named("frecuencia_cardiaca", triage.HeartRate),
+		sql.Named("frecuencia_respiratoria", triage.RespiratoryRate),
+		sql.Named("presion_arterial", triage.BloodPressure),
+		sql.Named("temperatura", triage.Temperature),
+		sql.Named("saturacion_oxigeno", triage.OxygenSaturation),
+		sql.Named("IdCausaExternaMorbilidad", triage.IdCausaExternaMorbilidad),
+		sql.Named("escala_dolor", triage.PainScale),
+		sql.Named("escala_glasgow", triage.GlasgowScale),
+		sql.Named("IdTipoPrioridad", triage.PriorityTypeID),
+		sql.Named("IdServicio", triage.ServiceID),
+		namedBool("EsGestante", triage.EsGestante),
+		sql.Named("EsAccidenteTransito", triage.IsTrafficAccident),
+		sql.Named("IdEstadollego", triage.ArrivalStateID),
+		namedDate("FUR", triage.FUR),
+		namedInt64Ptr("EdadGestacional", triage.EdadGestacional),
+		namedDate("FPP", triage.FPP),
+		namedInt64Ptr("NroControlesPrenatales", triage.NroControlesPrenatales),
+		namedInt64Ptr("MovimientosFetales", triage.MovimientosFetales),
+		sql.Named("Idempleado", triage.EmployeeID),
+		sql.Named("Resultado", sql.Out{Dest: &resultado}),
+	)
+	if err != nil {
+		return "", fmt.Errorf("calling usp_go_ModificarTriaje: %w", err)
+	}
+
+	return resultado, nil
+}
+
 // filtros de rango de fechas, texto de búsqueda, servicio de derivación y
 // el id de empleado del operador. Los nombres de parámetro coinciden
 // exactamente con los del SP. Las columnas que devuelve el SP son
@@ -130,9 +185,18 @@ func (r *triageRepository) Create(ctx context.Context, triage *domain.Triage) (s
 func (r *triageRepository) List(ctx context.Context, params shared.TriageListParams) ([]map[string]any, error) {
 	const procedure = `ListarTriaje_Emergencia`
 
+	fini, err := parseDateTimeSQL(params.FechaInicio)
+	if err != nil {
+		return nil, err
+	}
+	ffin, err := parseDateTimeSQL(params.FechaFin)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := r.db.QueryContext(ctx, procedure,
-		sql.Named("fini", params.FechaInicio),
-		sql.Named("ffin", params.FechaFin),
+		sql.Named("fini", fini),
+		sql.Named("ffin", ffin),
 		sql.Named("filtro", params.Filtro),
 		sql.Named("derivado_a_servicio", params.DerivadoAServicio),
 		sql.Named("IdEmpleado", params.IdEmpleado),
@@ -182,6 +246,20 @@ func (r *triageRepository) ListPendingAdmission(ctx context.Context, params shar
 	return maps, nil
 }
 
+// UpdateIafa invoca el procedimiento almacenado
+// usp_go_Triaje_EmergeciaActualizarIAFA, que actualiza la IAFA del triaje
+// (fuente de financiamiento = SIS) para el id indicado.
+func (r *triageRepository) UpdateIafa(ctx context.Context, idTriaje int) error {
+	const procedure = `usp_go_Triaje_EmergeciaActualizarIAFA`
+
+	_, err := r.db.ExecContext(ctx, procedure, sql.Named("IdTriaje", idTriaje))
+	if err != nil {
+		return fmt.Errorf("calling usp_go_Triaje_EmergeciaActualizarIAFA: %w", err)
+	}
+
+	return nil
+}
+
 // CreateAdmission invoca el procedimiento almacenado
 // WebCrearAtencionDesdeTriaje con los datos del paciente que se admisiona
 // desde su triaje. El parámetro @Resultado se declara con sql.Out para
@@ -215,6 +293,28 @@ func (r *triageRepository) CreateAdmission(ctx context.Context, admision *domain
 	)
 	if err != nil {
 		return "", fmt.Errorf("calling WebCrearAtencionDesdeTriaje: %w", err)
+	}
+
+	return resultado, nil
+}
+
+// EliminarTriaje invoca el procedimiento almacenado
+// usp_go_Triaje_EmergenciaEliminar, que realiza la baja lógica del triaje
+// (IdEstado = 0). El SP no elimina nada si el triaje ya tiene ficha de
+// admisión y lo informa por medio del parámetro de salida @Resultado,
+// declarado con sql.Out para capturar su valor.
+func (r *triageRepository) EliminarTriaje(ctx context.Context, idTriaje, idEmpleado int) (string, error) {
+	const procedure = `usp_go_Triaje_EmergenciaEliminar`
+
+	var resultado string
+
+	_, err := r.db.ExecContext(ctx, procedure,
+		sql.Named("IdTriaje", idTriaje),
+		sql.Named("IdEmpleado", idEmpleado),
+		sql.Named("Resultado", sql.Out{Dest: &resultado}),
+	)
+	if err != nil {
+		return "", fmt.Errorf("calling usp_go_Triaje_EmergenciaEliminar: %w", err)
 	}
 
 	return resultado, nil
@@ -308,6 +408,38 @@ func (r *triageRepository) GetFichaAdmision(ctx context.Context, params shared.F
 	return &m, nil
 }
 
+// GetTriajePorId invoca el procedimiento almacenado
+// usp_go_Triaje_EmergeciaPorId con el id del triaje. El SP retorna una
+// única fila con los datos del paciente y los del triaje de emergencia.
+// Devuelve nil si no hay registros. Los valores decimales que el driver
+// entrega como []byte se normalizan a string para evitar que el JSON
+// los serialice como base64.
+func (r *triageRepository) GetTriajePorId(ctx context.Context, idTriaje int) (*map[string]any, error) {
+	const procedure = `usp_go_Triaje_EmergeciaPorId`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdTriaje", idTriaje))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_Triaje_EmergeciaPorId: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading triaje by id: %w", err)
+	}
+	if len(maps) == 0 {
+		return nil, nil
+	}
+
+	m := maps[0]
+	for clave, valor := range m {
+		if bytes, ok := valor.([]byte); ok {
+			m[clave] = string(bytes)
+		}
+	}
+	return &m, nil
+}
+
 // ListTriajeConsulta invoca el procedimiento almacenado
 // AtencionesTriajeFiltro con un fragmento WHERE construido en Go a partir
 // de los filtros ya validados por el handler (fechas en formato
@@ -361,6 +493,28 @@ func fechaSQL(fecha string) string {
 	return strings.ReplaceAll(fecha, "-", "")
 }
 
+// parseDateTimeSQL convierte una fecha/hora recibida como texto (con o sin
+// hora, con 'T' o espacio, con o sin segundos) a time.Time, para pasarla al
+// driver como parámetro datetime nativo y evitar que SQL Server convierta el
+// literal (formato 'YYYY-MM-DDTHH:MM' sin segundos falla la conversión).
+func parseDateTimeSQL(valor string) (time.Time, error) {
+	layouts := []string{
+		"2006-01-02T15:04",
+		"2006-01-02 15:04",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05.000",
+		"2006-01-02 15:04:05.000",
+		"2006-01-02",
+	}
+	for _, l := range layouts {
+		if t, err := time.ParseInLocation(l, valor, time.Local); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("formato de fecha inválido: %q", valor)
+}
+
 // CreateTriajeConsulta invoca el procedimiento almacenado
 // AtencionesTriajeAgregar, que registra un triaje nuevo de consulta
 // externa o actualiza el vigente de la atención (UltimoTriaje = 1). Los
@@ -404,11 +558,11 @@ func (r *triageRepository) CreateTriajeConsulta(ctx context.Context, triaje *dom
 	return resultado, nil
 }
 
-// GetTriajeConsultaPorAtencion consulta directamente la tabla
-// AtencionesTriaje para devolver el triaje de consulta externa vigente
+// GetTriajeConsultaPorAtencion invoca el procedimiento almacenado
+// dbo.usp_go_AtencionesTriaje_ObtenerVigentePorAtencion para devolver el triaje vigente
 // (UltimoTriaje = 1) de la atención indicada. Devuelve nil si no existe.
 func (r *triageRepository) GetTriajeConsultaPorAtencion(ctx context.Context, idAtencion int64) (*map[string]any, error) {
-	const query = `SELECT * FROM dbo.AtencionesTriaje WHERE IdAtencion = @p1 AND UltimoTriaje = 1`
+	const query = `EXEC dbo.usp_go_AtencionesTriaje_ObtenerVigentePorAtencion @IdAtencion = @p1`
 
 	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idAtencion))
 	if err != nil {
@@ -443,4 +597,207 @@ func (r *triageRepository) UpdateEstadoTriajeConsulta(ctx context.Context, param
 	}
 
 	return nil
+}
+
+// ReporteTriajePorEmpleado invoca el SP usp_go_ReporteTriaje con el
+// empleado y el rango de fechas (con hora y minuto). Devuelve las
+// cantidades de triajes por servicio (tópico) como mapas columna -> valor,
+// respetando los nombres que el SP devuelve en runtime.
+func (r *triageRepository) ReporteTriajePorEmpleado(ctx context.Context, params shared.ReporteTriajeParams) ([]map[string]any, error) {
+	const procedure = `usp_go_ReporteTriaje`
+
+	fechaIni, err := parseDateTimeSQL(params.FechaIni)
+	if err != nil {
+		return nil, err
+	}
+	fechaFin, err := parseDateTimeSQL(params.FechaFin)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.QueryContext(ctx, procedure,
+		sql.Named("IdEmplead", params.IdEmpleado),
+		sql.Named("Fechaini", fechaIni),
+		sql.Named("Fechafin", fechaFin),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ReporteTriaje: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading triage report by employee: %w", err)
+	}
+
+	return maps, nil
+}
+
+// ListReferenciasConsultaExterna invoca el procedimiento almacenado
+// usp_go_ListarBandejaReferencia, que devuelve las referencias hechas
+// desde consulta externa en el rango de fechas indicado, con filtro
+// opcional por nombre del paciente o número de cuenta de atención. Las
+// fechas se pasan como texto YYYY-MM-DD (parámetros DATE del SP).
+func (r *triageRepository) ListReferenciasConsultaExterna(ctx context.Context, params shared.ReferenciaParams) ([]map[string]any, error) {
+	const procedure = `usp_go_ListarBandejaReferencia`
+
+	rows, err := r.db.QueryContext(ctx, procedure,
+		sql.Named("fini", params.FechaInicio),
+		sql.Named("ffin", params.FechaFin),
+		sql.Named("filtro", params.Filtro),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarBandejaReferencia: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading outpatient referral tray: %w", err)
+	}
+
+	return maps, nil
+}
+
+// ListarDatosReferencia invoca el procedimiento almacenado
+// usp_go_ListarDatosReferencia, que devuelve los datos del destino de una
+// referencia (establecimiento, UPS y especialidad) para la atención
+// indicada. Devuelve nil si no hay registro.
+func (r *triageRepository) ListarDatosReferencia(ctx context.Context, idAtencion int) (*map[string]any, error) {
+	const procedure = `usp_go_ListarDatosReferencia`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdAtencion", idAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarDatosReferencia: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading referral data: %w", err)
+	}
+	if len(maps) == 0 {
+		return nil, nil
+	}
+
+	m := maps[0]
+	for clave, valor := range m {
+		if bytes, ok := valor.([]byte); ok {
+			m[clave] = string(bytes)
+		}
+	}
+	return &m, nil
+}
+
+// WebReferenciaJSONDet invoca el procedimiento almacenado
+// usp_go_webReferenciaJSONDet, que devuelve el detalle de la referencia
+// (los diagnósticos) para la cuenta de atención indicada. Devuelve la
+// lista de registros como mapas columna -> valor.
+func (r *triageRepository) WebReferenciaJSONDet(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	const procedure = `usp_go_webReferenciaJSONDet`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdcuentaAtencion", idCuentaAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_webReferenciaJSONDet: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading web referral JSON detail: %w", err)
+	}
+	for _, m := range maps {
+		for clave, valor := range m {
+			if bytes, ok := valor.([]byte); ok {
+				m[clave] = string(bytes)
+			}
+		}
+	}
+	return maps, nil
+}
+
+// WebTratamientoReferenciaJSON invoca el procedimiento almacenado
+// usp_go_WebTratamientoReferenciaJSON, que devuelve el tratamiento de la
+// referencia para la cuenta de atención indicada. Devuelve la lista de
+// registros como mapas columna -> valor.
+func (r *triageRepository) WebTratamientoReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	const procedure = `usp_go_WebTratamientoReferenciaJSON`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdCuentaAtencion", idCuentaAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_WebTratamientoReferenciaJSON: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading web referral JSON treatment: %w", err)
+	}
+	for _, m := range maps {
+		for clave, valor := range m {
+			if bytes, ok := valor.([]byte); ok {
+				m[clave] = string(bytes)
+			}
+		}
+	}
+	return maps, nil
+}
+
+// WebCPTReferenciaJSON invoca el procedimiento almacenado
+// usp_go_webCPTReferenciaJSON, que devuelve los códigos CPT de la
+// referencia para la cuenta de atención indicada. Devuelve la lista de
+// registros como mapas columna -> valor.
+func (r *triageRepository) WebCPTReferenciaJSON(ctx context.Context, idCuentaAtencion int) ([]map[string]any, error) {
+	const procedure = `usp_go_webCPTReferenciaJSON`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdcuentaAtencion", idCuentaAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_webCPTReferenciaJSON: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading web referral JSON CPT: %w", err)
+	}
+	for _, m := range maps {
+		for clave, valor := range m {
+			if bytes, ok := valor.([]byte); ok {
+				m[clave] = string(bytes)
+			}
+		}
+	}
+	return maps, nil
+}
+
+// WebReferenciaJSONCab invoca el procedimiento almacenado
+// usp_go_webReferenciaJSONCab, que devuelve la cabecera con los datos
+// completos de la referencia (paciente, responsable de la referencia,
+// personal que registra, personal del establecimiento, tutor, cita,
+// diagnósticos y datos del destino) para la cuenta de atención indicada.
+// Devuelve nil si no hay registro.
+func (r *triageRepository) WebReferenciaJSONCab(ctx context.Context, idCuentaAtencion int) (*map[string]any, error) {
+	const procedure = `usp_go_webReferenciaJSONCab`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdcuentaAtencion", idCuentaAtencion))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_webReferenciaJSONCab: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading web referral JSON header: %w", err)
+	}
+	if len(maps) == 0 {
+		return nil, nil
+	}
+
+	m := maps[0]
+	for clave, valor := range m {
+		if bytes, ok := valor.([]byte); ok {
+			m[clave] = string(bytes)
+		}
+	}
+	return &m, nil
 }

@@ -137,6 +137,7 @@ type CreateInterconsultaRequest struct {
 	IdEspecialidadAlt int    `json:"idEspecialidad"`
 	IdMedicoDestino   int    `json:"idMedicoDestino"`
 	Motivo            string `json:"motivo" binding:"required"`
+	ResumenHC         string `json:"resumenHC"`
 }
 
 // @Summary Create an interconsulta
@@ -168,6 +169,7 @@ func (h *InterconsultaHandler) HandleCrear(c *gin.Context) {
 		IdEspecialidad:   esp,
 		IdMedicoDestino:  req.IdMedicoDestino,
 		Motivo:           req.Motivo,
+		ResumenHC:        req.ResumenHC,
 	}
 
 	err := h.service.Crear(c.Request.Context(), ic)

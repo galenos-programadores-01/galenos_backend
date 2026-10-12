@@ -1,87 +1,93 @@
--- usp_go_ListarReferenciasPorMesyAnio
--- Dashboard de referencias y contrarreferencias (gráfico de barras)
--- Uso: EXEC usp_go_ListarReferenciasPorMesyAnio @mes, @año, @estado, @ups, @opcion
--- Ejemplo: EXEC usp_go_ListarReferenciasPorMesyAnio 1, 2026, 0, '', 1
-create proc usp_go_ListarReferenciasPorMesyAnio --'2026-01-01','2026-02-28',1
-@mes int,
-@año int,
-@estado int,
-@ups varchar(10),
-@opcion int
-as
+-- ============================================================================
+-- Procedimiento: dbo.usp_go_ListarReferenciasPorMesyAnio
+-- Módulo: Dashboard de Referencias y Contrarreferencias (HNSEB)
+-- Base de Datos: SIGH / Galenos Pro
+-- ============================================================================
 
-set language spanish
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
 
-if @opcion = 1
-begin
+CREATE OR ALTER PROCEDURE dbo.usp_go_ListarReferenciasPorMesyAnio
+    @mes INT = 0,
+    @año INT = 0,
+    @anio INT = 0,
+    @estado INT = 0,
+    @ups VARCHAR(10) = '',
+    @opcion INT = 1
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET LANGUAGE spanish;
 
-selecT 
-month(FechaReferencia),
-DATENAME ( month , FechaReferencia )  as Mes,
-count(IdReferencia) as Cantidad
-from Referencia
-where year(FechaReferencia)=@año
-and (month(FechaReferencia)=@mes or @mes = 0)
-group by DATENAME ( month , FechaReferencia ),month(FechaReferencia)
-order by month(FechaReferencia)
+    -- Consolidar alias de anio / año
+    DECLARE @AnioFiltro INT = @año;
+    IF (@AnioFiltro IS NULL OR @AnioFiltro = 0) AND (@anio IS NOT NULL AND @anio <> 0)
+        SET @AnioFiltro = @anio;
+    IF @AnioFiltro IS NULL OR @AnioFiltro = 0
+        SET @AnioFiltro = YEAR(GETDATE());
 
-end
-
-if @opcion = 2
-begin
-
-selecT 
-es.descripcion,
-count(es.idestado),
-month(FechaReferencia),
-DATENAME ( month , FechaReferencia )  as Mes,
-count(IdReferencia) as Cantidad
-from Referencia ref inner join EstadosRefconReferencia es
-on ref.IdEstadoReferencia=es.IdEstado
-where year(FechaReferencia)=@año
-and (month(FechaReferencia)=@mes or @mes = 0)
-and es.IdEstado in (3,5,7)
-group by DATENAME ( month , FechaReferencia ),month(FechaReferencia),
-es.idestado,es.descripcion
-order by month(FechaReferencia)
-
-end
-
-if @opcion = 3
-begin
-
-selecT 
-es.descripcion,
-count(es.idestado),
-month(FechaReferencia),
-DATENAME ( month , FechaReferencia )  as Mes,
-count(IdReferencia) as Cantidad
-from Referencia ref inner join EstadosRefconReferencia es
-on ref.IdEstadoReferencia=es.IdEstado
-where year(FechaReferencia)=@año
-and (month(FechaReferencia)=@mes or @mes = 0)
-and es.IdEstado =@estado
-group by DATENAME ( month , FechaReferencia ),month(FechaReferencia),
-es.idestado,es.descripcion
-order by month(FechaReferencia)
-end
-
-if @opcion = 4
-begin
-
-selecT 
-es.descripcion,
-count(es.idestado),
-month(FechaReferencia),
-DATENAME ( month , FechaReferencia )  as Mes,
-count(IdReferencia) as Cantidad
-from Referencia ref inner join EstadosRefconReferencia es
-on ref.IdEstadoReferencia=es.IdEstado
-where year(FechaReferencia)=@año
-and (month(FechaReferencia)=@mes or @mes = 0)
-and ref.ServicioDestino=@ups
-and es.IdEstado =@estado
-group by DATENAME ( month , FechaReferencia ),month(FechaReferencia),
-es.idestado,es.descripcion
-order by month(FechaReferencia)
-end
+    IF @opcion = 1
+    BEGIN
+        SELECT 
+            MONTH(FechaReferencia) AS MesNum,
+            DATENAME(MONTH, FechaReferencia) AS Mes,
+            COUNT(IdReferencia) AS Cantidad
+        FROM dbo.Referencia WITH (NOLOCK)
+        WHERE YEAR(FechaReferencia) = @AnioFiltro
+          AND (@mes = 0 OR MONTH(FechaReferencia) = @mes)
+        GROUP BY DATENAME(MONTH, FechaReferencia), MONTH(FechaReferencia)
+        ORDER BY MONTH(FechaReferencia);
+    END
+    ELSE IF @opcion = 2
+    BEGIN
+        SELECT 
+            ISNULL(es.Descripcion, 'DESCONOCIDO') AS Descripcion,
+            COUNT(es.IdEstado) AS Conteo,
+            MONTH(ref.FechaReferencia) AS MesNum,
+            DATENAME(MONTH, ref.FechaReferencia) AS Mes,
+            COUNT(ref.IdReferencia) AS Cantidad
+        FROM dbo.Referencia ref WITH (NOLOCK)
+        INNER JOIN dbo.EstadosReferencia es WITH (NOLOCK) ON ref.IdEstadoReferencia = es.IdEstado
+        WHERE YEAR(ref.FechaReferencia) = @AnioFiltro
+          AND (@mes = 0 OR MONTH(ref.FechaReferencia) = @mes)
+          AND es.IdEstado IN (3, 5, 7)
+        GROUP BY DATENAME(MONTH, ref.FechaReferencia), MONTH(ref.FechaReferencia), es.IdEstado, es.Descripcion
+        ORDER BY MONTH(ref.FechaReferencia);
+    END
+    ELSE IF @opcion = 3
+    BEGIN
+        SELECT 
+            ISNULL(es.Descripcion, 'DESCONOCIDO') AS Descripcion,
+            COUNT(es.IdEstado) AS Conteo,
+            MONTH(ref.FechaReferencia) AS MesNum,
+            DATENAME(MONTH, ref.FechaReferencia) AS Mes,
+            COUNT(ref.IdReferencia) AS Cantidad
+        FROM dbo.Referencia ref WITH (NOLOCK)
+        INNER JOIN dbo.EstadosReferencia es WITH (NOLOCK) ON ref.IdEstadoReferencia = es.IdEstado
+        WHERE YEAR(ref.FechaReferencia) = @AnioFiltro
+          AND (@mes = 0 OR MONTH(ref.FechaReferencia) = @mes)
+          AND (@estado = 0 OR es.IdEstado = @estado)
+        GROUP BY DATENAME(MONTH, ref.FechaReferencia), MONTH(ref.FechaReferencia), es.IdEstado, es.Descripcion
+        ORDER BY MONTH(ref.FechaReferencia);
+    END
+    ELSE IF @opcion = 4
+    BEGIN
+        SELECT 
+            ISNULL(es.Descripcion, 'DESCONOCIDO') AS Descripcion,
+            COUNT(es.IdEstado) AS Conteo,
+            MONTH(ref.FechaReferencia) AS MesNum,
+            DATENAME(MONTH, ref.FechaReferencia) AS Mes,
+            COUNT(ref.IdReferencia) AS Cantidad
+        FROM dbo.Referencia ref WITH (NOLOCK)
+        INNER JOIN dbo.EstadosReferencia es WITH (NOLOCK) ON ref.IdEstadoReferencia = es.IdEstado
+        WHERE YEAR(ref.FechaReferencia) = @AnioFiltro
+          AND (@mes = 0 OR MONTH(ref.FechaReferencia) = @mes)
+          AND (LTRIM(RTRIM(@ups)) = '' OR ref.ServicioDestino = @ups)
+          AND (@estado = 0 OR es.IdEstado = @estado)
+        GROUP BY DATENAME(MONTH, ref.FechaReferencia), MONTH(ref.FechaReferencia), es.IdEstado, es.Descripcion
+        ORDER BY MONTH(ref.FechaReferencia);
+    END
+END;
+GO

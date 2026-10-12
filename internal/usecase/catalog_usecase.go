@@ -178,6 +178,14 @@ func (uc *catalogUseCase) ListarEspecialidadesQx(ctx context.Context) ([]domain.
 	return items, nil
 }
 
+func (uc *catalogUseCase) ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error) {
+	items, err := uc.repo.ListarServiciosPorPrioridad(ctx, idPrioridad, fechaNac)
+	if err != nil {
+		return nil, fmt.Errorf("listing servicios por prioridad: %w", err)
+	}
+	return items, nil
+}
+
 func (uc *catalogUseCase) GetParametro(ctx context.Context, idParametro int64) (*domain.Parametro, error) {
 	item, err := uc.repo.GetParametro(ctx, idParametro)
 	if err != nil {
@@ -259,6 +267,51 @@ func (uc *catalogUseCase) ListParametrosClinicos(ctx context.Context, idGrupo in
 	}
 
 	items, err := uc.repo.ListParametrosClinicos(ctx, idGrupo)
+	if err != nil {
+		return nil, err
+	}
+
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 24*time.Hour)
+	}
+
+	return items, nil
+}
+
+func (uc *catalogUseCase) ActualizarParametroValorTexto(ctx context.Context, idParametro int) error {
+	if err := uc.repo.ActualizarParametroValorTexto(ctx, idParametro); err != nil {
+		return err
+	}
+
+	if uc.cache != nil {
+		keys := make([]string, 0, 5)
+		for idGrupo := 1; idGrupo <= 5; idGrupo++ {
+			keys = append(keys, fmt.Sprintf("cache:param_clinicos:grupo:%d", idGrupo))
+		}
+		uc.cache.Delete(ctx, keys...)
+	}
+
+	return nil
+}
+
+func (uc *catalogUseCase) ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error) {
+	items, err := uc.repo.ListEstablecimientos(ctx, filtro, tipo)
+	if err != nil {
+		return nil, fmt.Errorf("listing establecimientos: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error) {
+	cacheKey := fmt.Sprintf("cache:subclasif_dx:%d:%d", idTipoServicio, idClasificacionDx)
+	if uc.cache != nil {
+		var cached []domain.SubclasificacionDxItem
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			return cached, nil
+		}
+	}
+
+	items, err := uc.repo.ListSubclasificacionesDiagnostico(ctx, idTipoServicio, idClasificacionDx)
 	if err != nil {
 		return nil, err
 	}

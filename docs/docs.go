@@ -289,6 +289,165 @@ const docTemplate = `{
                 }
             }
         },
+        "/auditoria": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Inserta un registro en la tabla Auditoria mediante dbo.AuditoriaAgregarV",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auditoria"
+                ],
+                "summary": "Registrar auditoría",
+                "parameters": [
+                    {
+                        "description": "Registro de auditoría a agregar",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.AgregarAuditoriaRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/catalogos/parametros-clinicos/{idGrupo}": {
+            "get": {
+                "description": "Devuelve el catálogo de parámetros clínicos según su grupo (SP usp_go_Cat_ParametroClinico_Listar).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catálogos"
+                ],
+                "summary": "Listar parámetros clínicos por grupo",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del grupo (1: Estado General, 2: Hidratación, 3: Conciencia/Glasgow, 4: Destino Alta, 5: Tipo Atención)",
+                        "name": "idGrupo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.ParametroClinico"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/catalogos/parametros/{idParametro}/valor-texto": {
+            "patch": {
+                "description": "Marca el parámetro con ValorTexto = 'N' (SP usp_go_ActualizarParametroValorTextoPorId). Invalida la cache de parámetros clínicos.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Actualiza el ValorTexto de un parámetro",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del parámetro",
+                        "name": "idParametro",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/centros-poblados/{idDistrito}": {
             "get": {
                 "description": "Devuelve los centros poblados de un distrito (SP usp_go_ListarCentrosPoblados).",
@@ -369,6 +528,181 @@ const docTemplate = `{
                 }
             }
         },
+        "/dashrefcon/consulta-referencia-detalle": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Consulta el detalle de una referencia en el servicio REST del MINSA por documento del paciente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "DashRefCon"
+                ],
+                "summary": "Consultar detalle de referencia en MINSA",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Número de documento del paciente",
+                        "name": "numerodocumento",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tipo de documento (1 = DNI)",
+                        "name": "tipodocumento",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Número de página a consultar",
+                        "name": "pagina",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Código de establecimiento destino (por defecto el configurado)",
+                        "name": "establecimientoDestino",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Límite de resultados por página (por defecto el configurado)",
+                        "name": "limite",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.ConsultaMinsaResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/dashrefcon/enviar-referencia": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra una referencia en el servicio saveReferencia del MINSA enviando la estructura completa de la referencia",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "DashRefCon"
+                ],
+                "summary": "Enviar (registrar) una referencia en MINSA",
+                "parameters": [
+                    {
+                        "description": "Estructura de la referencia a registrar",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SaveReferenciaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.SaveReferenciaResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/refconhttp.apiResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/refconhttp.apiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashrefcon/especialidades-minsa": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Consulta el listado de especialidades vigentes en el servicio REST de interoperabilidad del MINSA (sin parámetros)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "DashRefCon"
+                ],
+                "summary": "Listar especialidades vigentes en MINSA",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.ListadoEspecialidadesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/dashrefcon/referencias": {
             "get": {
                 "security": [
@@ -427,7 +761,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
                                 },
                                 {
                                     "type": "object",
@@ -467,7 +801,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
                                 },
                                 {
                                     "type": "object",
@@ -477,6 +811,52 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/domain.Ups"
                                             }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/dashrefcon/upss/{codigoRenipress}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Consulta el listado de Unidades Productoras de Servicios (UPS) del establecimiento indicado por su código RENIPRESS en el servicio REST del MINSA",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "DashRefCon"
+                ],
+                "summary": "Listar UPS de un establecimiento en MINSA",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Código RENIPRESS del establecimiento",
+                        "name": "codigoRenipress",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.ListadoUpsResponse"
                                         }
                                     }
                                 }
@@ -589,6 +969,152 @@ const docTemplate = `{
                 }
             }
         },
+        "/diagnosticos/atencion": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra un diagnóstico para una atención médica utilizando usp_go_AtencionesDiagnosticosAgregar",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Diagnosticos"
+                ],
+                "summary": "Agregar diagnóstico a una atención médica",
+                "parameters": [
+                    {
+                        "description": "Datos del diagnóstico a registrar",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.AgregarDiagnosticoAtencionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.AgregarDiagnosticoAtencionResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/diagnosticos/atencion/{idAtencion}": {
+            "get": {
+                "description": "Obtiene los diagnósticos de una atención médica utilizando usp_go_ObtenerDiagnosticosAtencion",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Diagnosticos"
+                ],
+                "summary": "Obtener diagnósticos de una atención",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de Atención",
+                        "name": "idAtencion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de Primera Atención",
+                        "name": "idPrimeraAtencion",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de Evolución",
+                        "name": "idEvolucion",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.DiagnosticoAtencion"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/diagnosticos/listar": {
             "get": {
                 "security": [
@@ -596,7 +1122,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Busca diagnosticos por filtro (codigo o descripcion)",
+                "description": "Busca diagnosticos por filtro (codigo o descripcion) invocando el SP usp_go_SelectDiagnosticos. idAtencion e idPaciente son opcionales y por defecto se envian en 0 (sin acotar)",
                 "consumes": [
                     "application/json"
                 ],
@@ -614,6 +1140,18 @@ const docTemplate = `{
                         "name": "filtro",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Id de la atencion (0 = sin acotar)",
+                        "name": "idAtencion",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Id del paciente (0 = sin acotar)",
+                        "name": "idPaciente",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1001,6 +1539,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/establecimientos": {
+            "get": {
+                "description": "Devuelve establecimientos filtrados (SP usp_go_webEstablecimientosFiltrar). El filtro busca por código, nombre o departamento.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Lista establecimientos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Texto a buscar (código, nombre o departamento)",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tipo de establecimiento: 1=Referencia, 0=Contrareferencia (0/Todos por defecto)",
+                        "name": "tipo",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.EstablecimientoBusqueda"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/estados-civil": {
             "get": {
                 "description": "Devuelve el catálogo de estados civiles (SP usp_go_ListarEstadosCivil).",
@@ -1325,6 +1933,34 @@ const docTemplate = `{
             }
         },
         "/evoluciones/{idRegAtencion}/sintomas": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve los síntomas registrados para la atención médica (usp_go_ObtenerAtencionSintomas)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Evoluciones"
+                ],
+                "summary": "Obtener síntomas registrados de la atención",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de Atención",
+                        "name": "idRegAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            },
             "post": {
                 "security": [
                     {
@@ -3254,6 +3890,111 @@ const docTemplate = `{
                 }
             }
         },
+        "/pacientes/historia-clinica": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Genera el número de historia clínica, inserta el paciente y da de alta la historia invocando el SP usp_go_PacienteHistoriaClinicaAgregar, y devuelve el detalle del paciente creado. Requiere token y usa el claim idEmpleado del JWT como @IdEmpleado del SP.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pacientes"
+                ],
+                "summary": "Registra un paciente con su historia clínica",
+                "parameters": [
+                    {
+                        "description": "Datos del paciente a registrar",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.createPatientWithHistoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Paciente creado",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/httpadapter.patientDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Cuerpo inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Token inválido o sin claim idEmpleado",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error al registrar el paciente",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/pacientes/por-documento": {
             "get": {
                 "description": "Invoca el SP usp_go_ListarPacientePorNroDocyTipo con el número y el tipo de documento.",
@@ -3396,6 +4137,134 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Paciente no encontrado",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/pacientes/{idOrDoc}/datos-adicionales": {
+            "get": {
+                "description": "Invoca el SP usp_go_PacientesDatosAdicionalesIdPaciente para devolver antecedentes quirúrgicos, patológicos, obstétricos, etc.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pacientes"
+                ],
+                "summary": "Obtiene los antecedentes y datos adicionales de un paciente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del paciente",
+                        "name": "idOrDoc",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.PacienteDatosAdicionales"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Identificador inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Invoca los SPs PacientesDatosAdicionalesModificar / PacientesDatosAdicionalesAgregar",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pacientes"
+                ],
+                "summary": "Actualiza los antecedentes y datos adicionales de un paciente",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del paciente",
+                        "name": "idOrDoc",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Antecedentes a guardar",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.PacienteDatosAdicionales"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.PacienteDatosAdicionales"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Identificador o payload inválido",
                         "schema": {
                             "allOf": [
                                 {
@@ -3813,6 +4682,166 @@ const docTemplate = `{
                 }
             }
         },
+        "/refcon/distritos-reniec/{idReniec}": {
+            "get": {
+                "description": "Retorna el distrito asociado a un código RENIEC (tabla Distritos)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RefCon"
+                ],
+                "summary": "Listar distritos por IdReniec",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "IdReniec del distrito",
+                        "name": "idReniec",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.DistritoReniec"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/refcon/establecimientos": {
+            "get": {
+                "description": "Retorna el catálogo de establecimientos de salud con código IPRESS y nombre desde la tabla Establecimientos",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RefCon"
+                ],
+                "summary": "Listar establecimientos",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.Establecimiento"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/refcon/hoja-referencia": {
+            "post": {
+                "description": "Hace login en el portal REFCON y genera/descarga la hoja de referencia oficial en PDF, devuelta en base64",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RefCon"
+                ],
+                "summary": "Generar hoja de referencia PDF del MINSA",
+                "parameters": [
+                    {
+                        "description": "Datos de la referencia a generar",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.GenerarHojaReferenciaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.GenerarHojaReferenciaResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/refcon/ups": {
+            "get": {
+                "description": "Retorna el catálogo completo de Unidades Productoras de Servicios (UPS) con código y descripción desde la tabla SuSalud_ups",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "RefCon"
+                ],
+                "summary": "Listar todas las UPS",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/refconhttp.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.Ups"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/reniec/{nrodoc}": {
             "get": {
                 "description": "Invoca el servicio SOAP externo de RENIEC. La operación por defecto es \"completo\".",
@@ -3954,6 +4983,178 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {}
+            }
+        },
+        "/servicios-prioridad/{idPrioridad}": {
+            "get": {
+                "description": "Devuelve los servicios según la prioridad y fecha de nacimiento (SP usp_go_ListarServiciosXPrioridad). La fecha de nacimiento es opcional.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Lista servicios por prioridad y fecha de nacimiento",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la prioridad",
+                        "name": "idPrioridad",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha de nacimiento (YYYY-MM-DD)",
+                        "name": "fechaNac",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.ServicioSimple"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/servicios-prioridad/{idPrioridad}/{fechaNac}": {
+            "get": {
+                "description": "Devuelve los servicios según la prioridad y fecha de nacimiento (SP usp_go_ListarServiciosXPrioridad). La fecha de nacimiento es opcional.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Lista servicios por prioridad y fecha de nacimiento",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la prioridad",
+                        "name": "idPrioridad",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha de nacimiento (YYYY-MM-DD)",
+                        "name": "fechaNac",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.ServicioSimple"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
             }
         },
         "/servicios/{idTipoServicio}": {
@@ -4363,8 +5564,96 @@ const docTemplate = `{
             }
         },
         "/sis/filiaciones": {
+            "get": {
+                "description": "Invoca el SP usp_go_SisFiliacionesConsultar, que lee de la tabla SisFiliaciones las afiliaciones guardadas para un tipo y número de documento. A diferencia de /sis/afiliado, no consulta al SIS por SOAP.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SIS"
+                ],
+                "summary": "Lista las afiliaciones SIS registradas en la base de datos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Número de documento (DNI)",
+                        "name": "nroDocumento",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tipo de documento (1=DNI, 3=CE)",
+                        "name": "idTipoDoc",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de afiliaciones",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error al consultar las afiliaciones",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
             "post": {
-                "description": "Invoca el SP webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.",
+                "description": "Invoca el SP usp_go_webSisFiliacionesGestionar para guardar los datos de afiliación de un paciente.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4951,9 +6240,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/triaje": {
+        "/triaje/causas-externas-morbilidad": {
             "get": {
-                "description": "Lista triajes de emergencia con filtros de fecha y estado.",
+                "description": "Devuelve el catálogo de causas externas de morbilidad (uso_go_EmergenciaCausaExternaMorbilidadListar)",
                 "consumes": [
                     "application/json"
                 ],
@@ -4961,89 +6250,409 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "triaje"
+                    "Triaje"
                 ],
-                "summary": "Listar triajes",
+                "summary": "Listar causas externas de morbilidad",
+                "responses": {}
+            }
+        },
+        "/triaje/referencias": {
+            "get": {
+                "description": "Lista las referencias hechas desde consulta externa invocando el SP usp_go_ListarBandejaReferencia",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Bandeja de referencias de consulta externa",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Fecha inicio (YYYY-MM-DD)",
+                        "description": "Fecha inicial (YYYY-MM-DD)",
                         "name": "fini",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Fecha fin (YYYY-MM-DD)",
+                        "description": "Fecha final (YYYY-MM-DD)",
                         "name": "ffin",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Filtro por paciente o documento",
+                        "description": "Texto de búsqueda por paciente o número de cuenta",
                         "name": "filtro",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID de servicio derivado",
-                        "name": "derivadoAServicio",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID del empleado logueado",
-                        "name": "idEmpleado",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Referencias de consulta externa",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
                             }
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Error de validación",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "type": "object"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Error interno",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "type": "object"
                         }
                     }
                 }
-            },
-            "post": {
-                "description": "Registra un nuevo triaje de emergencia con signos vitales y clasificación.",
+            }
+        },
+        "/triaje/referencias-cabecera/{idCuentaAtencion}": {
+            "get": {
+                "description": "Devuelve la cabecera con los datos completos de una referencia (paciente, responsable, personal que registra, cita, diagnósticos y destino) invocando el SP usp_go_webReferenciaJSONCab",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "tags": [
-                    "triaje"
-                ],
-                "summary": "Registrar triaje",
+                "summary": "Cabecera JSON de una referencia",
                 "parameters": [
                     {
-                        "description": "Datos del triaje",
-                        "name": "body",
+                        "type": "integer",
+                        "description": "Id de la cuenta de atención",
+                        "name": "idCuentaAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cabecera con los datos de la referencia",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Referencia no encontrada",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/referencias-cpt/{idCuentaAtencion}": {
+            "get": {
+                "description": "Devuelve los códigos CPT de la referencia invocando el SP usp_go_webCPTReferenciaJSON",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "CPT de una referencia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la cuenta de atención",
+                        "name": "idCuentaAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CPT de la referencia",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/referencias-detalle/{idCuentaAtencion}": {
+            "get": {
+                "description": "Devuelve el detalle de la referencia (los diagnósticos) invocando el SP usp_go_webReferenciaJSONDet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Detalle JSON de una referencia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la cuenta de atención",
+                        "name": "idCuentaAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle con los diagnósticos de la referencia",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/referencias-tratamiento/{idCuentaAtencion}": {
+            "get": {
+                "description": "Devuelve el tratamiento de la referencia invocando el SP usp_go_WebTratamientoReferenciaJSON",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Tratamiento JSON de una referencia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la cuenta de atención",
+                        "name": "idCuentaAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tratamiento de la referencia",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/referencias/{idAtencion}": {
+            "get": {
+                "description": "Devuelve los datos del destino de una referencia (establecimiento, UPS y especialidad) invocando el SP usp_go_ListarDatosReferencia",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Datos de una referencia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la atención",
+                        "name": "idAtencion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Datos de la referencia",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/reporte-por-empleado": {
+            "get": {
+                "description": "Cantidad de triajes de un empleado por servicio (tópico) entre fechas con hora y minuto (SP usp_go_ReporteTriaje)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Reporte de triajes por empleado",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del empleado",
+                        "name": "IdEmpleado",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha inicial (YYYY-MM-DD o YYYY-MM-DD HH:MM)",
+                        "name": "fechaini",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha final (YYYY-MM-DD o YYYY-MM-DD HH:MM)",
+                        "name": "fechafin",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cantidad de triajes por tópico",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/{id}": {
+            "get": {
+                "description": "Devuelve los datos del paciente (solo lectura) y del triaje de emergencia del id indicado (SP usp_go_Triaje_EmergeciaPorId)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Datos de un triaje por id",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del triaje",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Datos del paciente y del triaje",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Triaje no encontrado",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Modifica los datos clínicos de un triaje de emergencia invocando el SP usp_go_ModificarTriaje",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Modifica un triaje",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del triaje",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos clínicos editables del triaje",
+                        "name": "triaje",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -5053,7 +6662,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Mensaje de resultado del SP",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -5062,154 +6671,21 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Error de validación",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "type": "object"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Error interno",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/admision": {
-            "post": {
-                "description": "Registra la admisión de un paciente derivado desde triaje de emergencia.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "triaje"
-                ],
-                "summary": "Crear admisión desde triaje",
-                "parameters": [
-                    {
-                        "description": "Datos de la admisión",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.createAdmissionFromTriageRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/consulta": {
-            "get": {
-                "description": "Lista triajes de consulta externa con filtros de fecha y servicio.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "triaje"
-                ],
-                "summary": "Listar triajes consulta",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Fecha inicio (YYYY-MM-DD)",
-                        "name": "fini",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Fecha fin (YYYY-MM-DD)",
-                        "name": "ffin",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filtro por paciente o documento",
-                        "name": "filtro",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID de servicio",
-                        "name": "idServicio",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "type": "object"
                         }
                     }
                 }
             },
-            "post": {
-                "description": "Registra signos vitales de un paciente en consulta externa.",
+            "delete": {
+                "description": "Elimina (baja lógica: IdEstado = 0) un triaje de emergencia invocando el SP usp_go_Triaje_EmergenciaEliminar. Si el triaje ya cuenta con ficha de admisión el SP no lo elimina y devuelve un mensaje de error",
                 "consumes": [
                     "application/json"
                 ],
@@ -5217,138 +6693,73 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "triaje"
+                    "Triaje"
                 ],
-                "summary": "Registrar triaje consulta",
-                "parameters": [
-                    {
-                        "description": "Datos del triaje de consulta",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/httpadapter.createTriajeConsultaRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/consulta/atencion/{idAtencion}": {
-            "get": {
-                "description": "Obtiene el triaje de consulta externa asociado a una atención.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "triaje"
-                ],
-                "summary": "Triaje por atención",
+                "summary": "Elimina un triaje de emergencia",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID de la atención",
-                        "name": "idAtencion",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/consulta/{id}/estado": {
-            "put": {
-                "description": "Cambia el estado de un triaje de consulta externa (ej. atendido).",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "triaje"
-                ],
-                "summary": "Actualizar estado triaje consulta",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID del triaje",
+                        "description": "Id del triaje",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Nuevo estado",
-                        "name": "body",
+                        "description": "Empleado que ejecuta la eliminación",
+                        "name": "triaje",
                         "in": "body",
-                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/httpadapter.triajeConsultaEstadoRequest"
+                            "$ref": "#/definitions/httpadapter.deleteTriajeRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Mensaje de resultado del SP",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/triaje/{id}/iafa": {
+            "put": {
+                "description": "Actualiza la fuente de financiamiento (IAFA) de un triaje de emergencia a SIS invocando el SP usp_go_Triaje_EmergeciaActualizarIAFA",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Triaje"
+                ],
+                "summary": "Actualiza la IAFA de un triaje",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del triaje",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operación exitosa",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -5357,274 +6768,15 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Error de validación",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "type": "object"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Error interno",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/ficha-admision": {
-            "get": {
-                "description": "Obtiene los datos de la ficha de admisión por número de cuenta.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "triaje"
-                ],
-                "summary": "Ficha de admisión",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de la cuenta de atención",
-                        "name": "idCuentaAtencion",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/medicos/{IdEspecialidad}": {
-            "get": {
-                "description": "Lista los médicos disponibles de una especialidad específica.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "triaje"
-                ],
-                "summary": "Médicos por especialidad",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de la especialidad",
-                        "name": "IdEspecialidad",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/pendientes-admision": {
-            "get": {
-                "description": "Lista pacientes en triaje pendientes de admisión hospitalaria.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "triaje"
-                ],
-                "summary": "Pendientes de admisión",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Fecha de atención (YYYY-MM-DD)",
-                        "name": "fecha",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filtro por paciente o documento",
-                        "name": "filtro",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Número de cuenta",
-                        "name": "nroCta",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID de departamento",
-                        "name": "idDepartamento",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID de especialidad",
-                        "name": "IdEspecialidad",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID de servicio",
-                        "name": "idServicio",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID de tipo de servicio",
-                        "name": "idTipoServicio",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/triaje/reporte": {
-            "get": {
-                "description": "Obtiene los datos del reporte de un triaje específico.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "triaje"
-                ],
-                "summary": "Reporte de triaje",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID del triaje",
-                        "name": "id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID del paciente",
-                        "name": "idPaciente",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "type": "object"
                         }
                     }
                 }
@@ -5632,6 +6784,67 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "domain.AgregarDiagnosticoAtencionRequest": {
+            "type": "object",
+            "properties": {
+                "codigoCIE10": {
+                    "type": "string"
+                },
+                "grupoHIS": {
+                    "type": "integer"
+                },
+                "idAtencion": {
+                    "type": "integer"
+                },
+                "idDiagnostico": {
+                    "type": "integer"
+                },
+                "idEpisodio": {
+                    "type": "integer"
+                },
+                "idEvolucion": {
+                    "type": "integer"
+                },
+                "idPaciente": {
+                    "type": "integer"
+                },
+                "idPrimeraAtencion": {
+                    "type": "integer"
+                },
+                "idSubclasificacionDiagnostico": {
+                    "type": "integer"
+                },
+                "labConfHIS": {
+                    "type": "string"
+                },
+                "labConfHIS1": {
+                    "type": "string"
+                },
+                "labConfHIS2": {
+                    "type": "string"
+                },
+                "labConfHIS3": {
+                    "type": "string"
+                },
+                "subGrupoHIS": {
+                    "type": "integer"
+                },
+                "tipoDiagnostico": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.AgregarDiagnosticoAtencionResponse": {
+            "type": "object",
+            "properties": {
+                "descripcionSubclasificacion": {
+                    "type": "string"
+                },
+                "idAtencionDiagnostico": {
+                    "type": "integer"
+                }
+            }
+        },
         "domain.Appointment": {
             "type": "object",
             "properties": {
@@ -5676,6 +6889,20 @@ const docTemplate = `{
                 "StatusCompleted"
             ]
         },
+        "domain.CPT": {
+            "type": "object",
+            "properties": {
+                "cpt_1": {
+                    "type": "string"
+                },
+                "cpt_2": {
+                    "type": "string"
+                },
+                "cpt_3": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.CentroPoblado": {
             "type": "object",
             "properties": {
@@ -5683,6 +6910,81 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CitaReferencia": {
+            "type": "object",
+            "properties": {
+                "fecha_vencimiento_sis": {
+                    "type": "string"
+                },
+                "frecuencia_cardiaca": {
+                    "type": "string"
+                },
+                "frecuencia_respiratoria": {
+                    "type": "string"
+                },
+                "id_financiador": {
+                    "type": "string"
+                },
+                "num_afil": {
+                    "type": "string"
+                },
+                "peso": {
+                    "type": "string"
+                },
+                "presion_arterial_diastolica": {
+                    "type": "string"
+                },
+                "presion_arterial_sistolica": {
+                    "type": "string"
+                },
+                "resumeanamnesis": {
+                    "type": "string"
+                },
+                "resumeexfisico": {
+                    "type": "string"
+                },
+                "talla": {
+                    "type": "string"
+                },
+                "temperatura": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ConsultaMinsaDatos": {
+            "type": "object",
+            "properties": {
+                "datos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ReferenciaMinsa"
+                    }
+                },
+                "paginas": {
+                    "type": "integer"
+                },
+                "porPagina": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.ConsultaMinsaResponse": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "datos": {
+                    "$ref": "#/definitions/domain.ConsultaMinsaDatos"
+                },
+                "mensaje": {
                     "type": "string"
                 }
             }
@@ -5715,6 +7017,144 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ubigeoHosp": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DatosReferenciaMinsa": {
+            "type": "object",
+            "properties": {
+                "codigoEstado": {
+                    "type": "string"
+                },
+                "codigo_especialidad": {
+                    "type": "string"
+                },
+                "codigo_establecimiento_origen": {
+                    "type": "string"
+                },
+                "condicion": {
+                    "type": "string"
+                },
+                "estado": {
+                    "type": "string"
+                },
+                "fecha_aceptacion": {
+                    "type": "string"
+                },
+                "fecha_envio": {
+                    "type": "string"
+                },
+                "fecha_referencia": {
+                    "type": "string"
+                },
+                "hora_referencia": {
+                    "type": "string"
+                },
+                "id_referencia": {
+                    "type": "string"
+                },
+                "motivo_referencia": {
+                    "type": "string"
+                },
+                "numero_referencia": {
+                    "type": "string"
+                },
+                "resume_anamnesis": {
+                    "type": "string"
+                },
+                "resume_exfisico": {
+                    "type": "string"
+                },
+                "servicio_destino": {
+                    "type": "string"
+                },
+                "servicio_origen": {
+                    "type": "string"
+                },
+                "tipo_financiador": {
+                    "type": "string"
+                },
+                "tipo_transporte": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DatosReferenciaSave": {
+            "type": "object",
+            "properties": {
+                "codEspecialidad": {
+                    "type": "string"
+                },
+                "condicion": {
+                    "type": "string"
+                },
+                "desc_Cartera_servicio": {
+                    "type": "string"
+                },
+                "fechaReferencia": {
+                    "type": "string"
+                },
+                "fgRegistro": {
+                    "type": "string"
+                },
+                "horaReferencia": {
+                    "type": "string"
+                },
+                "idCarteraServicio": {
+                    "type": "string"
+                },
+                "idEnvio": {
+                    "type": "string"
+                },
+                "idTipoAtencion": {
+                    "type": "string"
+                },
+                "idTipoTransporte": {
+                    "type": "string"
+                },
+                "idestabDestino": {
+                    "type": "string"
+                },
+                "idestabOrigen": {
+                    "type": "string"
+                },
+                "idupsOrigen": {
+                    "type": "string"
+                },
+                "idupsdestino": {
+                    "type": "string"
+                },
+                "motivo_referencia": {
+                    "$ref": "#/definitions/domain.MotivoReferencia"
+                },
+                "notasobs": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DatosTutorMinsa": {
+            "type": "object",
+            "properties": {
+                "celular": {
+                    "type": "string"
+                },
+                "correo": {
+                    "type": "string"
+                },
+                "nombres": {
+                    "type": "string"
+                },
+                "numero_documento": {
+                    "type": "string"
+                },
+                "primer_apellido": {
+                    "type": "string"
+                },
+                "segundo_apellido": {
+                    "type": "string"
+                },
+                "tipo_documento": {
                     "type": "string"
                 }
             }
@@ -5756,6 +7196,50 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.DiagnosticoAtencion": {
+            "type": "object",
+            "properties": {
+                "codigoCIE10": {
+                    "type": "string"
+                },
+                "descripcion": {
+                    "type": "string"
+                },
+                "descripcionLarga": {
+                    "type": "string"
+                },
+                "idAtencion": {
+                    "type": "integer"
+                },
+                "idAtencionDiagnostico": {
+                    "type": "integer"
+                },
+                "idDiagnostico": {
+                    "type": "integer"
+                },
+                "idSubclasificacionDx": {
+                    "type": "integer"
+                },
+                "labConfHIS": {
+                    "type": "string"
+                },
+                "labConfHIS1": {
+                    "type": "string"
+                },
+                "labConfHIS2": {
+                    "type": "string"
+                },
+                "labConfHIS3": {
+                    "type": "string"
+                },
+                "tipoCodigo": {
+                    "type": "string"
+                },
+                "tipoDx": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.DiagnosticoBusqueda": {
             "type": "object",
             "properties": {
@@ -5794,6 +7278,34 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.DiagnosticoMinsa": {
+            "type": "object",
+            "properties": {
+                "codigo_ciex": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "tipo_diagnostico": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DiagnosticoReferencia": {
+            "type": "object",
+            "properties": {
+                "diagnostico": {
+                    "type": "string"
+                },
+                "nro_diagnostico": {
+                    "type": "string"
+                },
+                "tipo_diagnostico": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.DiagnosticoSimple": {
             "type": "object",
             "properties": {
@@ -5819,6 +7331,23 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.DistritoReniec": {
+            "type": "object",
+            "properties": {
+                "idDistrito": {
+                    "type": "integer"
+                },
+                "idProvincia": {
+                    "type": "integer"
+                },
+                "idReniec": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Especialidad": {
             "type": "object",
             "properties": {
@@ -5830,6 +7359,17 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.EspecialidadMinsa": {
+            "type": "object",
+            "properties": {
+                "codigo_especialidad": {
+                    "type": "string"
+                },
+                "especialidad": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.EspecialidadSimple": {
             "type": "object",
             "properties": {
@@ -5837,6 +7377,43 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Establecimiento": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.EstablecimientoBusqueda": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "departamento": {
+                    "type": "string"
+                },
+                "distrito": {
+                    "type": "string"
+                },
+                "idEstablecimiento": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "nombreLargo": {
+                    "type": "string"
+                },
+                "provincia": {
                     "type": "string"
                 }
             }
@@ -5874,6 +7451,37 @@ const docTemplate = `{
                 },
                 "idTipoFinanciamiento": {
                     "type": "integer"
+                }
+            }
+        },
+        "domain.GenerarHojaReferenciaRequest": {
+            "type": "object",
+            "properties": {
+                "estadoreferencia": {
+                    "type": "string"
+                },
+                "idestablecimiento": {
+                    "type": "integer"
+                },
+                "idreferencia": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.GenerarHojaReferenciaResult": {
+            "type": "object",
+            "properties": {
+                "archivoB64": {
+                    "type": "string"
+                },
+                "estadoreferencia": {
+                    "type": "string"
+                },
+                "nombreReporte": {
+                    "type": "string"
+                },
+                "urlFile": {
+                    "type": "string"
                 }
             }
         },
@@ -6038,6 +7646,209 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ListadoEspecialidadesResponse": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.EspecialidadMinsa"
+                    }
+                }
+            }
+        },
+        "domain.ListadoUpsItem": {
+            "type": "object",
+            "properties": {
+                "codUps": {
+                    "type": "string"
+                },
+                "descripcion": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ListadoUpsResponse": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "datos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ListadoUpsItem"
+                    }
+                },
+                "mensaje": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.MotivoReferencia": {
+            "type": "object",
+            "properties": {
+                "idmotivoref": {
+                    "type": "string"
+                },
+                "obsmotivoref": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PacienteDatosAdicionales": {
+            "type": "object",
+            "properties": {
+                "anemia": {
+                    "type": "integer"
+                },
+                "antecedAlergico": {
+                    "type": "string"
+                },
+                "antecedFamiliar": {
+                    "type": "string"
+                },
+                "antecedObstetrico": {
+                    "type": "string"
+                },
+                "antecedPatologico": {
+                    "type": "string"
+                },
+                "antecedQuirurgico": {
+                    "type": "string"
+                },
+                "antecedentes": {
+                    "type": "string"
+                },
+                "cancer": {
+                    "type": "integer"
+                },
+                "dislipidemia": {
+                    "type": "integer"
+                },
+                "enfTiroidea": {
+                    "type": "integer"
+                },
+                "fNacimientoCalculada": {
+                    "type": "boolean"
+                },
+                "fumaActualmente": {
+                    "type": "integer"
+                },
+                "higadoGraso": {
+                    "type": "integer"
+                },
+                "hipertensionArterial": {
+                    "type": "integer"
+                },
+                "idPaciente": {
+                    "type": "integer"
+                },
+                "obesidad": {
+                    "type": "integer"
+                },
+                "otrosComorbilidad": {
+                    "type": "string"
+                },
+                "tuberculosis": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.PacienteMinsa": {
+            "type": "object",
+            "properties": {
+                "celular": {
+                    "type": "string"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "fecha_nacimiento": {
+                    "type": "string"
+                },
+                "fecha_vencimiento_sis": {
+                    "type": "string"
+                },
+                "nombres": {
+                    "type": "string"
+                },
+                "numero_documento": {
+                    "type": "string"
+                },
+                "numero_seguro": {
+                    "type": "string"
+                },
+                "primer_apellido": {
+                    "type": "string"
+                },
+                "segundo_apellido": {
+                    "type": "string"
+                },
+                "sexo": {
+                    "type": "string"
+                },
+                "tipo_documento": {
+                    "type": "string"
+                },
+                "ubigeo1": {
+                    "type": "string"
+                },
+                "ubigeo2": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PacienteReferencia": {
+            "type": "object",
+            "properties": {
+                "apelmatpac": {
+                    "type": "string"
+                },
+                "apelpatpac": {
+                    "type": "string"
+                },
+                "celularpac": {
+                    "type": "string"
+                },
+                "correopac": {
+                    "type": "string"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "fechnacpac": {
+                    "type": "string"
+                },
+                "idsexo": {
+                    "type": "string"
+                },
+                "idtipodoc": {
+                    "type": "string"
+                },
+                "nombpac": {
+                    "type": "string"
+                },
+                "nrohis": {
+                    "type": "string"
+                },
+                "numdoc": {
+                    "type": "string"
+                },
+                "telefonopac": {
+                    "type": "string"
+                },
+                "ubigeoactual": {
+                    "type": "string"
+                },
+                "ubigeoreniec": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Pais": {
             "type": "object",
             "properties": {
@@ -6066,6 +7877,20 @@ const docTemplate = `{
                 },
                 "valorTexto": {
                     "type": "string"
+                }
+            }
+        },
+        "domain.ParametroClinico": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "descripcion": {
+                    "type": "string"
+                },
+                "idParametro": {
+                    "type": "integer"
                 }
             }
         },
@@ -6307,6 +8132,102 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.PersonaAcompana": {
+            "type": "object",
+            "properties": {
+                "apelmatacomp": {
+                    "type": "string"
+                },
+                "apelpatacomp": {
+                    "type": "string"
+                },
+                "fechanacacomp": {
+                    "type": "string"
+                },
+                "idcolegioacomp": {
+                    "type": "string"
+                },
+                "idprofesionacomp": {
+                    "type": "string"
+                },
+                "idsexoacomp": {
+                    "type": "string"
+                },
+                "idtipodocacmop": {
+                    "type": "string"
+                },
+                "nombperacomp": {
+                    "type": "string"
+                },
+                "numdocacomp": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PersonaEstablecimiento": {
+            "type": "object",
+            "properties": {
+                "apelmata": {
+                    "type": "string"
+                },
+                "apelpata": {
+                    "type": "string"
+                },
+                "fechanac": {
+                    "type": "string"
+                },
+                "idcolegio": {
+                    "type": "string"
+                },
+                "idprofesion": {
+                    "type": "string"
+                },
+                "idsexo": {
+                    "type": "string"
+                },
+                "idtipodoc": {
+                    "type": "string"
+                },
+                "nombper": {
+                    "type": "string"
+                },
+                "numdoc": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PersonalRegistra": {
+            "type": "object",
+            "properties": {
+                "apellidoMaterno": {
+                    "type": "string"
+                },
+                "apellidoPaterno": {
+                    "type": "string"
+                },
+                "fechaNacimiento": {
+                    "type": "string"
+                },
+                "idcolegio": {
+                    "type": "string"
+                },
+                "idprofesion": {
+                    "type": "string"
+                },
+                "nombres": {
+                    "type": "string"
+                },
+                "nroDocumento": {
+                    "type": "string"
+                },
+                "sexo": {
+                    "type": "string"
+                },
+                "tipoDocumento": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Provincia": {
             "type": "object",
             "properties": {
@@ -6314,6 +8235,41 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ReferenciaMinsa": {
+            "type": "object",
+            "properties": {
+                "cpt_imagenes": {
+                    "type": "string"
+                },
+                "cpt_laboratorio": {
+                    "type": "string"
+                },
+                "cpt_procedimiento": {
+                    "type": "string"
+                },
+                "datos_referencia": {
+                    "$ref": "#/definitions/domain.DatosReferenciaMinsa"
+                },
+                "datos_tutor": {
+                    "$ref": "#/definitions/domain.DatosTutorMinsa"
+                },
+                "diagnosticos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.DiagnosticoMinsa"
+                    }
+                },
+                "paciente": {
+                    "$ref": "#/definitions/domain.PacienteMinsa"
+                },
+                "rownum": {
+                    "type": "string"
+                },
+                "tratamiento": {
                     "type": "string"
                 }
             }
@@ -6417,10 +8373,119 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ResponsableReferencia": {
+            "type": "object",
+            "properties": {
+                "apelmatrefiere": {
+                    "type": "string"
+                },
+                "apelpatrefiere": {
+                    "type": "string"
+                },
+                "fechanacrefiere": {
+                    "type": "string"
+                },
+                "idcolegioref": {
+                    "type": "string"
+                },
+                "idprofesionref": {
+                    "type": "string"
+                },
+                "idsexorefiere": {
+                    "type": "string"
+                },
+                "idtipodocref": {
+                    "type": "string"
+                },
+                "nombperrefiere": {
+                    "type": "string"
+                },
+                "numdocref": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SaveReferenciaDatos": {
+            "type": "object",
+            "properties": {
+                "desc estado": {
+                    "type": "string"
+                },
+                "fg_estado": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SaveReferenciaRequest": {
+            "type": "object",
+            "properties": {
+                "cita": {
+                    "$ref": "#/definitions/domain.CitaReferencia"
+                },
+                "cpt": {
+                    "$ref": "#/definitions/domain.CPT"
+                },
+                "datos_referencia": {
+                    "$ref": "#/definitions/domain.DatosReferenciaSave"
+                },
+                "diagnostico": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.DiagnosticoReferencia"
+                    }
+                },
+                "paciente": {
+                    "$ref": "#/definitions/domain.PacienteReferencia"
+                },
+                "persona_acompana": {
+                    "$ref": "#/definitions/domain.PersonaAcompana"
+                },
+                "persona_establecimiento": {
+                    "$ref": "#/definitions/domain.PersonaEstablecimiento"
+                },
+                "personal_registra": {
+                    "$ref": "#/definitions/domain.PersonalRegistra"
+                },
+                "responsable_referencia": {
+                    "$ref": "#/definitions/domain.ResponsableReferencia"
+                },
+                "tratamiento": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.TratamientoReferencia"
+                    }
+                }
+            }
+        },
+        "domain.SaveReferenciaResponse": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "type": "string"
+                },
+                "datos": {
+                    "$ref": "#/definitions/domain.SaveReferenciaDatos"
+                },
+                "mensaje": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Servicio": {
             "type": "object",
             "properties": {
                 "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ServicioSimple": {
+            "type": "object",
+            "properties": {
+                "idServicio": {
                     "type": "integer"
                 },
                 "nombre": {
@@ -6508,6 +8573,32 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.TratamientoReferencia": {
+            "type": "object",
+            "properties": {
+                "cantidad": {
+                    "type": "string"
+                },
+                "codigo_medicamento": {
+                    "type": "string"
+                },
+                "frecuencia": {
+                    "type": "string"
+                },
+                "nro_diagnostico": {
+                    "type": "string"
+                },
+                "nro_tratamiento": {
+                    "type": "string"
+                },
+                "periodo": {
+                    "type": "string"
+                },
+                "unidad_tiempo": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Ups": {
             "type": "object",
             "properties": {
@@ -6515,6 +8606,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "descripcion": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpadapter.AgregarAuditoriaRequest": {
+            "type": "object",
+            "properties": {
+                "accion": {
+                    "type": "string"
+                },
+                "idListItem": {
+                    "type": "integer"
+                },
+                "idRegistro": {
+                    "type": "integer"
+                },
+                "nombrePC": {
+                    "type": "string"
+                },
+                "observaciones": {
+                    "type": "string"
+                },
+                "tabla": {
                     "type": "string"
                 }
             }
@@ -6537,9 +8651,7 @@ const docTemplate = `{
         "httpadapter.CreateInterconsultaRequest": {
             "type": "object",
             "required": [
-                "IdEspecialidad",
                 "idAtencionOrigen",
-                "idMedicoDestino",
                 "motivo"
             ],
             "properties": {
@@ -6547,6 +8659,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "idAtencionOrigen": {
+                    "type": "integer"
+                },
+                "idEspecialidad": {
                     "type": "integer"
                 },
                 "idMedicoDestino": {
@@ -6700,38 +8815,8 @@ const docTemplate = `{
                 },
                 "observacion": {
                     "type": "string"
-                }
-            }
-        },
-        "httpadapter.createAdmissionFromTriageRequest": {
-            "type": "object",
-            "required": [
-                "idPacienteTriaje",
-                "idTriaje"
-            ],
-            "properties": {
-                "direccionPaciente": {
-                    "type": "string"
                 },
-                "idMedico": {
-                    "type": "integer"
-                },
-                "idPacienteTriaje": {
-                    "type": "integer"
-                },
-                "idTriaje": {
-                    "type": "integer"
-                },
-                "nombreAcompanante": {
-                    "type": "string"
-                },
-                "nroDocumento": {
-                    "type": "string"
-                },
-                "observacion": {
-                    "type": "string"
-                },
-                "telefonoAcompanante": {
+                "telefono": {
                     "type": "string"
                 }
             }
@@ -6826,72 +8911,61 @@ const docTemplate = `{
                 }
             }
         },
-        "httpadapter.createTriajeConsultaRequest": {
+        "httpadapter.createPatientWithHistoryRequest": {
             "type": "object",
-            "required": [
-                "idAtencion",
-                "idEmpleado",
-                "idPaciente"
-            ],
             "properties": {
-                "fi02": {
+                "apellidoMaterno": {
                     "type": "string"
                 },
-                "frecCardiaca": {
+                "apellidoPaterno": {
                     "type": "string"
                 },
-                "frecCardiacaFetal": {
+                "direccionPaciente": {
                     "type": "string"
                 },
-                "frecRespiratoria": {
-                    "type": "string"
-                },
-                "gestante": {
-                    "type": "string"
-                },
-                "hemoglobina": {
-                    "type": "string"
-                },
-                "idAtencion": {
+                "discapacidad": {
                     "type": "integer"
                 },
-                "idEmpleado": {
+                "fechaNacimiento": {
+                    "type": "string"
+                },
+                "idDistrito": {
                     "type": "integer"
                 },
-                "idPaciente": {
+                "idDocIdentidad": {
                     "type": "integer"
                 },
-                "imc": {
+                "idEstadoCivil": {
+                    "type": "integer"
+                },
+                "idFuenteFinanciamiento": {
+                    "type": "integer"
+                },
+                "idGradoInstruccion": {
+                    "type": "integer"
+                },
+                "idOcupacion": {
+                    "type": "integer"
+                },
+                "idPais": {
+                    "type": "integer"
+                },
+                "idTipoSexo": {
+                    "type": "integer"
+                },
+                "incapacidad": {
+                    "type": "integer"
+                },
+                "nroDocumento": {
                     "type": "string"
                 },
-                "observacion": {
+                "primerNombre": {
                     "type": "string"
                 },
-                "origen": {
+                "segundoNombre": {
                     "type": "string"
                 },
-                "perimAbdominal": {
-                    "type": "string"
-                },
-                "perimCefalico": {
-                    "type": "string"
-                },
-                "peso": {
-                    "type": "string"
-                },
-                "presionArterial": {
-                    "type": "string"
-                },
-                "pulso": {
-                    "type": "string"
-                },
-                "sat02": {
-                    "type": "string"
-                },
-                "talla": {
-                    "type": "string"
-                },
-                "temperatura": {
+                "telefono": {
                     "type": "string"
                 }
             }
@@ -6927,7 +9001,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fiO2": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "foto": {
                     "type": "string"
@@ -6945,6 +9019,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "gestante": {
+                    "type": "integer"
+                },
+                "idCausaExternaMorbilidad": {
                     "type": "integer"
                 },
                 "idComunidadDomicilio": {
@@ -7039,6 +9116,14 @@ const docTemplate = `{
                 }
             }
         },
+        "httpadapter.deleteTriajeRequest": {
+            "type": "object",
+            "properties": {
+                "idEmpleado": {
+                    "type": "integer"
+                }
+            }
+        },
         "httpadapter.firmaPeruInitResponse": {
             "type": "object",
             "properties": {
@@ -7075,6 +9160,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "observacion": {
+                    "type": "string"
+                },
+                "telefono": {
                     "type": "string"
                 }
             }
@@ -7444,17 +9532,6 @@ const docTemplate = `{
                 }
             }
         },
-        "httpadapter.triajeConsultaEstadoRequest": {
-            "type": "object",
-            "required": [
-                "estado"
-            ],
-            "properties": {
-                "estado": {
-                    "type": "string"
-                }
-            }
-        },
         "httpadapter.updatePatientRequest": {
             "type": "object",
             "properties": {
@@ -7562,6 +9639,29 @@ const docTemplate = `{
                 },
                 "thirdName": {
                     "type": "string"
+                }
+            }
+        },
+        "refconhttp.apiError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "refconhttp.apiResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error": {
+                    "$ref": "#/definitions/refconhttp.apiError"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         }

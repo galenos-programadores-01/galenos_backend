@@ -20,8 +20,8 @@ func (uc *diagnosticoUseCase) SearchDiagnosticos(ctx context.Context, filtro str
 	return uc.repo.SearchDiagnosticos(ctx, filtro, idAtencion, idPaciente)
 }
 
-func (uc *diagnosticoUseCase) ListarDiagnosticos(ctx context.Context, filtro string) ([]domain.DiagnosticoSimple, error) {
-	return uc.repo.ListarDiagnosticos(ctx, filtro)
+func (uc *diagnosticoUseCase) ListarDiagnosticos(ctx context.Context, filtro string, idAtencion, idPaciente int) ([]domain.DiagnosticoSimple, error) {
+	return uc.repo.ListarDiagnosticos(ctx, filtro, idAtencion, idPaciente)
 }
 
 func (uc *diagnosticoUseCase) ObtenerDiagnosticosAtencion(ctx context.Context, idAtencion int, idPrimeraAtencion *int, idEvolucion *int) ([]domain.DiagnosticoAtencion, error) {

@@ -432,11 +432,11 @@ func (r *catalogRepository) GetDatosInstitucion(ctx context.Context) (*domain.Da
 }
 
 func (r *catalogRepository) ListEspecialidades(ctx context.Context) ([]domain.Especialidad, error) {
-	const procedure = `usp_go_ListarEspecialidades`
+	const procedure = `usp_go_Especialidades_Listar`
 
 	rows, err := r.db.QueryContext(ctx, procedure)
 	if err != nil {
-		return nil, fmt.Errorf("calling usp_go_ListarEspecialidades: %w", err)
+		return nil, fmt.Errorf("calling usp_go_Especialidades_Listar: %w", err)
 	}
 	defer rows.Close()
 
@@ -447,9 +447,14 @@ func (r *catalogRepository) ListEspecialidades(ctx context.Context) ([]domain.Es
 
 	items := make([]domain.Especialidad, 0, len(maps))
 	for _, m := range maps {
+		idVal := rowInt64(m, "IdEspecialidad", "id", "ID")
+		var id int64
+		if idVal != nil {
+			id = *idVal
+		}
 		items = append(items, domain.Especialidad{
-			ID:     *rowInt64(m, "id"),
-			Nombre: rowString(m, "descripcion"),
+			ID:     id,
+			Nombre: rowString(m, "Nombre", "descripcion", "Descripcion"),
 		})
 	}
 
@@ -493,6 +498,33 @@ func (r *catalogRepository) ListarEspecialidadesQx(ctx context.Context) ([]domai
 			return nil, fmt.Errorf("scanning especialidad qx: %w", err)
 		}
 		items = append(items, e)
+	}
+	return items, rows.Err()
+}
+
+func (r *catalogRepository) ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error) {
+	const query = `EXEC usp_go_ListarServiciosXPrioridad @IdPrioridad = @p1, @FechaNac = @p2`
+
+	// Sin fecha de nacimiento se envía NULL para que el SP aplique su
+	// comportamiento por defecto (lista general según la prioridad).
+	var fechaNacParam any
+	if fechaNac != "" {
+		fechaNacParam = fechaNac
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idPrioridad), sql.Named("p2", fechaNacParam))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarServiciosXPrioridad: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.ServicioSimple
+	for rows.Next() {
+		var s domain.ServicioSimple
+		if err := rows.Scan(&s.IdServicio, &s.Nombre); err != nil {
+			return nil, fmt.Errorf("scanning servicio por prioridad: %w", err)
+		}
+		items = append(items, s)
 	}
 	return items, rows.Err()
 }
@@ -702,6 +734,45 @@ func (r *catalogRepository) BuscarExamenesCatalogo(ctx context.Context, filtro s
 	return items, nil
 }
 
+// ListEstablecimientos invoca el SP usp_go_webEstablecimientosFiltrar para
+// buscar establecimientos por filtro y tipo (1=referencia, 0=contrareferencia).
+// ActualizarParametroValorTexto invoca el SP usp_go_ActualizarParametroValorTextoPorId,
+// que deja ValorTexto = 'N' para el parámetro recibido.
+func (r *catalogRepository) ActualizarParametroValorTexto(ctx context.Context, idParametro int) error {
+	const procedure = `EXEC dbo.usp_go_ActualizarParametroValorTextoPorId @IdParametro = @p1`
+	if _, err := r.db.ExecContext(ctx, procedure, sql.Named("p1", idParametro)); err != nil {
+		return fmt.Errorf("calling usp_go_ActualizarParametroValorTextoPorId: %w", err)
+	}
+	return nil
+}
+
+func (r *catalogRepository) ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC [dbo].[usp_go_webEstablecimientosFiltrar] @filtro = @p1, @Tipo = @p2", sql.Named("p1", filtro), sql.Named("p2", tipo))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_webEstablecimientosFiltrar: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.EstablecimientoBusqueda
+	for rows.Next() {
+		var (
+			item            domain.EstablecimientoBusqueda
+			dist, prov, dep sql.NullString
+		)
+		if err := rows.Scan(&item.IdEstablecimiento, &item.Codigo, &item.Nombre, &dist, &prov, &dep, &item.NombreLargo); err != nil {
+			return nil, fmt.Errorf("escaneando establecimiento: %w", err)
+		}
+		item.Distrito = dist.String
+		item.Provincia = prov.String
+		item.Departamento = dep.String
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (r *catalogRepository) ListParametrosClinicos(ctx context.Context, idGrupo int) ([]domain.ParametroClinico, error) {
 	rows, err := r.db.QueryContext(ctx, "EXEC dbo.usp_go_Cat_ParametroClinico_Listar @IdGrupo = @p1", sql.Named("p1", idGrupo))
 	if err != nil {
@@ -729,3 +800,36 @@ func (r *catalogRepository) ListParametrosClinicos(ctx context.Context, idGrupo 
 	}
 	return items, nil
 }
+
+func (r *catalogRepository) ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC dbo.usp_go_SubclasificacionDiagnosticos_Select @IdTipoServicio = @p1, @IdClasificacionDx = @p2",
+		sql.Named("p1", idTipoServicio),
+		sql.Named("p2", idClasificacionDx),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_SubclasificacionDiagnosticos_Select: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.SubclasificacionDxItem
+	for rows.Next() {
+		var (
+			idSubDx int
+			corta   string
+			larga   string
+		)
+		if err := rows.Scan(&idSubDx, &corta, &larga); err != nil {
+			return nil, fmt.Errorf("escaneando subclasificacion dx: %w", err)
+		}
+		items = append(items, domain.SubclasificacionDxItem{
+			IdSubclasificacionDx: idSubDx,
+			DescripcionCorta:     corta,
+			DescripcionLarga:     larga,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+

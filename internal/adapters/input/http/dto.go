@@ -1,6 +1,10 @@
 package httpadapter
 
 import (
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
@@ -65,6 +69,72 @@ func (r createPatientRequest) toDomain() domain.PatientCreate {
 	}
 }
 
+// createPatientWithHistoryRequest es el cuerpo de
+// POST /api/v1/pacientes/historia-clinica. Mapea los parametros de
+// usp_go_PacienteHistoriaClinicaAgregar; idEmpleado NO forma parte del cuerpo
+// porque el adaptador lo toma del claim idEmpleado del JWT.
+type createPatientWithHistoryRequest struct {
+	PaternalSurname   *string    `json:"apellidoPaterno"`
+	MaternalSurname   *string    `json:"apellidoMaterno"`
+	FirstName         *string    `json:"primerNombre"`
+	SecondName        *string    `json:"segundoNombre"`
+	DateOfBirth       *time.Time `json:"fechaNacimiento"`
+	DocIdentityID     *int64     `json:"idDocIdentidad"`
+	DocumentNumber    *string    `json:"nroDocumento"`
+	Phone             *string    `json:"telefono"`
+	HomeAddress       *string    `json:"direccionPaciente"`
+	SexTypeID         *int64     `json:"idTipoSexo"`
+	MaritalStatusID   *int64     `json:"idEstadoCivil"`
+	HomeDistrictID    *int64     `json:"idDistrito"`
+	HomeCountryID     *int64     `json:"idPais"`
+	EthnicityID       *int64     `json:"idEtnia"`
+	LanguageID        *int64     `json:"idIdioma"`
+	OccupationID      *int64     `json:"idOcupacion"`
+	EducationDegreeID *int64     `json:"idGradoInstruccion"`
+	// Datos de la madre tutor (@Madre* de usp_go_PacienteHistoriaClinicaAgregar).
+	MotherDocumentNumber  *string `json:"madreNroDocumento"`
+	MotherPaternalSurname *string `json:"madreApellidoPaterno"`
+	MotherMaternalSurname *string `json:"madreApellidoMaterno"`
+	MotherFirstName       *string `json:"madrePrimerNombre"`
+	MotherSecondName      *string `json:"madreSegundoNombre"`
+	InsuranceTypeID       *int64  `json:"idFuenteFinanciamiento"`
+	DisabilityID          *int64  `json:"discapacidad"`
+	IncapacityID          *int64  `json:"incapacidad"`
+}
+
+// toDomain mapea el request HTTP al objeto de dominio para el SP. El
+// idEmpleado se inyecta desde el token y no desde el cuerpo.
+func (r createPatientWithHistoryRequest) toDomain(employeeID int64) domain.PatientCreateHistoria {
+	return domain.PatientCreateHistoria{
+		PaternalSurname:       r.PaternalSurname,
+		MaternalSurname:       r.MaternalSurname,
+		FirstName:             r.FirstName,
+		SecondName:            r.SecondName,
+		DateOfBirth:           r.DateOfBirth,
+		DocIdentityID:         r.DocIdentityID,
+		DocumentNumber:        r.DocumentNumber,
+		Phone:                 r.Phone,
+		HomeAddress:           r.HomeAddress,
+		SexTypeID:             r.SexTypeID,
+		MaritalStatusID:       r.MaritalStatusID,
+		HomeDistrictID:        r.HomeDistrictID,
+		HomeCountryID:         r.HomeCountryID,
+		EthnicityID:           r.EthnicityID,
+		LanguageID:            r.LanguageID,
+		OccupationID:          r.OccupationID,
+		EducationDegreeID:     r.EducationDegreeID,
+		MotherDocumentNumber:  r.MotherDocumentNumber,
+		MotherPaternalSurname: r.MotherPaternalSurname,
+		MotherMaternalSurname: r.MotherMaternalSurname,
+		MotherFirstName:       r.MotherFirstName,
+		MotherSecondName:      r.MotherSecondName,
+		InsuranceTypeID:       r.InsuranceTypeID,
+		DisabilityID:          r.DisabilityID,
+		IncapacityID:          r.IncapacityID,
+		EmployeeID:            employeeID,
+	}
+}
+
 // updatePatientRequest es el cuerpo de PUT /api/v1/pacientes/:id. Repite los
 // campos editables de domain.PatientUpdate para que el binding de Gin sea
 // explícito en el adaptador HTTP.
@@ -103,11 +173,17 @@ type updatePatientRequest struct {
 	Email             *string    `json:"email"`
 	DisabilityID      *int64     `json:"disabilityId"`
 	IncapacityID      *int64     `json:"incapacityId"`
-	AuditUserID       *int64     `json:"auditUserId"`
+	// Datos de la madre tutor (@Madre* de usp_go_ModificarPaciente).
+	MotherDocumentNumber  *string `json:"motherDocumentNumber"`
+	MotherPaternalSurname *string `json:"motherPaternalSurname"`
+	MotherMaternalSurname *string `json:"motherMaternalSurname"`
+	MotherFirstName       *string `json:"motherFirstName"`
+	MotherSecondName      *string `json:"motherSecondName"`
+	AuditUserID           *int64  `json:"auditUserId"`
 }
 
 // sisAfiliacionRequest es el cuerpo de POST /api/v1/sis/filiaciones.
-// Replica los campos del SP webSisFiliacionesGestionar; los campos
+// Replica los campos del SP usp_go_webSisFiliacionesGestionar; los campos
 // opcionales son punteros para enviar NULL cuando no se incluyen.
 type sisAfiliacionRequest struct {
 	IDSiasis                *int64     `json:"idSiasis"`
@@ -201,6 +277,14 @@ type sisCuentaAtencionParams struct {
 	IdCuentaAtencion int64 `form:"idCuentaAtencion" binding:"required"`
 }
 
+// sisFiliacionesParams son los parámetros de GET /api/v1/sis/filiaciones.
+// El tipo de documento se valida a mano en el handler porque el SP acepta
+// cualquier entero y el 0 no corresponde a un tipo válido.
+type sisFiliacionesParams struct {
+	NroDocumento string `form:"nroDocumento" binding:"required"`
+	IdTipoDoc    int    `form:"idTipoDoc"`
+}
+
 // sisFuaAgregarRequest es el cuerpo de POST /api/v1/sis/fua/agregar.
 type sisFuaAgregarRequest struct {
 	IdCuentaAtencion int64  `json:"idCuentaAtencion" binding:"required"`
@@ -251,7 +335,7 @@ type createTriajeRequest struct {
 	BloodPressure             *string    `json:"presionArterial"`
 	Oxygen                    *int64     `json:"saturacion"`
 	RespiratoryRate           *int64     `json:"frecRespiratoria"`
-	FiO2                      *int64     `json:"fiO2"`
+	FiO2                      *float64   `json:"fiO2"`
 	Weight                    *float64   `json:"peso"`
 	Height                    *float64   `json:"talla"`
 	BMI                       *float64   `json:"imc"`
@@ -272,6 +356,7 @@ type createTriajeRequest struct {
 	MovimientosFetales        *int64     `json:"movimientosFetales"`
 	Photo                     *string    `json:"foto"`
 	EmployeeID                *int64     `json:"idEmpleado"`
+	IdCausaExternaMorbilidad  *int64     `json:"idCausaExternaMorbilidad"`
 }
 
 // toDomain mapea el request HTTP al objeto de dominio para el SP.
@@ -323,6 +408,7 @@ func (r createTriajeRequest) toDomain() *domain.Triage {
 		MovimientosFetales:        r.MovimientosFetales,
 		Photo:                     r.Photo,
 		EmployeeID:                r.EmployeeID,
+		IdCausaExternaMorbilidad:  r.IdCausaExternaMorbilidad,
 	}
 }
 
@@ -333,11 +419,20 @@ type createAdmissionFromTriageRequest struct {
 	IDTriaje            *int64  `json:"idTriaje" binding:"required"`
 	IDPacienteTriaje    *int64  `json:"idPacienteTriaje" binding:"required"`
 	NroDocumento        *string `json:"nroDocumento"`
+	IDEmpleado          *int64  `json:"idEmpleado"`
 	IDMedico            *int64  `json:"idMedico"`
 	NombreAcompanante   *string `json:"nombreAcompanante"`
 	TelefonoAcompanante *string `json:"telefonoAcompanante"`
 	DireccionPaciente   *string `json:"direccionPaciente"`
 	Observacion         *string `json:"observacion"`
+}
+
+// deleteTriajeRequest es el cuerpo (opcional) de DELETE
+// /api/v1/triaje/{id}. El id del triaje viaja en la ruta y el empleado que
+// ejecuta la eliminación en el cuerpo; si el cuerpo no lo trae, el handler
+// usa el id del empleado del token JWT.
+type deleteTriajeRequest struct {
+	IDEmpleado *int64 `json:"idEmpleado"`
 }
 
 // toDomain mapea el request HTTP al objeto de dominio para el SP.
@@ -346,6 +441,7 @@ func (r createAdmissionFromTriageRequest) toDomain() *domain.AdmisionDesdeTriaje
 		IDTriaje:            r.IDTriaje,
 		IDPacienteTriaje:    r.IDPacienteTriaje,
 		NroDocumento:        r.NroDocumento,
+		IDEmpleado:          r.IDEmpleado,
 		IDMedico:            r.IDMedico,
 		NombreAcompanante:   r.NombreAcompanante,
 		TelefonoAcompanante: r.TelefonoAcompanante,
@@ -357,41 +453,46 @@ func (r createAdmissionFromTriageRequest) toDomain() *domain.AdmisionDesdeTriaje
 // toDomain mapea el request HTTP al objeto de dominio.
 func (r updatePatientRequest) toDomain() domain.PatientUpdate {
 	return domain.PatientUpdate{
-		BirthCountryID:    r.BirthCountryID,
-		MaternalSurname:   r.MaternalSurname,
-		HomeAddress:       r.HomeAddress,
-		OriginCountryID:   r.OriginCountryID,
-		PaternalSurname:   r.PaternalSurname,
-		FirstName:         r.FirstName,
-		SecondName:        r.SecondName,
-		ThirdName:         r.ThirdName,
-		DateOfBirth:       r.DateOfBirth,
-		DocumentNumber:    r.DocumentNumber,
-		Phone:             r.Phone,
-		Cellphone:         r.Cellphone,
-		AutoGenerated:     r.AutoGenerated,
-		SexTypeID:         r.SexTypeID,
-		OriginID:          r.OriginID,
-		EducationDegreeID: r.EducationDegreeID,
-		MaritalStatusID:   r.MaritalStatusID,
-		DocIdentityID:     r.DocIdentityID,
-		OccupationTypeID:  r.OccupationTypeID,
-		HomeCenterID:      r.HomeCenterID,
-		FatherName:        r.FatherName,
-		MotherName:        r.MotherName,
-		HomeCountryID:     r.HomeCountryID,
-		HistoryNumber:     r.HistoryNumber,
-		BirthCenterID:     r.BirthCenterID,
-		OriginCenterID:    r.OriginCenterID,
-		OriginDistrictID:  r.OriginDistrictID,
-		HomeDistrictID:    r.HomeDistrictID,
-		BirthDistrictID:   r.BirthDistrictID,
-		EthnicityID:       r.EthnicityID,
-		LanguageID:        r.LanguageID,
-		Email:             r.Email,
-		DisabilityID:      r.DisabilityID,
-		IncapacityID:      r.IncapacityID,
-		AuditUserID:       r.AuditUserID,
+		BirthCountryID:        r.BirthCountryID,
+		MaternalSurname:       r.MaternalSurname,
+		HomeAddress:           r.HomeAddress,
+		OriginCountryID:       r.OriginCountryID,
+		PaternalSurname:       r.PaternalSurname,
+		FirstName:             r.FirstName,
+		SecondName:            r.SecondName,
+		ThirdName:             r.ThirdName,
+		DateOfBirth:           r.DateOfBirth,
+		DocumentNumber:        r.DocumentNumber,
+		Phone:                 r.Phone,
+		Cellphone:             r.Cellphone,
+		AutoGenerated:         r.AutoGenerated,
+		SexTypeID:             r.SexTypeID,
+		OriginID:              r.OriginID,
+		EducationDegreeID:     r.EducationDegreeID,
+		MaritalStatusID:       r.MaritalStatusID,
+		DocIdentityID:         r.DocIdentityID,
+		OccupationTypeID:      r.OccupationTypeID,
+		HomeCenterID:          r.HomeCenterID,
+		FatherName:            r.FatherName,
+		MotherName:            r.MotherName,
+		HomeCountryID:         r.HomeCountryID,
+		HistoryNumber:         r.HistoryNumber,
+		BirthCenterID:         r.BirthCenterID,
+		OriginCenterID:        r.OriginCenterID,
+		OriginDistrictID:      r.OriginDistrictID,
+		HomeDistrictID:        r.HomeDistrictID,
+		BirthDistrictID:       r.BirthDistrictID,
+		EthnicityID:           r.EthnicityID,
+		LanguageID:            r.LanguageID,
+		Email:                 r.Email,
+		DisabilityID:          r.DisabilityID,
+		IncapacityID:          r.IncapacityID,
+		MotherDocumentNumber:  r.MotherDocumentNumber,
+		MotherPaternalSurname: r.MotherPaternalSurname,
+		MotherMaternalSurname: r.MotherMaternalSurname,
+		MotherFirstName:       r.MotherFirstName,
+		MotherSecondName:      r.MotherSecondName,
+		AuditUserID:           r.AuditUserID,
 	}
 }
 
@@ -452,6 +553,94 @@ type createTriajeConsultaRequest struct {
 	Observacion       *string `json:"observacion"`
 	IMC               *string `json:"imc"`
 	Gestante          *string `json:"gestante"`
+}
+
+func (r createTriajeConsultaRequest) Validate() error {
+	if r.IdAtencion <= 0 {
+		return errors.New("idAtencion debe ser un entero positivo")
+	}
+	if r.IdPaciente <= 0 {
+		return errors.New("idPaciente debe ser un entero positivo")
+	}
+
+	tieneSignos := false
+	validarSigno := func(nombre string, val *string, min, max float64) error {
+		if val == nil || strings.TrimSpace(*val) == "" {
+			return nil
+		}
+		tieneSignos = true
+		s := strings.TrimSpace(*val)
+		if len(s) > 10 {
+			return fmt.Errorf("%s excede la longitud máxima permitida de 10 caracteres", nombre)
+		}
+		num, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return fmt.Errorf("%s debe ser un valor numérico válido", nombre)
+		}
+		if num < min || num > max {
+			return fmt.Errorf("%s fuera de rango biológico permitido (%.1f a %.1f)", nombre, min, max)
+		}
+		return nil
+	}
+
+	if err := validarSigno("temperatura", r.Temperatura, 32.0, 43.0); err != nil {
+		return err
+	}
+	if err := validarSigno("pulso", r.Pulso, 30.0, 250.0); err != nil {
+		return err
+	}
+	if err := validarSigno("frecCardiaca", r.FrecCardiaca, 30.0, 250.0); err != nil {
+		return err
+	}
+	if err := validarSigno("frecRespiratoria", r.FrecRespiratoria, 6.0, 60.0); err != nil {
+		return err
+	}
+	if err := validarSigno("sat02", r.SAT02, 40.0, 100.0); err != nil {
+		return err
+	}
+	if err := validarSigno("peso", r.Peso, 1.0, 300.0); err != nil {
+		return err
+	}
+	if err := validarSigno("talla", r.Talla, 20.0, 250.0); err != nil {
+		return err
+	}
+	if err := validarSigno("hemoglobina", r.Hemoglobina, 3.0, 25.0); err != nil {
+		return err
+	}
+
+	if r.PresionArterial != nil && strings.TrimSpace(*r.PresionArterial) != "" {
+		tieneSignos = true
+		pa := strings.TrimSpace(*r.PresionArterial)
+		if len(pa) > 10 {
+			return errors.New("presionArterial excede la longitud máxima de 10 caracteres")
+		}
+		if strings.Contains(pa, "/") {
+			partes := strings.Split(pa, "/")
+			if len(partes) == 2 {
+				sis, errSis := strconv.ParseFloat(strings.TrimSpace(partes[0]), 64)
+				dia, errDia := strconv.ParseFloat(strings.TrimSpace(partes[1]), 64)
+				if errSis != nil || errDia != nil {
+					return errors.New("presionArterial con formato numérico inválido")
+				}
+				if sis < 40 || sis > 260 || dia < 30 || dia > 160 {
+					return errors.New("presionArterial fuera de rango fisiológico permitido (sistólica 40-260, diastólica 30-160)")
+				}
+				if sis <= dia {
+					return errors.New("la presión sistólica debe ser mayor que la diastólica")
+				}
+			}
+		}
+	}
+
+	if r.Observacion != nil && len(*r.Observacion) > 500 {
+		return errors.New("observacion excede la longitud máxima de 500 caracteres")
+	}
+
+	if !tieneSignos {
+		return errors.New("debe registrar al menos una función vital válida (temperatura, pulso, presión arterial, etc.)")
+	}
+
+	return nil
 }
 
 // toDomain mapea el request HTTP al objeto de dominio para el SP

@@ -6,8 +6,10 @@ type Interconsulta struct {
 	IdEspecialidad   int    `json:"IdEspecialidad"`
 	IdMedicoDestino  int    `json:"idMedicoDestino"`
 	Motivo           string `json:"motivo"`
+	ResumenHC        string `json:"resumenHC"`
 	FechaSolicitud   string `json:"fechaSolicitud"`
 	Estado           string `json:"estado"`
+	Especialidad     string `json:"especialidad"`
 }
 
 type FirmaInterconsulta struct {

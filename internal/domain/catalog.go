@@ -130,6 +130,13 @@ type EspecialidadSimple struct {
 	Nombre         string `json:"nombre"`
 }
 
+// ServicioSimple contiene el id y nombre de un servicio
+// (SP usp_go_ListarServiciosXPrioridad).
+type ServicioSimple struct {
+	IdServicio int    `json:"idServicio"`
+	Nombre     string `json:"nombre"`
+}
+
 // Parametro contiene los valores de un parámetro configurable
 // (SP usp_go_webParametroSeleccionarPorId @IdParametro).
 type Parametro struct {
@@ -170,4 +177,20 @@ type ParametroClinico struct {
 	IdParametro int    `json:"idParametro"`
 	Codigo      string `json:"codigo"`
 	Descripcion string `json:"descripcion"`
+}
+
+type EstablecimientoBusqueda struct {
+	IdEstablecimiento int    `json:"idEstablecimiento"`
+	Codigo            string `json:"codigo"`
+	Nombre            string `json:"nombre"`
+	Distrito          string `json:"distrito"`
+	Provincia         string `json:"provincia"`
+	Departamento      string `json:"departamento"`
+	NombreLargo       string `json:"nombreLargo"`
+}
+
+type SubclasificacionDxItem struct {
+	IdSubclasificacionDx int    `json:"idSubclasificacionDx"`
+	DescripcionCorta     string `json:"descripcionCorta"`
+	DescripcionLarga     string `json:"descripcionLarga"`
 }

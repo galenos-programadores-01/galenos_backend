@@ -27,6 +27,7 @@ type CatalogService interface {
 	ListEspecialidades(ctx context.Context) ([]domain.Especialidad, error)
 	ListarEspecialidadesPorDepartamento(ctx context.Context, idDepartamento int) ([]domain.EspecialidadSimple, error)
 	ListarEspecialidadesQx(ctx context.Context) ([]domain.EspecialidadSimple, error)
+	ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error)
 	GetDatosInstitucion(ctx context.Context) (*domain.DatosInstitucion, error)
 	GetParametro(ctx context.Context, idParametro int64) (*domain.Parametro, error)
 	ListRecetaFrecuencias(ctx context.Context) ([]domain.CatalogItem, error)
@@ -35,4 +36,7 @@ type CatalogService interface {
 	BuscarMedicamentosReceta(ctx context.Context, filtro string, idPaciente int) ([]domain.MedicamentoBusqueda, error)
 	BuscarExamenesCatalogo(ctx context.Context, filtro string, tipo string) ([]domain.ExamenCatalogo, error)
 	ListParametrosClinicos(ctx context.Context, idGrupo int) ([]domain.ParametroClinico, error)
+	ActualizarParametroValorTexto(ctx context.Context, idParametro int) error
+	ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error)
+	ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error)
 }

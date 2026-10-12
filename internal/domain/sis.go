@@ -40,7 +40,7 @@ type SisAfiliado struct {
 }
 
 // SisAfiliacion representa el registro de afiliación que se persiste
-// invocando el SP webSisFiliacionesGestionar. Campos opcionales a NULL.
+// invocando el SP usp_go_webSisFiliacionesGestionar. Campos opcionales a NULL.
 type SisAfiliacion struct {
 	IDSiasis                *int64     `json:"idSiasis"`
 	Codigo                  *string    `json:"codigo"`
