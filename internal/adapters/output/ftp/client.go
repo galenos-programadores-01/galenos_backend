@@ -151,10 +151,13 @@ func (c *client) withSession(ctx context.Context, fn func(*goftp.ServerConn) err
 		goftp.DialWithContext(ctx),
 	}
 
+	// Misma tls.Config para control + data. IIS exige reanudar la sesion TLS
+	// en el canal de datos ("425 TLS session of data connection not resumed").
 	tlsCfg := &tls.Config{
 		ServerName:         c.cfg.Host,
 		InsecureSkipVerify: c.cfg.InsecureSkipVerify,
 		MinVersion:         tls.VersionTLS12,
+		ClientSessionCache: tls.NewLRUClientSessionCache(8),
 	}
 	switch c.cfg.TLSMode {
 	case "explicit":
