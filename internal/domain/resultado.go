@@ -19,12 +19,22 @@ type DetalleResultadoLab struct {
 	Unidad           string `json:"unidad"`
 	ValorReferencial string `json:"valorReferencial"`
 	Metodo           string `json:"metodo"`
+	Interpretacion   string `json:"interpretacion"`
 }
 
 type DetalleResultadoImagen struct {
-	IdOrden      int    `json:"idOrden"`
-	IdProducto   int    `json:"idProducto"`
-	NombreExamen string `json:"nombreExamen"`
-	FechaInforme string `json:"fechaInforme"`
-	InformeTexto string `json:"informeTexto"`
+	IdOrden           int    `json:"idOrden"`
+	IdProducto        int    `json:"idProducto"`
+	NombreExamen      string `json:"nombreExamen"`
+	FechaInforme      string `json:"fechaInforme"`
+	InformeTexto      string `json:"informeTexto"`
+	Sugerencias       string `json:"sugerencias"`
+	RealizaPrueba     string `json:"realizaPrueba"`
+	FechaExamen       string `json:"fechaExamen"`
+	MedicoSolicitante string `json:"medicoSolicitante"`
+	Procedencia       string `json:"procedencia"`
+	Diagnostico       string `json:"diagnostico"`
+	Responsable       string `json:"responsable"`
+	Estado            string `json:"estado"`
+	Observacion       string `json:"observacion"`
 }

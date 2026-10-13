@@ -535,7 +535,7 @@ type DiagnosticoRequest struct {
 type createTriajeConsultaRequest struct {
 	IdAtencion        int64   `json:"idAtencion" binding:"required"`
 	IdPaciente        int64   `json:"idPaciente" binding:"required"`
-	IdEmpleado        int64   `json:"idEmpleado" binding:"required"`
+	IdEmpleado        int64   `json:"idEmpleado"`
 	Talla             *string `json:"talla"`
 	Peso              *string `json:"peso"`
 	Temperatura       *string `json:"temperatura"`
@@ -643,30 +643,39 @@ func (r createTriajeConsultaRequest) Validate() error {
 	return nil
 }
 
-// toDomain mapea el request HTTP al objeto de dominio para el SP
-// AtencionesTriajeAgregar.
+func sanitizarSignoTexto(valor *string) *string {
+	if valor == nil {
+		return nil
+	}
+	limpio := strings.TrimSpace(*valor)
+	if limpio == "" {
+		return nil
+	}
+	return &limpio
+}
+
 func (r createTriajeConsultaRequest) toDomain() *domain.TriajeConsulta {
 	return &domain.TriajeConsulta{
 		IdAtencion:        r.IdAtencion,
 		IdPaciente:        r.IdPaciente,
 		IdEmpleado:        r.IdEmpleado,
-		Talla:             r.Talla,
-		Peso:              r.Peso,
-		Temperatura:       r.Temperatura,
-		Pulso:             r.Pulso,
-		FrecRespiratoria:  r.FrecRespiratoria,
-		FrecCardiaca:      r.FrecCardiaca,
-		FrecCardiacaFetal: r.FrecCardiacaFetal,
-		PerimCefalico:     r.PerimCefalico,
-		Origen:            r.Origen,
-		PerimAbdominal:    r.PerimAbdominal,
-		SAT02:             r.SAT02,
-		FI02:              r.FI02,
-		PresionArterial:   r.PresionArterial,
-		Hemoglobina:       r.Hemoglobina,
-		Observacion:       r.Observacion,
-		IMC:               r.IMC,
-		Gestante:          r.Gestante,
+		Talla:             sanitizarSignoTexto(r.Talla),
+		Peso:              sanitizarSignoTexto(r.Peso),
+		Temperatura:       sanitizarSignoTexto(r.Temperatura),
+		Pulso:             sanitizarSignoTexto(r.Pulso),
+		FrecRespiratoria:  sanitizarSignoTexto(r.FrecRespiratoria),
+		FrecCardiaca:      sanitizarSignoTexto(r.FrecCardiaca),
+		FrecCardiacaFetal: sanitizarSignoTexto(r.FrecCardiacaFetal),
+		PerimCefalico:     sanitizarSignoTexto(r.PerimCefalico),
+		Origen:            sanitizarSignoTexto(r.Origen),
+		PerimAbdominal:    sanitizarSignoTexto(r.PerimAbdominal),
+		SAT02:             sanitizarSignoTexto(r.SAT02),
+		FI02:              sanitizarSignoTexto(r.FI02),
+		PresionArterial:   sanitizarSignoTexto(r.PresionArterial),
+		Hemoglobina:       sanitizarSignoTexto(r.Hemoglobina),
+		Observacion:       sanitizarSignoTexto(r.Observacion),
+		IMC:               sanitizarSignoTexto(r.IMC),
+		Gestante:          sanitizarSignoTexto(r.Gestante),
 	}
 }
 

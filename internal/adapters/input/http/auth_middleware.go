@@ -34,3 +34,19 @@ func RequireBearerToken(authService input.AuthService) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func OptionalBearerToken(authService input.AuthService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		header := c.GetHeader("Authorization")
+		if header != "" && strings.HasPrefix(header, bearerPrefix) {
+			tokenString := strings.TrimPrefix(header, bearerPrefix)
+			claims, err := authService.ValidateToken(tokenString)
+			if err == nil {
+				c.Set("authSubject", claims.Subject)
+				c.Set("idEmpleado", claims.IdEmpleado)
+				c.Set("auth_claims", claims)
+			}
+		}
+		c.Next()
+	}
+}

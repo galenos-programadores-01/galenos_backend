@@ -22,7 +22,7 @@ BEGIN
         IF @FechaConsulta IS NULL AND @FiltroLimpio IS NULL
             SET @FechaConsulta = CAST(GETDATE() AS DATE);
 
-        IF (@FiltroLimpio IS NULL)
+        IF (@FechaConsulta IS NOT NULL)
         BEGIN
             DECLARE @FechaInicio DATETIME = CAST(@FechaConsulta AS DATETIME);
             DECLARE @FechaFin DATETIME = DATEADD(DAY, 1, @FechaInicio);
@@ -92,6 +92,13 @@ BEGIN
             LEFT JOIN dbo.FuentesFinanciamiento ff WITH (NOLOCK) ON a.idFuenteFinanciamiento = ff.IdFuenteFinanciamiento
             LEFT JOIN dbo.AtencionesCE ace WITH (NOLOCK) ON ace.idAtencion = a.IdAtencion
             LEFT JOIN dbo.AtencionesTriaje atri WITH (NOLOCK) ON atri.IdAtencion = a.IdAtencion
+            WHERE (@FiltroLimpio IS NULL OR (
+                p.NroDocumento LIKE @FiltroLimpio
+                OR CAST(p.NroHistoriaClinica AS VARCHAR(20)) LIKE @FiltroLimpio
+                OR p.ApellidoPaterno LIKE @FiltroLimpio
+                OR p.PrimerNombre LIKE @FiltroLimpio
+                OR CONCAT(p.ApellidoPaterno, ' ', p.ApellidoMaterno, ' ', p.PrimerNombre) LIKE @FiltroLimpio
+            ))
             ORDER BY a.HoraIngreso ASC, a.IdAtencion ASC;
 
             DROP TABLE #AtencionesDia;

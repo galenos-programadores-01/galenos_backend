@@ -49,34 +49,88 @@ Copia `.env.example` a `.env` y ajusta los valores (el `.env` real con credencia
 
 `main.go` carga `.env` automáticamente si existe (vía `godotenv`), útil solo para desarrollo local.
 
-## Cómo correr
+## Cómo compilar y ejecutar
+
+> [!IMPORTANT]
+> Si te encuentras en la raíz del repositorio, debes ingresar primero a este directorio:
+> ```bash
+> cd galenos_backend
+> ```
+
+### 1. Configuración de Variables de Entorno
+
+Antes de iniciar la API, asegúrate de contar con el archivo `.env`:
+
+- **En PowerShell:**
+  ```powershell
+  if (-not (Test-Path ".env")) { Copy-Item .env.example .env }
+  ```
+- **En Git Bash:**
+  ```bash
+  [ ! -f .env ] && cp .env.example .env
+  ```
+
+Edita el archivo `.env` y verifica que las variables `SQLSERVER_DSN`, `JWT_SECRET`, `API_USERNAME` y `API_PASSWORD` tengan valores válidos.
+
+---
+
+### 2. Descargar Dependencias
 
 ```bash
 go mod tidy
 ```
 
-### En PowerShell / CMD:
-```powershell
-go run ./cmd/api
-# O bien compilar y ejecutar directamente el binario:
-go build -o api.exe ./cmd/api
-.\api.exe
-```
+---
 
-### En Git Bash / Linux:
-```bash
-go run ./cmd/api
-# O bien compilar y ejecutar directamente el binario:
-go build -o api.exe ./cmd/api
-./api.exe
-```
+### 3. Ejecutar y Compilar
+
+#### En PowerShell / Windows CMD:
+
+- **Compilar el ejecutable:**
+  ```powershell
+  go build -o api.exe ./cmd/api
+  ```
+- **Ejecutar el binario compilado:**
+  ```powershell
+  .\api.exe
+  ```
+- **Ejecutar directamente en desarrollo:**
+  ```powershell
+  go run ./cmd/api
+  ```
+
+#### En Git Bash / Linux:
+
+- **Compilar el ejecutable:**
+  ```bash
+  go build -o api.exe ./cmd/api
+  ```
+- **Ejecutar el binario compilado (barra diagonal hacia adelante):**
+  ```bash
+  ./api.exe
+  ```
+- **Ejecutar directamente en desarrollo:**
+  ```bash
+  go run ./cmd/api
+  ```
 
 > [!NOTE]
-> Al arrancar, la API hace `PING` a SQL Server; si el host no es alcanzable (red/VPN) o la contraseña es incorrecta, falla rápido con el error correspondiente en el log.
+> Al arrancar, la API realiza un `PING` a SQL Server; si el host no es alcanzable (por red o VPN inactiva) o la contraseña es incorrecta, la aplicación se detendrá inmediatamente reportando el error en el registro de salida.
+
+---
 
 ### Solución de Problemas Frecuentes
 
-#### 1. Error `fork/exec ...\AppData\Local\go-build\...\api.exe: Acceso denegado` al usar `go run`
+#### 1. Error `no Go files in ...\galenos_backend`
+* **Causa:** Ejecutar `go run .` o `go build .`. El archivo de entrada principal está en el subdirectorio `cmd/api`.
+* **Solución:** Utilizar siempre `./cmd/api`:
+  ```bash
+  go run ./cmd/api
+  # o para compilar:
+  go build -o api.exe ./cmd/api
+  ```
+
+#### 2. Error `fork/exec ...\AppData\Local\go-build\...\api.exe: Acceso denegado` al usar `go run`
 * **Causa:** Antivirus o EDR corporativos (como WatchGuard Endpoint Security 360 o Windows Defender) bloquean por directiva de seguridad la ejecución de binarios recién generados en directorios temporales de usuario (`%LocalAppData%\go-build`).
 * **Solución recomendada:** Compilar el binario localmente en la carpeta del proyecto y ejecutarlo directo:
   ```bash
@@ -89,12 +143,16 @@ go build -o api.exe ./cmd/api
   go clean -cache
   ```
 
-#### 2. Error `bash: .api.exe: command not found`
+#### 3. Error `bash: .api.exe: command not found`
 * **Causa:** En Git Bash, la barra invertida `\` actúa como carácter de escape, transformando `.\api.exe` en `.api.exe`.
 * **Solución:** En Git Bash debes utilizar siempre la barra diagonal hacia adelante:
   ```bash
   ./api.exe
   ```
+
+#### 4. Error `fatal error: SQLSERVER_DSN environment variable is required`
+* **Causa:** Falta el archivo `.env` en la carpeta `galenos_backend` o la variable de conexión no fue declarada.
+* **Solución:** Crear el archivo `.env` copiando `.env.example` y configurando las credenciales requeridas.
 
 
 ### Formato y Linter (Validación de código)

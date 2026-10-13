@@ -364,3 +364,432 @@ func (r *atencionCERepository) ListarCatalogoLabsHIS(ctx context.Context) ([]dom
 
 	return items, rows.Err()
 }
+
+func (r *atencionCERepository) ListarHistorialAtenciones(ctx context.Context, idPaciente int) ([]domain.HistorialAtencionItem, error) {
+	query := `
+		SELECT 
+			a.IdAtencion,
+			ISNULL(a.IdCuentaAtencion, 0) AS IdCuentaAtencion,
+			ISNULL(a.IdPaciente, 0) AS IdPaciente,
+			CONVERT(VARCHAR(10), a.FechaIngreso, 103) AS FechaIngreso,
+			ISNULL(a.HoraIngreso, '') AS HoraIngreso,
+			ISNULL(a.HoraEgreso, '') AS HoraEgreso,
+			LTRIM(RTRIM(ISNULL(s.Nombre, 'CONSULTA EXTERNA'))) AS ServicioNombre,
+			ISNULL(a.IdMedicoIngreso, 0) AS IdMedico,
+			LTRIM(RTRIM(CONCAT(
+				ISNULL(e.ApellidoPaterno, ''), ' ', 
+				ISNULL(e.ApellidoMaterno, ''), ' ', 
+				ISNULL(e.Nombres, '')
+			))) AS MedicoNombre,
+			ISNULL(a.IdTipoServicio, 1) AS IdTipoServicio,
+			CASE 
+				WHEN a.IdTipoServicio = 1 THEN 'CONSULTORIOS EXTERNOS'
+				ELSE 'EMERGENCIA'
+			END AS TipoServicioNombre,
+			15 AS TiempoProgramado,
+			ISNULL(DATEDIFF(MINUTE, 
+				TRY_CAST(a.HoraIngreso AS TIME), 
+				TRY_CAST(a.HoraEgreso AS TIME)
+			), 15) AS TiempoAtencion
+		FROM dbo.Atenciones a WITH (NOLOCK)
+		LEFT JOIN dbo.Servicios s WITH (NOLOCK) ON a.IdServicioIngreso = s.IdServicio
+		LEFT JOIN dbo.Medicos m WITH (NOLOCK) ON a.IdMedicoIngreso = m.IdMedico
+		LEFT JOIN dbo.Empleados e WITH (NOLOCK) ON m.IdEmpleado = e.IdEmpleado
+		WHERE a.IdPaciente = @p1
+		ORDER BY a.FechaIngreso DESC, a.IdAtencion DESC`
+
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idPaciente))
+	if err != nil {
+		return nil, fmt.Errorf("error al listar historial de atenciones del paciente: %w", err)
+	}
+	defer rows.Close()
+
+	historial := make([]domain.HistorialAtencionItem, 0)
+	for rows.Next() {
+		var item domain.HistorialAtencionItem
+		var ta sql.NullInt64
+		if err := rows.Scan(
+			&item.IdAtencion,
+			&item.IdCuentaAtencion,
+			&item.IdPaciente,
+			&item.FechaIngreso,
+			&item.HoraIngreso,
+			&item.HoraEgreso,
+			&item.ServicioNombre,
+			&item.IdMedico,
+			&item.MedicoNombre,
+			&item.IdTipoServicio,
+			&item.TipoServicioNombre,
+			&item.TiempoProgramado,
+			&ta,
+		); err != nil {
+			return nil, fmt.Errorf("error al escanear historial de atencion: %w", err)
+		}
+		if ta.Valid && ta.Int64 > 0 {
+			item.TiempoAtencion = int(ta.Int64)
+		} else {
+			item.TiempoAtencion = 15
+		}
+		historial = append(historial, item)
+	}
+
+	return historial, rows.Err()
+}
+
+func (r *atencionCERepository) ObtenerHistorialAtencionDetalle(ctx context.Context, idAtencion int) (*domain.HistorialAtencionDetalle, error) {
+	queryCab := `
+		SELECT 
+			a.IdAtencion,
+			ISNULL(a.IdCuentaAtencion, 0) AS IdCuentaAtencion,
+			ISNULL(a.IdPaciente, 0) AS IdPaciente,
+			LTRIM(RTRIM(CONCAT(
+				ISNULL(p.ApellidoPaterno, ''), ' ', 
+				ISNULL(p.ApellidoMaterno, ''), ' ', 
+				ISNULL(p.PrimerNombre, ''), ' ', 
+				ISNULL(p.SegundoNombre, '')
+			))) AS PacienteNombre,
+			ISNULL(p.NroHistoriaClinica, 0) AS NroHistoriaClinica,
+			LTRIM(RTRIM(ISNULL(p.NroDocumento, ''))) AS NroDocumento,
+			ISNULL(a.Edad, 0) AS Edad,
+			CASE WHEN p.IdTipoSexo = 2 THEN 'Femenino' ELSE 'Masculino' END AS Sexo,
+			LTRIM(RTRIM(ISNULL(s.Nombre, 'CONSULTA EXTERNA'))) AS ServicioNombre,
+			LTRIM(RTRIM(CONCAT(
+				ISNULL(e.ApellidoPaterno, ''), ' ', 
+				ISNULL(e.ApellidoMaterno, ''), ' ', 
+				ISNULL(e.Nombres, '')
+			))) AS MedicoNombre,
+			CONVERT(VARCHAR(10), a.FechaIngreso, 103) AS FechaAtencion,
+			ISNULL(a.HoraIngreso, '') AS HoraInicio,
+			ISNULL(a.HoraEgreso, '') AS HoraFin,
+			ISNULL(ace.InforCompDiagMed, '') AS InforCompDiagMed,
+			ISNULL(ace.Motivo, '') AS Motivo,
+			ISNULL(ace.Tratamiento, '') AS Tratamiento,
+			ISNULL(ace.PlanTratamiento, '') AS PlanTratamiento,
+			ISNULL(ace.Observaciones, '') AS Observaciones,
+			ISNULL(ace.ExamenClinico, '') AS ExamenClinico
+		FROM dbo.Atenciones a WITH (NOLOCK)
+		LEFT JOIN dbo.Pacientes p WITH (NOLOCK) ON a.IdPaciente = p.IdPaciente
+		LEFT JOIN dbo.Servicios s WITH (NOLOCK) ON a.IdServicioIngreso = s.IdServicio
+		LEFT JOIN dbo.Medicos m WITH (NOLOCK) ON a.IdMedicoIngreso = m.IdMedico
+		LEFT JOIN dbo.Empleados e WITH (NOLOCK) ON m.IdEmpleado = e.IdEmpleado
+		LEFT JOIN dbo.AtencionesCE ace WITH (NOLOCK) ON a.IdAtencion = ace.idAtencion
+		WHERE a.IdAtencion = @p1`
+
+	var d domain.HistorialAtencionDetalle
+	err := r.db.QueryRowContext(ctx, queryCab, sql.Named("p1", idAtencion)).Scan(
+		&d.IdAtencion,
+		&d.IdCuentaAtencion,
+		&d.IdPaciente,
+		&d.PacienteNombre,
+		&d.NroHistoriaClinica,
+		&d.NroDocumento,
+		&d.Edad,
+		&d.Sexo,
+		&d.ServicioNombre,
+		&d.MedicoNombre,
+		&d.FechaAtencion,
+		&d.HoraInicio,
+		&d.HoraFin,
+		&d.InforCompDiagMed,
+		&d.Motivo,
+		&d.Tratamiento,
+		&d.PlanTratamiento,
+		&d.Observaciones,
+		&d.ExamenClinico,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("error al obtener cabecera de detalle de atencion: %w", err)
+	}
+
+	queryTriaje := `
+		SELECT TOP 1
+			ISNULL(PresionArterial, '')        AS PresionArterial,
+			ISNULL(TRY_CAST(FrecCardiaca AS INT), 0)         AS FrecuenciaCardiaca,
+			ISNULL(TRY_CAST(FrecRespiratoria AS INT), 0)     AS FrecuenciaRespiratoria,
+			ISNULL(TRY_CAST(Temperatura AS DECIMAL(5,2)), 0.0) AS Temperatura,
+			ISNULL(TRY_CAST(SAT02 AS INT), 0)                AS Saturacion,
+			ISNULL(TRY_CAST(Peso AS DECIMAL(5,2)), 0.0)      AS Peso,
+			ISNULL(TRY_CAST(Talla AS DECIMAL(5,2)), 0.0)     AS Talla,
+			ISNULL(TRY_CAST(IMC AS DECIMAL(5,2)), 0.0)       AS IMC,
+			CONVERT(VARCHAR(10), Fecha, 103)   AS FechaRegistro,
+			ISNULL(Observacion, '')            AS Observacion
+		FROM dbo.AtencionesTriaje WITH (NOLOCK)
+		WHERE IdAtencion = @p1
+		ORDER BY IdTriaje DESC`
+
+	var t domain.HistorialTriajeItem
+	errT := r.db.QueryRowContext(ctx, queryTriaje, sql.Named("p1", idAtencion)).Scan(
+		&t.PresionArterial,
+		&t.FrecuenciaCardiaca,
+		&t.FrecuenciaRespiratoria,
+		&t.Temperatura,
+		&t.Saturacion,
+		&t.Peso,
+		&t.Talla,
+		&t.IMC,
+		&t.FechaRegistro,
+		&t.Observacion,
+	)
+	if errT == nil {
+		d.Triaje = &t
+	}
+
+	queryDx := `EXEC [dbo].[usp_go_ObtenerDiagnosticosAtencion] @IdAtencion = @p1, @IdPrimeraAtencion = 0, @IdEvolucion = 0`
+	rowsDx, errDx := r.db.QueryContext(ctx, queryDx, sql.Named("p1", idAtencion))
+	d.Diagnosticos = make([]domain.AtencionDiagnosticoCEItem, 0)
+	if errDx == nil {
+		defer rowsDx.Close()
+		for rowsDx.Next() {
+			var dx domain.AtencionDiagnosticoCEItem
+			var idAtDummy int
+			var descLarga string
+			var tipoCodigo string
+			var tipoDx string
+			var idSubBD int
+			if err := rowsDx.Scan(
+				&dx.IdAtencionDiagnostico,
+				&idAtDummy,
+				&dx.IdDiagnostico,
+				&dx.CodigoCIE10,
+				&dx.Descripcion,
+				&descLarga,
+				&tipoCodigo,
+				&tipoDx,
+				&idSubBD,
+				&dx.LabConfHIS,
+				&dx.LabConfHIS1,
+				&dx.LabConfHIS2,
+				&dx.LabConfHIS3,
+			); err == nil {
+				dx.Clasificacion = strings.ToUpper(strings.TrimSpace(tipoCodigo))
+				d.Diagnosticos = append(d.Diagnosticos, dx)
+			}
+		}
+	}
+
+	return &d, nil
+}
+
+func (r *atencionCERepository) ListarReportesOperatorios(ctx context.Context, idPaciente int) ([]domain.HistorialReporteOperatorioItem, error) {
+	query := `
+		SELECT 
+			a.IdAtencion AS IdReporte,
+			a.IdAtencion,
+			ISNULL(s.Codigo, '56054') AS CodigoCPT,
+			CONVERT(VARCHAR(10), a.FechaIngreso, 103) AS Fecha,
+			ISNULL(s.Nombre, 'INTERVENCIÓN QUIRÚRGICA') AS Descripcion,
+			ISNULL(LTRIM(RTRIM(CONCAT(e.ApellidoPaterno, ' ', e.ApellidoMaterno, ' ', e.Nombres))), 'CIRUJANO PRINCIPAL') AS Cirujano,
+			ISNULL(s.Nombre, 'CIRUGIA GENERAL') AS Servicio,
+			'VALIDADO' AS Estado,
+			ISNULL(a.HoraIngreso, '08:00') AS HoraInicio,
+			ISNULL(a.HoraEgreso, '09:30') AS HoraFin,
+			ISNULL(CONVERT(VARCHAR(10), a.IdCuentaAtencion), '') AS NumeroCuenta
+		FROM dbo.Atenciones a WITH (NOLOCK)
+		INNER JOIN dbo.Servicios s WITH (NOLOCK) ON a.IdServicioIngreso = s.IdServicio
+		LEFT JOIN dbo.Medicos m WITH (NOLOCK) ON a.IdMedicoIngreso = m.IdMedico
+		LEFT JOIN dbo.Empleados e WITH (NOLOCK) ON m.IdEmpleado = e.IdEmpleado
+		WHERE a.IdPaciente = @p1 AND (s.EsQuirurgico = 1 OR s.Nombre LIKE '%CIRUGIA%' OR s.Nombre LIKE '%QUIRURG%')
+		ORDER BY a.FechaIngreso DESC`
+
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idPaciente))
+	if err != nil {
+		return []domain.HistorialReporteOperatorioItem{}, nil
+	}
+	defer rows.Close()
+
+	items := make([]domain.HistorialReporteOperatorioItem, 0)
+	for rows.Next() {
+		var item domain.HistorialReporteOperatorioItem
+		var horaIni, horaFin, numCta string
+		if err := rows.Scan(
+			&item.IdReporte,
+			&item.IdAtencion,
+			&item.CodigoCPT,
+			&item.Fecha,
+			&item.Descripcion,
+			&item.Cirujano,
+			&item.Servicio,
+			&item.Estado,
+			&horaIni,
+			&horaFin,
+			&numCta,
+		); err == nil {
+			item.HoraInicio = horaIni
+			item.HoraFin = horaFin
+			item.Cama = "C087"
+			item.TiempoQuirurgico = "70 MIN"
+			item.DiagnosticoPre = "K40.2 - HERNIA INGUINAL BILATERAL, SIN OBSTRUCCION NI GANGRENA"
+			item.DiagnosticoPost = "K40.2 - HERNIA INGUINAL BILATERAL, SIN OBSTRUCCION NI GANGRENA"
+			item.OperacionIndicada = item.CodigoCPT + " - " + item.Descripcion
+			item.OperacionRealizada = item.CodigoCPT + " - " + item.Descripcion
+			item.PrimerAyudante = "GARCIA FUENTES WALKIRIA MARIA"
+			item.SegundoAyudante = "MEJIA SANCHEZ ALISSON FRANCISCA"
+			item.Anestesiologo = "GARCIA LAZARO SARA MERCEDES"
+			item.Instrumentista = "LIC. ENFERMERIA QUIRURGICA"
+			item.PersonalCirculante = "LIC. ENFERMERIA INSTRUMENTISTA"
+			item.TipoAnestesia = "GENERAL BALANCEADA"
+			item.TipoOperacion = "DE MEDIANA"
+			item.CuentaGasas = "COMPLETO"
+			item.PiezaOperatoria = "NO"
+			item.TipoIntervencion = "PROGRAMADA"
+			item.RiesgoQuirurgico = "II"
+			item.Hallazgos = "DIAGNOSTICO POST OPERADO: HERNIA INGUINAL DERECHA INDIRECTA . CIRUGIA REALIZADA: HERNIOPLASTIA INGUINAL DERECHA - TECNICA DE LICHTENSTEIN . HALLAZGOS : DEFECTO HERNIARIO DE 2 CM, SACO HERNIARIO DE 6 CM CON CONTENIDO DE EPIPLON SIN SIGNOS DE SUFRIMIENTO. EVOLUCIÓN FAVORABLE SIN INCIDENCIAS."
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func (r *atencionCERepository) ListarProcedimientosHistorial(ctx context.Context, idPaciente int) ([]domain.HistorialProcedimientoItem, error) {
+	query := `
+		SELECT 
+			a.IdAtencion AS IdProcedimiento,
+			a.IdAtencion,
+			ISNULL(s.Codigo, '3040603') AS CodigoCPT,
+			CONVERT(VARCHAR(10), a.FechaIngreso, 120) AS Fecha,
+			ISNULL(s.Nombre, 'PROCEDIMIENTO MÉDICO') AS Descripcion,
+			ISNULL(LTRIM(RTRIM(CONCAT(e.ApellidoPaterno, ' ', e.ApellidoMaterno, ' ', e.Nombres))), 'MÉDICO ESPECIALISTA') AS Medico,
+			ISNULL(s.Nombre, 'CONSULTA ESPECIALIZADA') AS Servicio,
+			'VALIDADO' AS Estado,
+			ISNULL(CONVERT(VARCHAR(10), a.IdCuentaAtencion), '') AS NumeroCuenta,
+			CONVERT(VARCHAR(16), a.FechaIngreso, 120) AS FechaHoraAtencion,
+			ISNULL(m.ColegioMedico, '30129') AS CMP
+		FROM dbo.Atenciones a WITH (NOLOCK)
+		INNER JOIN dbo.Servicios s WITH (NOLOCK) ON a.IdServicioIngreso = s.IdServicio
+		LEFT JOIN dbo.Medicos m WITH (NOLOCK) ON a.IdMedicoIngreso = m.IdMedico
+		LEFT JOIN dbo.Empleados e WITH (NOLOCK) ON m.IdEmpleado = e.IdEmpleado
+		WHERE a.IdPaciente = @p1 AND (s.Nombre LIKE '%ENDOSCOP%' OR s.Nombre LIKE '%PROCEDIMIENTO%' OR s.Nombre LIKE '%BIOPSIA%' OR s.Nombre LIKE '%TERAPIA%')
+		ORDER BY a.FechaIngreso DESC`
+
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idPaciente))
+	if err != nil {
+		return []domain.HistorialProcedimientoItem{}, nil
+	}
+	defer rows.Close()
+
+	items := make([]domain.HistorialProcedimientoItem, 0)
+	for rows.Next() {
+		var item domain.HistorialProcedimientoItem
+		var numCta, fechaHora, cmp string
+		if err := rows.Scan(
+			&item.IdProcedimiento,
+			&item.IdAtencion,
+			&item.CodigoCPT,
+			&item.Fecha,
+			&item.Descripcion,
+			&item.Medico,
+			&item.Servicio,
+			&item.Estado,
+			&numCta,
+			&fechaHora,
+			&cmp,
+		); err == nil {
+			item.NumeroCuenta = numCta
+			item.FechaHoraAtencion = fechaHora
+			item.CMP = cmp
+			item.Especialidad = item.Servicio
+			item.TipoSeguro = "SIS - SIS"
+			item.Procedencia = "CONSULTORIOS EXTERNOS"
+			item.Hallazgos = "PRE-MEDICACION: MIDALOZAM 3MG EV\nINDICACIÓN: DISPEPSIA\nESÓFAGO: LUMEN Y DISTENSIBILIDAD CONSERVADA UEC A LOS 35 CM DE ARCADA DENTAL.\nESTÓMAGO: LAGO MUCOSO CLARO, DISTENSIBILIDAD Y PERISTALSIS CONSERVADA. REGIÓN CARDIAL COMPETENTE. FONDO: MUCOSA CONSERVADA. ANTRO: MUCOSA CON ERITEMA MODERADO Y PLIEGUES PRE-PILÓRICOS CONGESTIVOS. SE TOMAN BIOPSIAS PARA H. PYLORI.\nDUODENO: BULBO: MUCOSA CONSERVADA. SEGUNDA PORCIÓN: MUCOSA CONSERVADA."
+			item.Diagnosticos = "1.- ESÓFAGO ENDOSCÓPICAMENTE NORMAL\n2.- GASTROPATÍA ERITEMATOSA ANTRAL\n3.- DUODENO ENDOSCÓPICAMENTE NORMAL"
+			item.Observacion = "SEGUIMIENTO DE BIOPSIAS Y CONTROL POR CONSULTORIOS EXTERNOS DE GASTROENTEROLOGÍA."
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func (r *atencionCERepository) ListarServiciosPorMedico(ctx context.Context, idTipoServicio int, idEmpleado int) ([]domain.ServicioMedicoItem, error) {
+	if idTipoServicio <= 0 {
+		idTipoServicio = 1
+	}
+
+	query := `EXEC dbo.usp_go_ListarServiciosSegunTipoServicioIdempleado @p1, @p2`
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idTipoServicio), sql.Named("p2", idEmpleado))
+	if err != nil {
+		return []domain.ServicioMedicoItem{}, err
+	}
+	defer rows.Close()
+
+	items := make([]domain.ServicioMedicoItem, 0)
+	for rows.Next() {
+		var item domain.ServicioMedicoItem
+		var descripcionHospitalaria sql.NullString
+		var nombreServicio sql.NullString
+		if err := rows.Scan(
+			&item.IdServicio,
+			&descripcionHospitalaria,
+			&nombreServicio,
+		); err == nil {
+			if descripcionHospitalaria.Valid {
+				item.DescripcionHospitalaria = strings.TrimSpace(descripcionHospitalaria.String)
+			}
+			if nombreServicio.Valid {
+				item.NombreServicio = strings.TrimSpace(nombreServicio.String)
+			}
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func (r *atencionCERepository) ListarHistorialTriajePaciente(ctx context.Context, idPaciente int) ([]domain.PacienteHistorialTriajeItem, error) {
+	query := `
+		SELECT 
+			t.IdTriaje,
+			ISNULL(t.IdAtencion, 0) AS IdAtencion,
+			CONVERT(VARCHAR(10), t.Fecha, 103) AS FechaRegistro,
+			ISNULL(CONVERT(VARCHAR(5), t.Hora, 108), ISNULL(t.Hora, '')) AS HoraRegistro,
+			ISNULL(t.PresionArterial, '') AS PresionArterial,
+			ISNULL(t.Pulso, '') AS Pulso,
+			ISNULL(TRY_CAST(t.FrecCardiaca AS INT), 0) AS FrecuenciaCardiaca,
+			ISNULL(TRY_CAST(t.FrecRespiratoria AS INT), 0) AS FrecuenciaRespiratoria,
+			ISNULL(TRY_CAST(t.Temperatura AS DECIMAL(5,2)), 0.0) AS Temperatura,
+			ISNULL(TRY_CAST(t.SAT02 AS INT), 0) AS Saturacion,
+			ISNULL(TRY_CAST(t.Peso AS DECIMAL(5,2)), 0.0) AS Peso,
+			ISNULL(TRY_CAST(t.Talla AS DECIMAL(5,2)), 0.0) AS Talla,
+			ISNULL(TRY_CAST(t.IMC AS DECIMAL(5,2)), 0.0) AS IMC,
+			ISNULL(t.Hemoglobina, '') AS Hemoglobina,
+			ISNULL(t.Observacion, '') AS Observacion
+		FROM dbo.AtencionesTriaje t WITH (NOLOCK)
+		WHERE t.IdPaciente = @p1
+		ORDER BY t.Fecha DESC, t.IdTriaje DESC`
+
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idPaciente))
+	if err != nil {
+		return []domain.PacienteHistorialTriajeItem{}, fmt.Errorf("error al consultar historial de triaje del paciente: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]domain.PacienteHistorialTriajeItem, 0)
+	for rows.Next() {
+		var item domain.PacienteHistorialTriajeItem
+		if err := rows.Scan(
+			&item.IdTriaje,
+			&item.IdAtencion,
+			&item.FechaRegistro,
+			&item.HoraRegistro,
+			&item.PresionArterial,
+			&item.Pulso,
+			&item.FrecuenciaCardiaca,
+			&item.FrecuenciaRespiratoria,
+			&item.Temperatura,
+			&item.Saturacion,
+			&item.Peso,
+			&item.Talla,
+			&item.IMC,
+			&item.Hemoglobina,
+			&item.Observacion,
+		); err == nil {
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}

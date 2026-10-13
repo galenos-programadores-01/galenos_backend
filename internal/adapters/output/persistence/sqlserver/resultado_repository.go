@@ -151,6 +151,9 @@ func (r *ResultadoRepository) ObtenerDetalleLaboratorio(ctx context.Context, idO
 		if v := rowString(m, "metodo", "metodologia", "observacion", "metodoanalisis"); v != nil {
 			d.Metodo = *v
 		}
+		if v := rowString(m, "interpretacion", "interpretacionresultado", "rango", "estado", "estadogerencial"); v != nil {
+			d.Interpretacion = *v
+		}
 		detalles = append(detalles, d)
 	}
 
@@ -177,11 +180,38 @@ func poblarDetalleImagen(m map[string]interface{}, d *domain.DetalleResultadoIma
 	if v := rowString(m, "nombre", "nombrecorto", "nombreexamen", "codigo", "descripcion", "servicio"); v != nil {
 		d.NombreExamen = *v
 	}
-	if v := rowString(m, "resultado", "informetexto", "informe", "conclusion", "observacionresultado", "observaciones", "descripcion", "texto", "detalle", "hallazgos", "impresiondiagnostica"); v != nil {
+	if v := rowString(m, "resultado", "informetexto", "informe", "conclusion", "observacionresultado", "observaciones", "descripcion", "texto", "detalle", "hallazgos"); v != nil {
 		d.InformeTexto = *v
+	}
+	if v := rowString(m, "sugerencias", "impresiondiagnostica", "sugerencia"); v != nil {
+		d.Sugerencias = *v
 	}
 	if v := rowString(m, "fechainforme", "fecharesultado", "fechamovimiento", "fecharegistro", "fecha"); v != nil {
 		d.FechaInforme = *v
+	}
+	if v := rowString(m, "fechaexamen", "fechamuestra"); v != nil {
+		d.FechaExamen = *v
+	}
+	if v := rowString(m, "realizaprueba", "tecnologo", "responsableprueba", "medicoejecuta", "ejecutor"); v != nil {
+		d.RealizaPrueba = *v
+	}
+	if v := rowString(m, "medicosolicitante", "solicitante", "medicosolicita"); v != nil {
+		d.MedicoSolicitante = *v
+	}
+	if v := rowString(m, "procedencia", "origen", "serviciosolicita"); v != nil {
+		d.Procedencia = *v
+	}
+	if v := rowString(m, "diagnostico", "cie10", "diagnosticopresuntivo"); v != nil {
+		d.Diagnostico = *v
+	}
+	if v := rowString(m, "responsable", "medicoinforma", "asistente"); v != nil {
+		d.Responsable = *v
+	}
+	if v := rowString(m, "estado", "estadovalidacion", "estadogerencial"); v != nil {
+		d.Estado = *v
+	}
+	if v := rowString(m, "observacion", "observaciones", "nota"); v != nil {
+		d.Observacion = *v
 	}
 }
 
