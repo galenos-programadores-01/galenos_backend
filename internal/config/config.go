@@ -47,7 +47,9 @@ type Config struct {
 	RedisDB               int
 	RedisTTL              time.Duration
 
-	// SFTP (almacenamiento remoto de PDFs firmados). Vacío = deshabilitado.
+	// Almacenamiento remoto de PDFs firmados (SFTP o FTP). Host/User vacíos = deshabilitado.
+	// SFTPProtocol: "sftp" (SSH :22) o "ftp" (FTP clásico :21). Mismas credenciales SFTP_*.
+	SFTPProtocol               string
 	SFTPHost                   string
 	SFTPPort                   int
 	SFTPUser                   string
@@ -93,6 +95,12 @@ func Load() (*Config, error) {
 		redisAddr = "localhost:6379"
 	}
 
+	sftpProtocol := normalizeSFTPProtocol(envOrDefault("SFTP_PROTOCOL", "sftp"))
+	sftpDefaultPort := 22
+	if sftpProtocol == "ftp" {
+		sftpDefaultPort = 21
+	}
+
 	return &Config{
 		ServerPort:            envOrDefault("SERVER_PORT", "8080"),
 		ServerHost:            envOrDefault("SERVER_HOST", defaultServerHost()),
@@ -127,8 +135,9 @@ func Load() (*Config, error) {
 		RedisDB:               envIntOrDefault("REDIS_DB", 0),
 		RedisTTL:              envDurationOrDefault("REDIS_TTL", 30*time.Minute),
 
+		SFTPProtocol:               sftpProtocol,
 		SFTPHost:                   os.Getenv("SFTP_HOST"),
-		SFTPPort:                   envIntOrDefault("SFTP_PORT", 22),
+		SFTPPort:                   envIntOrDefault("SFTP_PORT", sftpDefaultPort),
 		SFTPUser:                   os.Getenv("SFTP_USER"),
 		SFTPPassword:               os.Getenv("SFTP_PASSWORD"),
 		SFTPTimeout:                envDurationOrDefault("SFTP_TIMEOUT", 30*time.Second),
@@ -138,6 +147,16 @@ func Load() (*Config, error) {
 		SFTPPatternPrimeraAtencion: envOrDefault("SFTP_PATTERN_PRIMERA_ATENCION", "primera-atencion/{id}/{uuid}.pdf"),
 		SFTPPatternEvolucion:       envOrDefault("SFTP_PATTERN_EVOLUCION", "evoluciones/{id}/{uuid}.pdf"),
 	}, nil
+}
+
+// normalizeSFTPProtocol acepta "sftp" | "ftp" (case-insensitive). Default sftp.
+func normalizeSFTPProtocol(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "ftp":
+		return "ftp"
+	default:
+		return "sftp"
+	}
 }
 
 // defaultServerHost devuelve el IP de la interfaz de red principal para

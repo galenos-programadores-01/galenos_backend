@@ -11,10 +11,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -27,8 +29,10 @@ import (
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/persistence/sqlserver"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/reniec"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/sis"
+	ftpadapter "github.com/galenos-pro/appointments-api/internal/adapters/output/ftp"
 	sftpadapter "github.com/galenos-pro/appointments-api/internal/adapters/output/sftp"
 	"github.com/galenos-pro/appointments-api/internal/config"
+	"github.com/galenos-pro/appointments-api/internal/ports/output"
 	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/usecase"
 )
@@ -107,16 +111,8 @@ func run() error {
 	firmaPeruStore := firmaperu.NewMemoryStore(cfg.FirmaPeruSignedDir)
 	firmaPeruArchive := firmaperu.NewSevenZipTool(cfg.SevenZipPath)
 
-	// --- Adaptador de salida: SFTP (PDFs firmados; noop si no hay host) ---
-	almacenamientoRemoto, err := sftpadapter.New(sftpadapter.Config{
-		Host:                  cfg.SFTPHost,
-		Port:                  cfg.SFTPPort,
-		User:                  cfg.SFTPUser,
-		Password:              cfg.SFTPPassword,
-		Timeout:               cfg.SFTPTimeout,
-		InsecureIgnoreHostKey: cfg.SFTPInsecureIgnoreHostKey,
-		KnownHostsPath:        cfg.SFTPKnownHostsPath,
-	})
+	// --- Adaptador de salida: almacenamiento remoto (SFTP o FTP; noop si no hay host) ---
+	almacenamientoRemoto, err := newAlmacenamientoRemoto(cfg)
 	if err != nil {
 		return err
 	}
@@ -126,9 +122,10 @@ func run() error {
 	})
 	archivoRemotoService := usecase.NewArchivoRemotoService(almacenamientoRemoto, rutasArchivoRemoto)
 	if archivoRemotoService.Enabled() {
-		log.Printf("SFTP remoto habilitado host=%s base=%s", cfg.SFTPHost, cfg.SFTPBasePath)
+		log.Printf("almacenamiento remoto habilitado protocol=%s host=%s:%d base=%s",
+			cfg.SFTPProtocol, cfg.SFTPHost, cfg.SFTPPort, cfg.SFTPBasePath)
 	} else {
-		log.Printf("SFTP remoto deshabilitado (SFTP_HOST/SFTP_USER vacíos)")
+		log.Printf("almacenamiento remoto deshabilitado (SFTP_HOST/SFTP_USER vacíos)")
 	}
 
 	// --- Núcleo de dominio: casos de uso implementando los puertos de entrada ---
@@ -240,4 +237,31 @@ func run() error {
 	defer cancel()
 
 	return server.Shutdown(shutdownCtx)
+}
+
+// newAlmacenamientoRemoto elige el adaptador según SFTP_PROTOCOL (sftp|ftp).
+// Mismas variables SFTP_* de credenciales; solo cambia el transporte.
+func newAlmacenamientoRemoto(cfg *config.Config) (output.AlmacenamientoRemoto, error) {
+	switch strings.ToLower(strings.TrimSpace(cfg.SFTPProtocol)) {
+	case "ftp":
+		return ftpadapter.New(ftpadapter.Config{
+			Host:     cfg.SFTPHost,
+			Port:     cfg.SFTPPort,
+			User:     cfg.SFTPUser,
+			Password: cfg.SFTPPassword,
+			Timeout:  cfg.SFTPTimeout,
+		})
+	case "sftp", "":
+		return sftpadapter.New(sftpadapter.Config{
+			Host:                  cfg.SFTPHost,
+			Port:                  cfg.SFTPPort,
+			User:                  cfg.SFTPUser,
+			Password:              cfg.SFTPPassword,
+			Timeout:               cfg.SFTPTimeout,
+			InsecureIgnoreHostKey: cfg.SFTPInsecureIgnoreHostKey,
+			KnownHostsPath:        cfg.SFTPKnownHostsPath,
+		})
+	default:
+		return nil, fmt.Errorf("SFTP_PROTOCOL inválido %q (use sftp o ftp)", cfg.SFTPProtocol)
+	}
 }

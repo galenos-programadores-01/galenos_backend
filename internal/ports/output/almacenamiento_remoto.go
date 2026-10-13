@@ -3,7 +3,7 @@ package output
 import "context"
 
 // AlmacenamientoRemoto puerto de salida para subir/bajar archivos
-// (implementación típica: SFTP). Los casos de uso dependen solo de esta interfaz.
+// (implementaciones: SFTP o FTP). Los casos de uso dependen solo de esta interfaz.
 type AlmacenamientoRemoto interface {
 	// Enabled indica si hay configuración usable (host/credenciales).
 	Enabled() bool

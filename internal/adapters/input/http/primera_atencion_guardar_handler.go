@@ -191,24 +191,24 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 		ubicacion = h.ubicacionLogicaPrimeraAtencion(idAtencion, uuidFirma)
 	}
 
-	// Si SFTP está activo: subir PDF firmado (Firma Perú store) y usar la ruta real.
+	// Si el almacenamiento remoto está activo: subir PDF firmado y usar la ruta real.
 	if h.archivos != nil && h.archivos.Enabled() {
 		if uuidFirma == "" {
-			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "uuidFirma es obligatorio para subir a SFTP")
+			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "uuidFirma es obligatorio para subir al almacenamiento remoto")
 			return
 		}
 		if h.firmaStore == nil {
-			respondError(c, http.StatusInternalServerError, "SFTP_FIRMA_STORE_MISSING", "almacén de Firma Perú no disponible")
+			respondError(c, http.StatusInternalServerError, "REMOTE_FIRMA_STORE_MISSING", "almacén de Firma Perú no disponible")
 			return
 		}
 		pdf, errPdf := h.firmaStore.GetSigned(c.Request.Context(), uuidFirma)
 		if errPdf != nil {
-			respondError(c, http.StatusConflict, "FIRMA_PDF_NO_DISPONIBLE", "no se encontró el PDF firmado para subir a SFTP: "+errPdf.Error())
+			respondError(c, http.StatusConflict, "FIRMA_PDF_NO_DISPONIBLE", "no se encontró el PDF firmado para subir al remoto: "+errPdf.Error())
 			return
 		}
 		ubi, errUp := h.archivos.SubirPrimeraAtencion(c.Request.Context(), idAtencion, uuidFirma, pdf)
 		if errUp != nil {
-			respondError(c, http.StatusBadGateway, "SFTP_UPLOAD_FAILED", "no se pudo subir el PDF a SFTP: "+errUp.Error())
+			respondError(c, http.StatusBadGateway, "REMOTE_UPLOAD_FAILED", "no se pudo subir el PDF al almacenamiento remoto: "+errUp.Error())
 			return
 		}
 		ubicacion = ubi
