@@ -32,6 +32,7 @@ type CatalogService interface {
 	ListEspecialidadesPorTipoServicio(ctx context.Context, idTipoServicio int64) ([]domain.Especialidad, error)
 	// PA interconsulta: usp_go_Especialidades_Listar
 	ListEspecialidadesListar(ctx context.Context) ([]domain.Especialidad, error)
+	ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error)
 	GetDatosInstitucion(ctx context.Context) (*domain.DatosInstitucion, error)
 	GetParametro(ctx context.Context, idParametro int64) (*domain.Parametro, error)
 	// Compartido PA + develop (mismo SP; JSON tipado en HTTP)
@@ -50,4 +51,6 @@ type CatalogService interface {
 	ListViasAdministracion(ctx context.Context) ([]domain.ViaAdministracion, error)
 	// Develop: misma SP medicamentos, proyección enriquecida
 	BuscarMedicamentosReceta(ctx context.Context, filtro string, idPaciente int) ([]domain.MedicamentoBusqueda, error)
+	ActualizarParametroValorTexto(ctx context.Context, idParametro int) error
+	ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error)
 }

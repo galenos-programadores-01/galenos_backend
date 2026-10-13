@@ -45,6 +45,7 @@ type ListaEsperaQxModificar struct {
 	FechaICNeumo     string `json:"fechaICNeumo"`
 	FechaICAnestesio string `json:"fechaICAnestesio"`
 	Observacion      string `json:"observacion"`
+	Telefono         string `json:"telefono"`
 }
 
 type ListaEsperaQxCrear struct {
@@ -58,6 +59,7 @@ type ListaEsperaQxCrear struct {
 	FechaICNeumo     string `json:"fechaICNeumo"`
 	FechaICAnestesio string `json:"fechaICAnestesio"`
 	Observacion      string `json:"observacion"`
+	Telefono         string `json:"telefono"`
 }
 
 type ListaEsperaQxReporte struct {

@@ -1,5 +1,45 @@
 basePath: /api/v1
 definitions:
+  domain.AgregarDiagnosticoAtencionRequest:
+    properties:
+      codigoCIE10:
+        type: string
+      grupoHIS:
+        type: integer
+      idAtencion:
+        type: integer
+      idDiagnostico:
+        type: integer
+      idEpisodio:
+        type: integer
+      idEvolucion:
+        type: integer
+      idPaciente:
+        type: integer
+      idPrimeraAtencion:
+        type: integer
+      idSubclasificacionDiagnostico:
+        type: integer
+      labConfHIS:
+        type: string
+      labConfHIS1:
+        type: string
+      labConfHIS2:
+        type: string
+      labConfHIS3:
+        type: string
+      subGrupoHIS:
+        type: integer
+      tipoDiagnostico:
+        type: string
+    type: object
+  domain.AgregarDiagnosticoAtencionResponse:
+    properties:
+      descripcionSubclasificacion:
+        type: string
+      idAtencionDiagnostico:
+        type: integer
+    type: object
   domain.Appointment:
     properties:
       createdAt:
@@ -31,11 +71,69 @@ definitions:
     - StatusConfirmed
     - StatusCancelled
     - StatusCompleted
+  domain.CPT:
+    properties:
+      cpt_1:
+        type: string
+      cpt_2:
+        type: string
+      cpt_3:
+        type: string
+    type: object
   domain.CentroPoblado:
     properties:
       id:
         type: integer
       nombre:
+        type: string
+    type: object
+  domain.CitaReferencia:
+    properties:
+      fecha_vencimiento_sis:
+        type: string
+      frecuencia_cardiaca:
+        type: string
+      frecuencia_respiratoria:
+        type: string
+      id_financiador:
+        type: string
+      num_afil:
+        type: string
+      peso:
+        type: string
+      presion_arterial_diastolica:
+        type: string
+      presion_arterial_sistolica:
+        type: string
+      resumeanamnesis:
+        type: string
+      resumeexfisico:
+        type: string
+      talla:
+        type: string
+      temperatura:
+        type: string
+    type: object
+  domain.ConsultaMinsaDatos:
+    properties:
+      datos:
+        items:
+          $ref: '#/definitions/domain.ReferenciaMinsa'
+        type: array
+      paginas:
+        type: integer
+      porPagina:
+        type: string
+      total:
+        type: integer
+    type: object
+  domain.ConsultaMinsaResponse:
+    properties:
+      codigo:
+        type: string
+      datos:
+        $ref: '#/definitions/domain.ConsultaMinsaDatos'
+      mensaje:
         type: string
     type: object
   domain.DatosInstitucion:
@@ -57,6 +155,97 @@ definitions:
       telefono:
         type: string
       ubigeoHosp:
+        type: string
+    type: object
+  domain.DatosReferenciaMinsa:
+    properties:
+      codigo_especialidad:
+        type: string
+      codigo_establecimiento_origen:
+        type: string
+      codigoEstado:
+        type: string
+      condicion:
+        type: string
+      estado:
+        type: string
+      fecha_aceptacion:
+        type: string
+      fecha_envio:
+        type: string
+      fecha_referencia:
+        type: string
+      hora_referencia:
+        type: string
+      id_referencia:
+        type: string
+      motivo_referencia:
+        type: string
+      numero_referencia:
+        type: string
+      resume_anamnesis:
+        type: string
+      resume_exfisico:
+        type: string
+      servicio_destino:
+        type: string
+      servicio_origen:
+        type: string
+      tipo_financiador:
+        type: string
+      tipo_transporte:
+        type: string
+    type: object
+  domain.DatosReferenciaSave:
+    properties:
+      codEspecialidad:
+        type: string
+      condicion:
+        type: string
+      desc_Cartera_servicio:
+        type: string
+      fechaReferencia:
+        type: string
+      fgRegistro:
+        type: string
+      horaReferencia:
+        type: string
+      idCarteraServicio:
+        type: string
+      idEnvio:
+        type: string
+      idTipoAtencion:
+        type: string
+      idTipoTransporte:
+        type: string
+      idestabDestino:
+        type: string
+      idestabOrigen:
+        type: string
+      idupsOrigen:
+        type: string
+      idupsdestino:
+        type: string
+      motivo_referencia:
+        $ref: '#/definitions/domain.MotivoReferencia'
+      notasobs:
+        type: string
+    type: object
+  domain.DatosTutorMinsa:
+    properties:
+      celular:
+        type: string
+      correo:
+        type: string
+      nombres:
+        type: string
+      numero_documento:
+        type: string
+      primer_apellido:
+        type: string
+      segundo_apellido:
+        type: string
+      tipo_documento:
         type: string
     type: object
   domain.Departamento:
@@ -83,6 +272,35 @@ definitions:
       total:
         type: number
     type: object
+  domain.DiagnosticoAtencion:
+    properties:
+      codigoCIE10:
+        type: string
+      descripcion:
+        type: string
+      descripcionLarga:
+        type: string
+      idAtencion:
+        type: integer
+      idAtencionDiagnostico:
+        type: integer
+      idDiagnostico:
+        type: integer
+      idSubclasificacionDx:
+        type: integer
+      labConfHIS:
+        type: string
+      labConfHIS1:
+        type: string
+      labConfHIS2:
+        type: string
+      labConfHIS3:
+        type: string
+      tipoCodigo:
+        type: string
+      tipoDx:
+        type: string
+    type: object
   domain.DiagnosticoBusqueda:
     properties:
       cancer:
@@ -108,6 +326,24 @@ definitions:
       yaRegistrado:
         type: integer
     type: object
+  domain.DiagnosticoMinsa:
+    properties:
+      codigo_ciex:
+        type: string
+      id:
+        type: string
+      tipo_diagnostico:
+        type: string
+    type: object
+  domain.DiagnosticoReferencia:
+    properties:
+      diagnostico:
+        type: string
+      nro_diagnostico:
+        type: string
+      tipo_diagnostico:
+        type: string
+    type: object
   domain.DiagnosticoSimple:
     properties:
       codigoCIE10:
@@ -124,6 +360,17 @@ definitions:
       nombre:
         type: string
     type: object
+  domain.DistritoReniec:
+    properties:
+      idDistrito:
+        type: integer
+      idProvincia:
+        type: integer
+      idReniec:
+        type: integer
+      nombre:
+        type: string
+    type: object
   domain.Especialidad:
     properties:
       id:
@@ -131,11 +378,42 @@ definitions:
       nombre:
         type: string
     type: object
+  domain.EspecialidadMinsa:
+    properties:
+      codigo_especialidad:
+        type: string
+      especialidad:
+        type: string
+    type: object
   domain.EspecialidadSimple:
     properties:
       idEspecialidad:
         type: integer
       nombre:
+        type: string
+    type: object
+  domain.Establecimiento:
+    properties:
+      codigo:
+        type: string
+      nombre:
+        type: string
+    type: object
+  domain.EstablecimientoBusqueda:
+    properties:
+      codigo:
+        type: string
+      departamento:
+        type: string
+      distrito:
+        type: string
+      idEstablecimiento:
+        type: integer
+      nombre:
+        type: string
+      nombreLargo:
+        type: string
+      provincia:
         type: string
     type: object
   domain.EstadoLlegoPaciente:
@@ -160,6 +438,26 @@ definitions:
         type: integer
       idTipoFinanciamiento:
         type: integer
+    type: object
+  domain.GenerarHojaReferenciaRequest:
+    properties:
+      estadoreferencia:
+        type: string
+      idestablecimiento:
+        type: integer
+      idreferencia:
+        type: integer
+    type: object
+  domain.GenerarHojaReferenciaResult:
+    properties:
+      archivoB64:
+        type: string
+      estadoreferencia:
+        type: string
+      nombreReporte:
+        type: string
+      urlFile:
+        type: string
     type: object
   domain.Idioma:
     properties:
@@ -267,6 +565,139 @@ definitions:
       telefono:
         type: string
     type: object
+  domain.ListadoEspecialidadesResponse:
+    properties:
+      codigo:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.EspecialidadMinsa'
+        type: array
+    type: object
+  domain.ListadoUpsItem:
+    properties:
+      codUps:
+        type: string
+      descripcion:
+        type: string
+    type: object
+  domain.ListadoUpsResponse:
+    properties:
+      codigo:
+        type: string
+      datos:
+        items:
+          $ref: '#/definitions/domain.ListadoUpsItem'
+        type: array
+      mensaje:
+        type: string
+    type: object
+  domain.MotivoReferencia:
+    properties:
+      idmotivoref:
+        type: string
+      obsmotivoref:
+        type: string
+    type: object
+  domain.PacienteDatosAdicionales:
+    properties:
+      anemia:
+        type: integer
+      antecedAlergico:
+        type: string
+      antecedFamiliar:
+        type: string
+      antecedObstetrico:
+        type: string
+      antecedPatologico:
+        type: string
+      antecedQuirurgico:
+        type: string
+      antecedentes:
+        type: string
+      cancer:
+        type: integer
+      dislipidemia:
+        type: integer
+      enfTiroidea:
+        type: integer
+      fNacimientoCalculada:
+        type: boolean
+      fumaActualmente:
+        type: integer
+      higadoGraso:
+        type: integer
+      hipertensionArterial:
+        type: integer
+      idPaciente:
+        type: integer
+      obesidad:
+        type: integer
+      otrosComorbilidad:
+        type: string
+      tuberculosis:
+        type: integer
+    type: object
+  domain.PacienteMinsa:
+    properties:
+      celular:
+        type: string
+      direccion:
+        type: string
+      fecha_nacimiento:
+        type: string
+      fecha_vencimiento_sis:
+        type: string
+      nombres:
+        type: string
+      numero_documento:
+        type: string
+      numero_seguro:
+        type: string
+      primer_apellido:
+        type: string
+      segundo_apellido:
+        type: string
+      sexo:
+        type: string
+      tipo_documento:
+        type: string
+      ubigeo1:
+        type: string
+      ubigeo2:
+        type: string
+    type: object
+  domain.PacienteReferencia:
+    properties:
+      apelmatpac:
+        type: string
+      apelpatpac:
+        type: string
+      celularpac:
+        type: string
+      correopac:
+        type: string
+      direccion:
+        type: string
+      fechnacpac:
+        type: string
+      idsexo:
+        type: string
+      idtipodoc:
+        type: string
+      nombpac:
+        type: string
+      nrohis:
+        type: string
+      numdoc:
+        type: string
+      telefonopac:
+        type: string
+      ubigeoactual:
+        type: string
+      ubigeoreniec:
+        type: string
+    type: object
   domain.Pais:
     properties:
       id:
@@ -286,6 +717,15 @@ definitions:
         type: integer
       valorTexto:
         type: string
+    type: object
+  domain.ParametroClinico:
+    properties:
+      codigo:
+        type: string
+      descripcion:
+        type: string
+      idParametro:
+        type: integer
     type: object
   domain.Patient:
     properties:
@@ -445,11 +885,97 @@ definitions:
       xrayCaseNumber:
         type: string
     type: object
+  domain.PersonaAcompana:
+    properties:
+      apelmatacomp:
+        type: string
+      apelpatacomp:
+        type: string
+      fechanacacomp:
+        type: string
+      idcolegioacomp:
+        type: string
+      idprofesionacomp:
+        type: string
+      idsexoacomp:
+        type: string
+      idtipodocacmop:
+        type: string
+      nombperacomp:
+        type: string
+      numdocacomp:
+        type: string
+    type: object
+  domain.PersonaEstablecimiento:
+    properties:
+      apelmata:
+        type: string
+      apelpata:
+        type: string
+      fechanac:
+        type: string
+      idcolegio:
+        type: string
+      idprofesion:
+        type: string
+      idsexo:
+        type: string
+      idtipodoc:
+        type: string
+      nombper:
+        type: string
+      numdoc:
+        type: string
+    type: object
+  domain.PersonalRegistra:
+    properties:
+      apellidoMaterno:
+        type: string
+      apellidoPaterno:
+        type: string
+      fechaNacimiento:
+        type: string
+      idcolegio:
+        type: string
+      idprofesion:
+        type: string
+      nombres:
+        type: string
+      nroDocumento:
+        type: string
+      sexo:
+        type: string
+      tipoDocumento:
+        type: string
+    type: object
   domain.Provincia:
     properties:
       id:
         type: integer
       nombre:
+        type: string
+    type: object
+  domain.ReferenciaMinsa:
+    properties:
+      cpt_imagenes:
+        type: string
+      cpt_laboratorio:
+        type: string
+      cpt_procedimiento:
+        type: string
+      datos_referencia:
+        $ref: '#/definitions/domain.DatosReferenciaMinsa'
+      datos_tutor:
+        $ref: '#/definitions/domain.DatosTutorMinsa'
+      diagnosticos:
+        items:
+          $ref: '#/definitions/domain.DiagnosticoMinsa'
+        type: array
+      paciente:
+        $ref: '#/definitions/domain.PacienteMinsa'
+      rownum:
+        type: string
+      tratamiento:
         type: string
     type: object
   domain.ReferenciaPorMes:
@@ -517,9 +1043,80 @@ definitions:
           type: string
         type: array
     type: object
+  domain.ResponsableReferencia:
+    properties:
+      apelmatrefiere:
+        type: string
+      apelpatrefiere:
+        type: string
+      fechanacrefiere:
+        type: string
+      idcolegioref:
+        type: string
+      idprofesionref:
+        type: string
+      idsexorefiere:
+        type: string
+      idtipodocref:
+        type: string
+      nombperrefiere:
+        type: string
+      numdocref:
+        type: string
+    type: object
+  domain.SaveReferenciaDatos:
+    properties:
+      desc estado:
+        type: string
+      fg_estado:
+        type: string
+    type: object
+  domain.SaveReferenciaRequest:
+    properties:
+      cita:
+        $ref: '#/definitions/domain.CitaReferencia'
+      cpt:
+        $ref: '#/definitions/domain.CPT'
+      datos_referencia:
+        $ref: '#/definitions/domain.DatosReferenciaSave'
+      diagnostico:
+        items:
+          $ref: '#/definitions/domain.DiagnosticoReferencia'
+        type: array
+      paciente:
+        $ref: '#/definitions/domain.PacienteReferencia'
+      persona_acompana:
+        $ref: '#/definitions/domain.PersonaAcompana'
+      persona_establecimiento:
+        $ref: '#/definitions/domain.PersonaEstablecimiento'
+      personal_registra:
+        $ref: '#/definitions/domain.PersonalRegistra'
+      responsable_referencia:
+        $ref: '#/definitions/domain.ResponsableReferencia'
+      tratamiento:
+        items:
+          $ref: '#/definitions/domain.TratamientoReferencia'
+        type: array
+    type: object
+  domain.SaveReferenciaResponse:
+    properties:
+      codigo:
+        type: string
+      datos:
+        $ref: '#/definitions/domain.SaveReferenciaDatos'
+      mensaje:
+        type: string
+    type: object
   domain.Servicio:
     properties:
       id:
+        type: integer
+      nombre:
+        type: string
+    type: object
+  domain.ServicioSimple:
+    properties:
+      idServicio:
         type: integer
       nombre:
         type: string
@@ -575,11 +1172,43 @@ definitions:
       id:
         type: integer
     type: object
+  domain.TratamientoReferencia:
+    properties:
+      cantidad:
+        type: string
+      codigo_medicamento:
+        type: string
+      frecuencia:
+        type: string
+      nro_diagnostico:
+        type: string
+      nro_tratamiento:
+        type: string
+      periodo:
+        type: string
+      unidad_tiempo:
+        type: string
+    type: object
   domain.Ups:
     properties:
       codigo:
         type: string
       descripcion:
+        type: string
+    type: object
+  httpadapter.AgregarAuditoriaRequest:
+    properties:
+      accion:
+        type: string
+      idListItem:
+        type: integer
+      idRegistro:
+        type: integer
+      nombrePC:
+        type: string
+      observaciones:
+        type: string
+      tabla:
         type: string
     type: object
   httpadapter.AgregarSintomaRequest:
@@ -598,14 +1227,14 @@ definitions:
         type: integer
       idAtencionOrigen:
         type: integer
+      idEspecialidad:
+        type: integer
       idMedicoDestino:
         type: integer
       motivo:
         type: string
     required:
-    - IdEspecialidad
     - idAtencionOrigen
-    - idMedicoDestino
     - motivo
     type: object
   httpadapter.CreateOrdenRequest:
@@ -699,32 +1328,12 @@ definitions:
         type: integer
       observacion:
         type: string
+      telefono:
+        type: string
     required:
     - fechaOrden
     - idMedico
     - idPaciente
-    type: object
-  httpadapter.createAdmissionFromTriageRequest:
-    properties:
-      direccionPaciente:
-        type: string
-      idMedico:
-        type: integer
-      idPacienteTriaje:
-        type: integer
-      idTriaje:
-        type: integer
-      nombreAcompanante:
-        type: string
-      nroDocumento:
-        type: string
-      observacion:
-        type: string
-      telefonoAcompanante:
-        type: string
-    required:
-    - idPacienteTriaje
-    - idTriaje
     type: object
   httpadapter.createAppointmentRequest:
     properties:
@@ -787,52 +1396,44 @@ definitions:
       telefono:
         type: string
     type: object
-  httpadapter.createTriajeConsultaRequest:
+  httpadapter.createPatientWithHistoryRequest:
     properties:
-      fi02:
+      apellidoMaterno:
         type: string
-      frecCardiaca:
+      apellidoPaterno:
         type: string
-      frecCardiacaFetal:
+      direccionPaciente:
         type: string
-      frecRespiratoria:
-        type: string
-      gestante:
-        type: string
-      hemoglobina:
-        type: string
-      idAtencion:
+      discapacidad:
         type: integer
-      idEmpleado:
+      fechaNacimiento:
+        type: string
+      idDistrito:
         type: integer
-      idPaciente:
+      idDocIdentidad:
         type: integer
-      imc:
+      idEstadoCivil:
+        type: integer
+      idFuenteFinanciamiento:
+        type: integer
+      idGradoInstruccion:
+        type: integer
+      idOcupacion:
+        type: integer
+      idPais:
+        type: integer
+      idTipoSexo:
+        type: integer
+      incapacidad:
+        type: integer
+      nroDocumento:
         type: string
-      observacion:
+      primerNombre:
         type: string
-      origen:
+      segundoNombre:
         type: string
-      perimAbdominal:
+      telefono:
         type: string
-      perimCefalico:
-        type: string
-      peso:
-        type: string
-      presionArterial:
-        type: string
-      pulso:
-        type: string
-      sat02:
-        type: string
-      talla:
-        type: string
-      temperatura:
-        type: string
-    required:
-    - idAtencion
-    - idEmpleado
-    - idPaciente
     type: object
   httpadapter.createTriajeRequest:
     properties:
@@ -855,7 +1456,7 @@ definitions:
       fechaNacimiento:
         type: string
       fiO2:
-        type: integer
+        type: number
       foto:
         type: string
       fpp:
@@ -867,6 +1468,8 @@ definitions:
       fur:
         type: string
       gestante:
+        type: integer
+      idCausaExternaMorbilidad:
         type: integer
       idComunidadDomicilio:
         type: integer
@@ -929,6 +1532,11 @@ definitions:
       tiempoEvolucionCantidadUnidad:
         type: string
     type: object
+  httpadapter.deleteTriajeRequest:
+    properties:
+      idEmpleado:
+        type: integer
+    type: object
   httpadapter.firmaPeruInitResponse:
     properties:
       documentNameUUID:
@@ -953,6 +1561,8 @@ definitions:
       idEspecialidad:
         type: integer
       observacion:
+        type: string
+      telefono:
         type: string
     type: object
   httpadapter.patientDetailResponse:
@@ -1197,13 +1807,6 @@ definitions:
     required:
     - idCuentaAtencion
     type: object
-  httpadapter.triajeConsultaEstadoRequest:
-    properties:
-      estado:
-        type: string
-    required:
-    - estado
-    type: object
   httpadapter.updatePatientRequest:
     properties:
       auditUserId:
@@ -1276,6 +1879,21 @@ definitions:
         type: integer
       thirdName:
         type: string
+    type: object
+  refconhttp.apiError:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  refconhttp.apiResponse:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/refconhttp.apiError'
+      success:
+        type: boolean
     type: object
 host: localhost:8080
 info:
@@ -1447,6 +2065,101 @@ paths:
       summary: Obtiene una cita médica por id
       tags:
       - Appointments
+  /auditoria:
+    post:
+      consumes:
+      - application/json
+      description: Inserta un registro en la tabla Auditoria mediante dbo.AuditoriaAgregarV
+      parameters:
+      - description: Registro de auditoría a agregar
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpadapter.AgregarAuditoriaRequest'
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Registrar auditoría
+      tags:
+      - Auditoria
+  /catalogos/parametros-clinicos/{idGrupo}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve el catálogo de parámetros clínicos según su grupo (SP
+        usp_go_Cat_ParametroClinico_Listar).
+      parameters:
+      - description: 'ID del grupo (1: Estado General, 2: Hidratación, 3: Conciencia/Glasgow,
+          4: Destino Alta, 5: Tipo Atención)'
+        in: path
+        name: idGrupo
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.ParametroClinico'
+                  type: array
+              type: object
+      summary: Listar parámetros clínicos por grupo
+      tags:
+      - Catálogos
+  /catalogos/parametros/{idParametro}/valor-texto:
+    patch:
+      consumes:
+      - application/json
+      description: Marca el parámetro con ValorTexto = 'N' (SP usp_go_ActualizarParametroValorTextoPorId).
+        Invalida la cache de parámetros clínicos.
+      parameters:
+      - description: ID del parámetro
+        in: path
+        name: idParametro
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: ID inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error interno
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Actualiza el ValorTexto de un parámetro
+      tags:
+      - Catalogos
   /centros-poblados/{idDistrito}:
     get:
       description: Devuelve los centros poblados de un distrito (SP usp_go_ListarCentrosPoblados).
@@ -1491,6 +2204,112 @@ paths:
       summary: Lista centros poblados por distrito
       tags:
       - Catalogos
+  /dashrefcon/consulta-referencia-detalle:
+    get:
+      consumes:
+      - application/json
+      description: Consulta el detalle de una referencia en el servicio REST del MINSA
+        por documento del paciente
+      parameters:
+      - description: Número de documento del paciente
+        in: query
+        name: numerodocumento
+        required: true
+        type: string
+      - description: Tipo de documento (1 = DNI)
+        in: query
+        name: tipodocumento
+        required: true
+        type: string
+      - description: Número de página a consultar
+        in: query
+        name: pagina
+        required: true
+        type: string
+      - description: Código de establecimiento destino (por defecto el configurado)
+        in: query
+        name: establecimientoDestino
+        type: string
+      - description: Límite de resultados por página (por defecto el configurado)
+        in: query
+        name: limite
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.ConsultaMinsaResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Consultar detalle de referencia en MINSA
+      tags:
+      - DashRefCon
+  /dashrefcon/enviar-referencia:
+    post:
+      consumes:
+      - application/json
+      description: Registra una referencia en el servicio saveReferencia del MINSA
+        enviando la estructura completa de la referencia
+      parameters:
+      - description: Estructura de la referencia a registrar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SaveReferenciaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.SaveReferenciaResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/refconhttp.apiResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/refconhttp.apiResponse'
+      security:
+      - BearerAuth: []
+      summary: Enviar (registrar) una referencia en MINSA
+      tags:
+      - DashRefCon
+  /dashrefcon/especialidades-minsa:
+    get:
+      description: Consulta el listado de especialidades vigentes en el servicio REST
+        de interoperabilidad del MINSA (sin parámetros)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.ListadoEspecialidadesResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Listar especialidades vigentes en MINSA
+      tags:
+      - DashRefCon
   /dashrefcon/referencias:
     get:
       consumes:
@@ -1529,7 +2348,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/httpadapter.apiResponse'
+            - $ref: '#/definitions/refconhttp.apiResponse'
             - properties:
                 data:
                   items:
@@ -1551,7 +2370,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/httpadapter.apiResponse'
+            - $ref: '#/definitions/refconhttp.apiResponse'
             - properties:
                 data:
                   items:
@@ -1561,6 +2380,34 @@ paths:
       security:
       - BearerAuth: []
       summary: Listar UPS
+      tags:
+      - DashRefCon
+  /dashrefcon/upss/{codigoRenipress}:
+    get:
+      description: Consulta el listado de Unidades Productoras de Servicios (UPS)
+        del establecimiento indicado por su código RENIPRESS en el servicio REST del
+        MINSA
+      parameters:
+      - description: Código RENIPRESS del establecimiento
+        in: path
+        name: codigoRenipress
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.ListadoUpsResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Listar UPS de un establecimiento en MINSA
       tags:
       - DashRefCon
   /datos-institucion:
@@ -1619,17 +2466,110 @@ paths:
       summary: Lista departamentos
       tags:
       - Catalogos
+  /diagnosticos/atencion:
+    post:
+      consumes:
+      - application/json
+      description: Registra un diagnóstico para una atención médica utilizando usp_go_AtencionesDiagnosticosAgregar
+      parameters:
+      - description: Datos del diagnóstico a registrar
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.AgregarDiagnosticoAtencionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.AgregarDiagnosticoAtencionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Agregar diagnóstico a una atención médica
+      tags:
+      - Diagnosticos
+  /diagnosticos/atencion/{idAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Obtiene los diagnósticos de una atención médica utilizando usp_go_ObtenerDiagnosticosAtencion
+      parameters:
+      - description: ID de Atención
+        in: path
+        name: idAtencion
+        required: true
+        type: integer
+      - description: ID de Primera Atención
+        in: query
+        name: idPrimeraAtencion
+        type: integer
+      - description: ID de Evolución
+        in: query
+        name: idEvolucion
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.DiagnosticoAtencion'
+                  type: array
+              type: object
+      summary: Obtener diagnósticos de una atención
+      tags:
+      - Diagnosticos
   /diagnosticos/listar:
     get:
       consumes:
       - application/json
-      description: Busca diagnosticos por filtro (codigo o descripcion)
+      description: Busca diagnosticos por filtro (codigo o descripcion) invocando
+        el SP usp_go_SelectDiagnosticos. idAtencion e idPaciente son opcionales y
+        por defecto se envian en 0 (sin acotar)
       parameters:
       - description: Filtro de busqueda
         in: query
         name: filtro
         required: true
         type: string
+      - description: Id de la atencion (0 = sin acotar)
+        in: query
+        name: idAtencion
+        type: integer
+      - description: Id del paciente (0 = sin acotar)
+        in: query
+        name: idPaciente
+        type: integer
       produces:
       - application/json
       responses:
@@ -1849,6 +2789,48 @@ paths:
       summary: Lista especialidades quirurgicas
       tags:
       - Catalogos
+  /establecimientos:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve establecimientos filtrados (SP usp_go_webEstablecimientosFiltrar).
+        El filtro busca por código, nombre o departamento.
+      parameters:
+      - description: Texto a buscar (código, nombre o departamento)
+        in: query
+        name: q
+        type: string
+      - description: 'Tipo de establecimiento: 1=Referencia, 0=Contrareferencia (0/Todos
+          por defecto)'
+        in: query
+        name: tipo
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.EstablecimientoBusqueda'
+                  type: array
+              type: object
+        "500":
+          description: Error interno
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista establecimientos
+      tags:
+      - Catalogos
   /estados-civil:
     get:
       description: Devuelve el catálogo de estados civiles (SP usp_go_ListarEstadosCivil).
@@ -2001,6 +2983,24 @@ paths:
       tags:
       - Evoluciones
   /evoluciones/{idRegAtencion}/sintomas:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve los síntomas registrados para la atención médica (usp_go_ObtenerAtencionSintomas)
+      parameters:
+      - description: ID de Atención
+        in: path
+        name: idRegAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Obtener síntomas registrados de la atención
+      tags:
+      - Evoluciones
     post:
       consumes:
       - application/json
@@ -3306,6 +4306,80 @@ paths:
       summary: Busca un paciente por id o por número de documento
       tags:
       - Pacientes
+  /pacientes/{idOrDoc}/datos-adicionales:
+    get:
+      description: Invoca el SP usp_go_PacientesDatosAdicionalesIdPaciente para devolver
+        antecedentes quirúrgicos, patológicos, obstétricos, etc.
+      parameters:
+      - description: Id del paciente
+        in: path
+        name: idOrDoc
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.PacienteDatosAdicionales'
+              type: object
+        "400":
+          description: Identificador inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Obtiene los antecedentes y datos adicionales de un paciente
+      tags:
+      - Pacientes
+    put:
+      consumes:
+      - application/json
+      description: Invoca los SPs PacientesDatosAdicionalesModificar / PacientesDatosAdicionalesAgregar
+      parameters:
+      - description: Id del paciente
+        in: path
+        name: idOrDoc
+        required: true
+        type: integer
+      - description: Antecedentes a guardar
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.PacienteDatosAdicionales'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.PacienteDatosAdicionales'
+              type: object
+        "400":
+          description: Identificador o payload inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Actualiza los antecedentes y datos adicionales de un paciente
+      tags:
+      - Pacientes
   /pacientes/buscar:
     get:
       description: Invoca el procedimiento almacenado usp_go_listarpacientes. Los
@@ -3355,6 +4429,65 @@ paths:
                   $ref: '#/definitions/httpadapter.apiError'
               type: object
       summary: Busca pacientes aplicando filtros opcionales
+      tags:
+      - Pacientes
+  /pacientes/historia-clinica:
+    post:
+      consumes:
+      - application/json
+      description: Genera el número de historia clínica, inserta el paciente y da
+        de alta la historia invocando el SP usp_go_PacienteHistoriaClinicaAgregar,
+        y devuelve el detalle del paciente creado. Requiere token y usa el claim idEmpleado
+        del JWT como @IdEmpleado del SP.
+      parameters:
+      - description: Datos del paciente a registrar
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpadapter.createPatientWithHistoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Paciente creado
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/httpadapter.patientDetailResponse'
+              type: object
+        "400":
+          description: Cuerpo inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "401":
+          description: Token inválido o sin claim idEmpleado
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error al registrar el paciente
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Registra un paciente con su historia clínica
       tags:
       - Pacientes
   /pacientes/por-documento:
@@ -3529,6 +4662,102 @@ paths:
       summary: Lista provincias por departamento
       tags:
       - Catalogos
+  /refcon/distritos-reniec/{idReniec}:
+    get:
+      description: Retorna el distrito asociado a un código RENIEC (tabla Distritos)
+      parameters:
+      - description: IdReniec del distrito
+        in: path
+        name: idReniec
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.DistritoReniec'
+                  type: array
+              type: object
+      summary: Listar distritos por IdReniec
+      tags:
+      - RefCon
+  /refcon/establecimientos:
+    get:
+      description: Retorna el catálogo de establecimientos de salud con código IPRESS
+        y nombre desde la tabla Establecimientos
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Establecimiento'
+                  type: array
+              type: object
+      summary: Listar establecimientos
+      tags:
+      - RefCon
+  /refcon/hoja-referencia:
+    post:
+      consumes:
+      - application/json
+      description: Hace login en el portal REFCON y genera/descarga la hoja de referencia
+        oficial en PDF, devuelta en base64
+      parameters:
+      - description: Datos de la referencia a generar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/domain.GenerarHojaReferenciaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.GenerarHojaReferenciaResult'
+              type: object
+      summary: Generar hoja de referencia PDF del MINSA
+      tags:
+      - RefCon
+  /refcon/ups:
+    get:
+      description: Retorna el catálogo completo de Unidades Productoras de Servicios
+        (UPS) con código y descripción desde la tabla SuSalud_ups
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/refconhttp.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Ups'
+                  type: array
+              type: object
+      summary: Listar todas las UPS
+      tags:
+      - RefCon
   /reniec/{nrodoc}:
     get:
       description: Invoca el servicio SOAP externo de RENIEC. La operación por defecto
@@ -3614,6 +4843,104 @@ paths:
       summary: Get laboratory results for a patient
       tags:
       - Resultados
+  /servicios-prioridad/{idPrioridad}:
+    get:
+      description: Devuelve los servicios según la prioridad y fecha de nacimiento
+        (SP usp_go_ListarServiciosXPrioridad). La fecha de nacimiento es opcional.
+      parameters:
+      - description: Id de la prioridad
+        in: path
+        name: idPrioridad
+        required: true
+        type: integer
+      - description: Fecha de nacimiento (YYYY-MM-DD)
+        in: path
+        name: fechaNac
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.ServicioSimple'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista servicios por prioridad y fecha de nacimiento
+      tags:
+      - Catalogos
+  /servicios-prioridad/{idPrioridad}/{fechaNac}:
+    get:
+      description: Devuelve los servicios según la prioridad y fecha de nacimiento
+        (SP usp_go_ListarServiciosXPrioridad). La fecha de nacimiento es opcional.
+      parameters:
+      - description: Id de la prioridad
+        in: path
+        name: idPrioridad
+        required: true
+        type: integer
+      - description: Fecha de nacimiento (YYYY-MM-DD)
+        in: path
+        name: fechaNac
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.ServicioSimple'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista servicios por prioridad y fecha de nacimiento
+      tags:
+      - Catalogos
   /servicios/{idTipoServicio}:
     get:
       description: Devuelve los servicios de un tipo (SP usp_go_ListarServicios).
@@ -3850,11 +5177,63 @@ paths:
       tags:
       - SIS
   /sis/filiaciones:
+    get:
+      consumes:
+      - application/json
+      description: Invoca el SP usp_go_SisFiliacionesConsultar, que lee de la tabla
+        SisFiliaciones las afiliaciones guardadas para un tipo y número de documento.
+        A diferencia de /sis/afiliado, no consulta al SIS por SOAP.
+      parameters:
+      - description: Número de documento (DNI)
+        in: query
+        name: nroDocumento
+        required: true
+        type: string
+      - description: Tipo de documento (1=DNI, 3=CE)
+        in: query
+        name: idTipoDoc
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de afiliaciones
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    type: object
+                  type: array
+              type: object
+        "400":
+          description: Parámetros inválidos
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error al consultar las afiliaciones
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista las afiliaciones SIS registradas en la base de datos
+      tags:
+      - SIS
     post:
       consumes:
       - application/json
-      description: Invoca el SP webSisFiliacionesGestionar para guardar los datos
-        de afiliación de un paciente.
+      description: Invoca el SP usp_go_webSisFiliacionesGestionar para guardar los
+        datos de afiliación de un paciente.
       parameters:
       - description: Datos de afiliación SIS
         in: body
@@ -4178,66 +5557,86 @@ paths:
       summary: Lista tipos de sexo
       tags:
       - Catalogos
-  /triaje:
-    get:
+  /triaje/{id}:
+    delete:
       consumes:
       - application/json
-      description: Lista triajes de emergencia con filtros de fecha y estado.
+      description: 'Elimina (baja lógica: IdEstado = 0) un triaje de emergencia invocando
+        el SP usp_go_Triaje_EmergenciaEliminar. Si el triaje ya cuenta con ficha de
+        admisión el SP no lo elimina y devuelve un mensaje de error'
       parameters:
-      - description: Fecha inicio (YYYY-MM-DD)
-        in: query
-        name: fini
+      - description: Id del triaje
+        in: path
+        name: id
         required: true
-        type: string
-      - description: Fecha fin (YYYY-MM-DD)
-        in: query
-        name: ffin
-        required: true
-        type: string
-      - description: Filtro por paciente o documento
-        in: query
-        name: filtro
-        type: string
-      - description: ID de servicio derivado
-        in: query
-        name: derivadoAServicio
         type: integer
-      - description: ID del empleado logueado
-        in: query
-        name: idEmpleado
-        type: integer
+      - description: Empleado que ejecuta la eliminación
+        in: body
+        name: triaje
+        schema:
+          $ref: '#/definitions/httpadapter.deleteTriajeRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Mensaje de resultado del SP
           schema:
             additionalProperties:
               type: string
             type: object
         "400":
-          description: Bad Request
+          description: Error de validación
           schema:
-            additionalProperties:
-              type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Error interno
           schema:
-            additionalProperties:
-              type: string
             type: object
-      summary: Listar triajes
+      summary: Elimina un triaje de emergencia
       tags:
-      - triaje
-    post:
+      - Triaje
+    get:
       consumes:
       - application/json
-      description: Registra un nuevo triaje de emergencia con signos vitales y clasificación.
+      description: Devuelve los datos del paciente (solo lectura) y del triaje de
+        emergencia del id indicado (SP usp_go_Triaje_EmergeciaPorId)
       parameters:
-      - description: Datos del triaje
+      - description: Id del triaje
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Datos del paciente y del triaje
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "404":
+          description: Triaje no encontrado
+          schema:
+            type: object
+      summary: Datos de un triaje por id
+    put:
+      consumes:
+      - application/json
+      description: Modifica los datos clínicos de un triaje de emergencia invocando
+        el SP usp_go_ModificarTriaje
+      parameters:
+      - description: Id del triaje
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Datos clínicos editables del triaje
         in: body
-        name: body
+        name: triaje
         required: true
         schema:
           $ref: '#/definitions/httpadapter.createTriajeRequest'
@@ -4245,193 +5644,234 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Mensaje de resultado del SP
           schema:
             additionalProperties:
               type: string
             type: object
         "400":
-          description: Bad Request
+          description: Error de validación
           schema:
-            additionalProperties:
-              type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Error interno
           schema:
-            additionalProperties:
-              type: string
             type: object
-      summary: Registrar triaje
-      tags:
-      - triaje
-  /triaje/admision:
-    post:
-      consumes:
-      - application/json
-      description: Registra la admisión de un paciente derivado desde triaje de emergencia.
-      parameters:
-      - description: Datos de la admisión
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/httpadapter.createAdmissionFromTriageRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Crear admisión desde triaje
-      tags:
-      - triaje
-  /triaje/consulta:
-    get:
-      consumes:
-      - application/json
-      description: Lista triajes de consulta externa con filtros de fecha y servicio.
-      parameters:
-      - description: Fecha inicio (YYYY-MM-DD)
-        in: query
-        name: fini
-        required: true
-        type: string
-      - description: Fecha fin (YYYY-MM-DD)
-        in: query
-        name: ffin
-        required: true
-        type: string
-      - description: Filtro por paciente o documento
-        in: query
-        name: filtro
-        type: string
-      - description: ID de servicio
-        in: query
-        name: idServicio
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Listar triajes consulta
-      tags:
-      - triaje
-    post:
-      consumes:
-      - application/json
-      description: Registra signos vitales de un paciente en consulta externa.
-      parameters:
-      - description: Datos del triaje de consulta
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/httpadapter.createTriajeConsultaRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Registrar triaje consulta
-      tags:
-      - triaje
-  /triaje/consulta/{id}/estado:
+      summary: Modifica un triaje
+  /triaje/{id}/iafa:
     put:
-      consumes:
-      - application/json
-      description: Cambia el estado de un triaje de consulta externa (ej. atendido).
+      description: Actualiza la fuente de financiamiento (IAFA) de un triaje de emergencia
+        a SIS invocando el SP usp_go_Triaje_EmergeciaActualizarIAFA
       parameters:
-      - description: ID del triaje
+      - description: Id del triaje
         in: path
         name: id
         required: true
         type: integer
-      - description: Nuevo estado
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/httpadapter.triajeConsultaEstadoRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Operación exitosa
           schema:
             additionalProperties:
               type: boolean
             type: object
         "400":
-          description: Bad Request
+          description: Error de validación
           schema:
-            additionalProperties:
-              type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Error interno
           schema:
-            additionalProperties:
-              type: string
             type: object
-      summary: Actualizar estado triaje consulta
+      summary: Actualiza la IAFA de un triaje
       tags:
-      - triaje
-  /triaje/consulta/atencion/{idAtencion}:
+      - Triaje
+  /triaje/causas-externas-morbilidad:
     get:
       consumes:
       - application/json
-      description: Obtiene el triaje de consulta externa asociado a una atención.
+      description: Devuelve el catálogo de causas externas de morbilidad (uso_go_EmergenciaCausaExternaMorbilidadListar)
+      produces:
+      - application/json
+      responses: {}
+      summary: Listar causas externas de morbilidad
+      tags:
+      - Triaje
+  /triaje/referencias:
+    get:
+      consumes:
+      - application/json
+      description: Lista las referencias hechas desde consulta externa invocando el
+        SP usp_go_ListarBandejaReferencia
       parameters:
-      - description: ID de la atención
+      - description: Fecha inicial (YYYY-MM-DD)
+        in: query
+        name: fini
+        required: true
+        type: string
+      - description: Fecha final (YYYY-MM-DD)
+        in: query
+        name: ffin
+        required: true
+        type: string
+      - description: Texto de búsqueda por paciente o número de cuenta
+        in: query
+        name: filtro
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Referencias de consulta externa
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Bandeja de referencias de consulta externa
+  /triaje/referencias-cabecera/{idCuentaAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve la cabecera con los datos completos de una referencia
+        (paciente, responsable, personal que registra, cita, diagnósticos y destino)
+        invocando el SP usp_go_webReferenciaJSONCab
+      parameters:
+      - description: Id de la cuenta de atención
+        in: path
+        name: idCuentaAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cabecera con los datos de la referencia
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "404":
+          description: Referencia no encontrada
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Cabecera JSON de una referencia
+  /triaje/referencias-cpt/{idCuentaAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve los códigos CPT de la referencia invocando el SP usp_go_webCPTReferenciaJSON
+      parameters:
+      - description: Id de la cuenta de atención
+        in: path
+        name: idCuentaAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: CPT de la referencia
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: CPT de una referencia
+  /triaje/referencias-detalle/{idCuentaAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve el detalle de la referencia (los diagnósticos) invocando
+        el SP usp_go_webReferenciaJSONDet
+      parameters:
+      - description: Id de la cuenta de atención
+        in: path
+        name: idCuentaAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Detalle con los diagnósticos de la referencia
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Detalle JSON de una referencia
+  /triaje/referencias-tratamiento/{idCuentaAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve el tratamiento de la referencia invocando el SP usp_go_WebTratamientoReferenciaJSON
+      parameters:
+      - description: Id de la cuenta de atención
+        in: path
+        name: idCuentaAtencion
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tratamiento de la referencia
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Tratamiento JSON de una referencia
+  /triaje/referencias/{idAtencion}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve los datos del destino de una referencia (establecimiento,
+        UPS y especialidad) invocando el SP usp_go_ListarDatosReferencia
+      parameters:
+      - description: Id de la atención
         in: path
         name: idAtencion
         required: true
@@ -4440,191 +5880,54 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Datos de la referencia
           schema:
-            additionalProperties:
-              type: string
+            additionalProperties: true
             type: object
         "400":
-          description: Bad Request
+          description: Error de validación
           schema:
-            additionalProperties:
-              type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Error interno
           schema:
-            additionalProperties:
-              type: string
             type: object
-      summary: Triaje por atención
-      tags:
-      - triaje
-  /triaje/ficha-admision:
+      summary: Datos de una referencia
+  /triaje/reporte-por-empleado:
     get:
       consumes:
       - application/json
-      description: Obtiene los datos de la ficha de admisión por número de cuenta.
+      description: Cantidad de triajes de un empleado por servicio (tópico) entre
+        fechas con hora y minuto (SP usp_go_ReporteTriaje)
       parameters:
-      - description: ID de la cuenta de atención
+      - description: Id del empleado
         in: query
-        name: idCuentaAtencion
+        name: IdEmpleado
         required: true
         type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Ficha de admisión
-      tags:
-      - triaje
-  /triaje/medicos/{IdEspecialidad}:
-    get:
-      consumes:
-      - application/json
-      description: Lista los médicos disponibles de una especialidad específica.
-      parameters:
-      - description: ID de la especialidad
-        in: path
-        name: IdEspecialidad
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Médicos por especialidad
-      tags:
-      - triaje
-  /triaje/pendientes-admision:
-    get:
-      consumes:
-      - application/json
-      description: Lista pacientes en triaje pendientes de admisión hospitalaria.
-      parameters:
-      - description: Fecha de atención (YYYY-MM-DD)
+      - description: Fecha inicial (YYYY-MM-DD o YYYY-MM-DD HH:MM)
         in: query
-        name: fecha
+        name: fechaini
         required: true
         type: string
-      - description: Filtro por paciente o documento
+      - description: Fecha final (YYYY-MM-DD o YYYY-MM-DD HH:MM)
         in: query
-        name: filtro
+        name: fechafin
+        required: true
         type: string
-      - description: Número de cuenta
-        in: query
-        name: nroCta
-        type: integer
-      - description: ID de departamento
-        in: query
-        name: idDepartamento
-        type: integer
-      - description: ID de especialidad
-        in: query
-        name: IdEspecialidad
-        type: integer
-      - description: ID de servicio
-        in: query
-        name: idServicio
-        type: integer
-      - description: ID de tipo de servicio
-        in: query
-        name: idTipoServicio
-        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Cantidad de triajes por tópico
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            items:
+              additionalProperties: true
+              type: object
+            type: array
         "400":
-          description: Bad Request
+          description: Error de validación
           schema:
-            additionalProperties:
-              type: string
             type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Pendientes de admisión
-      tags:
-      - triaje
-  /triaje/reporte:
-    get:
-      consumes:
-      - application/json
-      description: Obtiene los datos del reporte de un triaje específico.
-      parameters:
-      - description: ID del triaje
-        in: query
-        name: id
-        type: integer
-      - description: ID del paciente
-        in: query
-        name: idPaciente
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Reporte de triaje
-      tags:
-      - triaje
+      summary: Reporte de triajes por empleado
 swagger: "2.0"

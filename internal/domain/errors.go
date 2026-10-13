@@ -24,6 +24,7 @@ var (
 	ErrInvalidReniecOperation            = errors.New("invalid reniec operation")
 	ErrInvalidCredentials                = errors.New("invalid credentials")
 	ErrInvalidToken                      = errors.New("invalid token")
+	ErrMissingEmployeeID                 = errors.New("the authenticated employee id is required")
 	ErrPrimeraAtencionYaFirmada          = errors.New("la primera atención ya fue firmada y no puede modificarse")
 	ErrPrimeraAtencionSinBorrador        = errors.New("no existe primera atención para firmar")
 	ErrFechaBandejaInvalida              = errors.New("fechaInicio y fechaFin deben usar el formato aaaa-mm-ddTHH:mm:ss")

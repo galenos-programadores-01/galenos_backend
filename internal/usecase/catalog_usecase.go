@@ -203,6 +203,14 @@ func (uc *catalogUseCase) ListEspecialidadesListar(ctx context.Context) ([]domai
 	return items, nil
 }
 
+func (uc *catalogUseCase) ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error) {
+	items, err := uc.repo.ListarServiciosPorPrioridad(ctx, idPrioridad, fechaNac)
+	if err != nil {
+		return nil, fmt.Errorf("listing servicios por prioridad: %w", err)
+	}
+	return items, nil
+}
+
 func (uc *catalogUseCase) GetParametro(ctx context.Context, idParametro int64) (*domain.Parametro, error) {
 	item, err := uc.repo.GetParametro(ctx, idParametro)
 	if err != nil {
@@ -361,6 +369,34 @@ func (uc *catalogUseCase) BuscarMedicamentosReceta(ctx context.Context, filtro s
 	}
 	if uc.cache != nil && len(items) > 0 {
 		uc.cache.Set(ctx, cacheKey, items, 30*time.Minute)
+	}
+	return items, nil
+}
+
+// ActualizarParametroValorTexto marca el parámetro con ValorTexto = 'N' (SP
+// usp_go_ActualizarParametroValorTextoPorId) e invalida la cache de parámetros
+// clínicos. La cache está indexada por grupo, y el SP no devuelve a qué grupo
+// pertenece el parámetro, así que se purgan los cinco grupos conocidos.
+func (uc *catalogUseCase) ActualizarParametroValorTexto(ctx context.Context, idParametro int) error {
+	if err := uc.repo.ActualizarParametroValorTexto(ctx, idParametro); err != nil {
+		return err
+	}
+
+	if uc.cache != nil {
+		keys := make([]string, 0, 5)
+		for idGrupo := 1; idGrupo <= 5; idGrupo++ {
+			keys = append(keys, fmt.Sprintf("cache:param_clinicos:grupo:%d", idGrupo))
+		}
+		uc.cache.Delete(ctx, keys...)
+	}
+
+	return nil
+}
+
+func (uc *catalogUseCase) ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error) {
+	items, err := uc.repo.ListEstablecimientos(ctx, filtro, tipo)
+	if err != nil {
+		return nil, fmt.Errorf("listing establecimientos: %w", err)
 	}
 	return items, nil
 }

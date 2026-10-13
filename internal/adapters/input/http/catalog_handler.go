@@ -516,6 +516,39 @@ func (h *CatalogHandler) ListEspecialidadesListar(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, dtoItems)
 }
 
+// HandleListarServiciosPorPrioridad maneja GET /api/v1/servicios-prioridad/:idPrioridad y
+// GET /api/v1/servicios-prioridad/:idPrioridad/:fechaNac.
+//
+// @Summary Lista servicios por prioridad y fecha de nacimiento
+// @Description Devuelve los servicios según la prioridad y fecha de nacimiento (SP usp_go_ListarServiciosXPrioridad). La fecha de nacimiento es opcional.
+// @Tags Catalogos
+// @Produce json
+// @Param idPrioridad path int true "Id de la prioridad"
+// @Param fechaNac path string false "Fecha de nacimiento (YYYY-MM-DD)"
+// @Success 200 {object} apiResponse{data=[]domain.ServicioSimple}
+// @Failure 400 {object} apiResponse{error=apiError}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /servicios-prioridad/{idPrioridad} [get]
+// @Router /servicios-prioridad/{idPrioridad}/{fechaNac} [get]
+func (h *CatalogHandler) HandleListarServiciosPorPrioridad(c *gin.Context) {
+	idStr := c.Param("idPrioridad")
+	idPrioridad, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_ID", "idPrioridad inválido")
+		return
+	}
+	fechaNac := c.Param("fechaNac")
+	items, err := h.service.ListarServiciosPorPrioridad(c.Request.Context(), int(idPrioridad), fechaNac)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.ServicioSimple, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
 // GetParametro maneja GET /api/v1/parametros/:idParametro.
 //
 // @Summary Obtiene un parámetro por id
@@ -925,6 +958,61 @@ func (h *CatalogHandler) BuscarExamenesCatalogo(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, dtoItems)
 }
 
+// ActualizarParametroValorTexto maneja PATCH /api/v1/catalogos/parametros/:idParametro/valor-texto.
+//
+// @Summary Actualiza el ValorTexto de un parámetro
+// @Description Marca el parámetro con ValorTexto = 'N' (SP usp_go_ActualizarParametroValorTextoPorId). Invalida la cache de parámetros clínicos.
+// @Tags Catalogos
+// @Accept json
+// @Produce json
+// @Param idParametro path int true "ID del parámetro"
+// @Success 200 {object} apiResponse{message=string}
+// @Failure 400 {object} apiResponse{error=apiError} "ID inválido"
+// @Failure 500 {object} apiResponse{error=apiError} "Error interno"
+// @Router /catalogos/parametros/{idParametro}/valor-texto [patch]
+func (h *CatalogHandler) ActualizarParametroValorTexto(c *gin.Context) {
+	raw := c.Param("idParametro")
+	idParametro, err := strconv.Atoi(raw)
+	if err != nil || idParametro <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_PARAMETRO_ID", "ID de parámetro inválido")
+		return
+	}
+
+	if err := h.service.ActualizarParametroValorTexto(c.Request.Context(), idParametro); err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, gin.H{"message": "Parámetro actualizado"})
+}
+
+// ListEstablecimientos maneja GET /api/v1/establecimientos.
+//
+// @Summary Lista establecimientos
+// @Description Devuelve establecimientos filtrados (SP usp_go_webEstablecimientosFiltrar). El filtro busca por código, nombre o departamento.
+// @Tags Catalogos
+// @Accept json
+// @Produce json
+// @Param q query string false "Texto a buscar (código, nombre o departamento)"
+// @Param tipo query string false "Tipo de establecimiento: 1=Referencia, 0=Contrareferencia (0/Todos por defecto)"
+// @Success 200 {object} apiResponse{data=[]domain.EstablecimientoBusqueda}
+// @Failure 500 {object} apiResponse{error=apiError} "Error interno"
+// @Router /establecimientos [get]
+func (h *CatalogHandler) ListEstablecimientos(c *gin.Context) {
+	filtro := c.DefaultQuery("q", "")
+	tipo := c.Query("tipo")
+
+	items, err := h.service.ListEstablecimientos(c.Request.Context(), filtro, tipo)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	if items == nil {
+		items = make([]domain.EstablecimientoBusqueda, 0)
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
 // parseID extrae y valida el path param "id" como entero.
 func parseID(c *gin.Context) (int64, bool) {
 	raw := c.Param("id")
@@ -939,3 +1027,4 @@ func parseID(c *gin.Context) (int64, bool) {
 // Referencia en blanco para que swag resuelva los tipos de dominio en los
 // comentarios de los handlers.
 var _ = domain.Etnia{}
+var _ = domain.EstablecimientoBusqueda{}

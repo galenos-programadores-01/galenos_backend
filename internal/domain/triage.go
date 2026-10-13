@@ -32,7 +32,7 @@ type Triage struct {
 	BloodPressure             *string
 	OxygenSaturation          *int64
 	RespiratoryRate           *int64
-	FiO2                      *int64
+	FiO2                      *float64
 	Weight                    *float64
 	Height                    *float64
 	BMI                       *float64
@@ -53,6 +53,7 @@ type Triage struct {
 	MovimientosFetales        *int64
 	Photo                     *string
 	EmployeeID                *int64
+	IdCausaExternaMorbilidad  *int64
 }
 
 // TriajeConsulta representa el registro de triaje de consulta externa que

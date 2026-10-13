@@ -586,7 +586,37 @@ func (r *catalogRepository) ListEspecialidadesListar(ctx context.Context) ([]dom
 	return items, nil
 }
 
-// GetParametro invoca usp_go_webParametroSeleccionarPorId @IdParametro.
+func (r *catalogRepository) ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error) {
+	const query = `EXEC usp_go_ListarServiciosXPrioridad @IdPrioridad = @p1, @FechaNac = @p2`
+
+	// Sin fecha de nacimiento se envía NULL para que el SP aplique su
+	// comportamiento por defecto (lista general según la prioridad).
+	var fechaNacParam any
+	if fechaNac != "" {
+		fechaNacParam = fechaNac
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", idPrioridad), sql.Named("p2", fechaNacParam))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarServiciosXPrioridad: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.ServicioSimple
+	for rows.Next() {
+		var s domain.ServicioSimple
+		if err := rows.Scan(&s.IdServicio, &s.Nombre); err != nil {
+			return nil, fmt.Errorf("scanning servicio por prioridad: %w", err)
+		}
+		items = append(items, s)
+	}
+	return items, rows.Err()
+}
+
+// GetParametro invoca el SP usp_go_webParametroSeleccionarPorId, que
+// devuelve en una única fila los valores (Tipo, Codigo, ValorTexto,
+// ValorInt, ValorFloat) del parámetro solicitado. Devuelve nil si el SP
+// no retorna filas.
 func (r *catalogRepository) GetParametro(ctx context.Context, idParametro int64) (*domain.Parametro, error) {
 	const procedure = `usp_go_webParametroSeleccionarPorId`
 
@@ -1025,6 +1055,45 @@ func (r *catalogRepository) ListProcedimientosCatalogo(ctx context.Context, idPu
 			item.EsCPT = *b
 		}
 		items = append(items, item)
+	}
+	return items, nil
+}
+
+// ActualizarParametroValorTexto invoca el SP usp_go_ActualizarParametroValorTextoPorId,
+// que deja ValorTexto = 'N' para el parámetro recibido.
+func (r *catalogRepository) ActualizarParametroValorTexto(ctx context.Context, idParametro int) error {
+	const procedure = `EXEC dbo.usp_go_ActualizarParametroValorTextoPorId @IdParametro = @p1`
+	if _, err := r.db.ExecContext(ctx, procedure, sql.Named("p1", idParametro)); err != nil {
+		return fmt.Errorf("calling usp_go_ActualizarParametroValorTextoPorId: %w", err)
+	}
+	return nil
+}
+
+// ListEstablecimientos invoca el SP usp_go_webEstablecimientosFiltrar para
+// buscar establecimientos por filtro y tipo (1=referencia, 0=contrareferencia).
+func (r *catalogRepository) ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error) {
+	rows, err := r.db.QueryContext(ctx, "EXEC [dbo].[usp_go_webEstablecimientosFiltrar] @filtro = @p1, @Tipo = @p2", sql.Named("p1", filtro), sql.Named("p2", tipo))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_webEstablecimientosFiltrar: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.EstablecimientoBusqueda
+	for rows.Next() {
+		var (
+			item            domain.EstablecimientoBusqueda
+			dist, prov, dep sql.NullString
+		)
+		if err := rows.Scan(&item.IdEstablecimiento, &item.Codigo, &item.Nombre, &dist, &prov, &dep, &item.NombreLargo); err != nil {
+			return nil, fmt.Errorf("escaneando establecimiento: %w", err)
+		}
+		item.Distrito = dist.String
+		item.Provincia = prov.String
+		item.Departamento = dep.String
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return items, nil
 }

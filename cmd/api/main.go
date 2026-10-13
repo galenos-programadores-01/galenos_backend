@@ -32,8 +32,13 @@ import (
 	ftpadapter "github.com/galenos-pro/appointments-api/internal/adapters/output/ftp"
 	sftpadapter "github.com/galenos-pro/appointments-api/internal/adapters/output/sftp"
 	"github.com/galenos-pro/appointments-api/internal/config"
-	"github.com/galenos-pro/appointments-api/internal/ports/output"
 	"github.com/galenos-pro/appointments-api/internal/domain"
+	"github.com/galenos-pro/appointments-api/internal/ports/output"
+	refconhttp "github.com/galenos-pro/appointments-api/internal/refcon/adapters/input/http"
+	refconminsa "github.com/galenos-pro/appointments-api/internal/refcon/adapters/output/minsa"
+	refconreports "github.com/galenos-pro/appointments-api/internal/refcon/adapters/output/refconreports"
+	refconsql "github.com/galenos-pro/appointments-api/internal/refcon/adapters/output/sqlserver"
+	refconusecase "github.com/galenos-pro/appointments-api/internal/refcon/usecase"
 	"github.com/galenos-pro/appointments-api/internal/usecase"
 )
 
@@ -80,7 +85,9 @@ func run() error {
 	diagnosticoRepo := sqlserver.NewSqlServerDiagnosticoRepository(db)
 	listaEsperaQxRepo := sqlserver.NewListaEsperaQxRepository(db)
 	medicoListaEsperaRepo := sqlserver.NewMedicoListaEsperaRepository(db)
-	refConRepo := sqlserver.NewRefConRepository(db)
+	causaExternaMorbilidadRepo := sqlserver.NewCausaExternaMorbilidadRepository(db)
+	auditoriaRepo := sqlserver.NewAuditoriaRepository(db)
+	refConRepo := refconsql.NewRefConRepository(db)
 	primeraAtencionRepo := sqlserver.NewPrimeraAtencionRepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
@@ -145,7 +152,25 @@ func run() error {
 	diagnosticoUseCase := usecase.NewDiagnosticoUseCase(diagnosticoRepo)
 	listaEsperaQxService := usecase.NewListaEsperaQxService(listaEsperaQxRepo)
 	medicoListaEsperaService := usecase.NewMedicoListaEsperaService(medicoListaEsperaRepo)
-	refConService := usecase.NewRefConService(refConRepo)
+	causaExternaMorbilidadService := usecase.NewCausaExternaMorbilidadService(causaExternaMorbilidadRepo)
+	auditoriaService := usecase.NewAuditoriaService(auditoriaRepo)
+	refConService := refconusecase.NewRefConService(refConRepo, refconminsa.New(refconminsa.Config{
+		URL:                    cfg.MinsaRefConURL,
+		UpsURL:                 cfg.MinsaRefConUpsURL,
+		EspecialidadesURL:      cfg.MinsaRefConEspURL,
+		SaveReferenciaURL:      cfg.MinsaRefConSaveURL,
+		Username:               cfg.MinsaRefConUsername,
+		Password:               cfg.MinsaRefConPassword,
+		IPClient:               cfg.MinsaRefConIPClient,
+		EstablecimientoDestino: cfg.MinsaRefConDestino,
+		Limite:                 cfg.MinsaRefConLimite,
+		Timeout:                cfg.MinsaRefConTimeout,
+	}), refconreports.New(refconreports.Config{
+		BaseURL:     cfg.RefConReportsURL,
+		UserWeb:     cfg.RefConReportsUserWeb,
+		PasswordWeb: cfg.RefConReportsPassword,
+		Timeout:     cfg.RefConReportsTimeout,
+	}))
 	primeraAtencionService := usecase.NewPrimeraAtencionUseCase(primeraAtencionRepo)
 
 	authRepo := sqlserver.NewAuthRepository(db)
@@ -174,7 +199,9 @@ func run() error {
 	diagnosticoHandler := httpadapter.NewDiagnosticoHandler(diagnosticoUseCase)
 	listaEsperaQxHandler := httpadapter.NewListaEsperaQxHandler(listaEsperaQxService)
 	medicoListaEsperaHandler := httpadapter.NewMedicoListaEsperaHandler(medicoListaEsperaService)
-	refConHandler := httpadapter.NewRefConHandler(refConService)
+	causaExternaMorbilidadHandler := httpadapter.NewCausaExternaMorbilidadHandler(causaExternaMorbilidadService)
+	auditoriaHandler := httpadapter.NewAuditoriaHandler(auditoriaService)
+	refConHandler := refconhttp.NewRefConHandler(refConService)
 	primeraAtencionHandler := httpadapter.NewPrimeraAtencionHandler(
 		primeraAtencionService,
 		archivoRemotoService,
@@ -182,35 +209,37 @@ func run() error {
 	)
 
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
-		AppointmentHandler:       appointmentHandler,
-		PatientHandler:           patientHandler,
-		CatalogHandler:           catalogHandler,
-		ReniecHandler:            reniecHandler,
-		SisHandler:               sisHandler,
-		FirmaPeruHandler:         firmaPeruHandler,
-		TriageHandler:            triageHandler,
-		PrimeraAtencionHandler:   primeraAtencionHandler,
-		AuthHandler:              authHandler,
-		EvolucionHandler:         evolucionHandler,
-		MotivoHandler:            motivoHandler,
-		OrdenHandler:             ordenHandler,
-		ResultadoHandler:         resultadoHandler,
-		InterconsultaHandler:     interconsultaHandler,
-		SintomaHandler:           sintomaHandler,
-		DiagnosticoHandler:       diagnosticoHandler,
-		ListaEsperaQxHandler:     listaEsperaQxHandler,
-		MedicoListaEsperaHandler: medicoListaEsperaHandler,
-		RefConHandler:            refConHandler,
-		AuthService:              authService,
-		AllowedOrigins:           cfg.AllowedOrigins,
+		AppointmentHandler:            appointmentHandler,
+		PatientHandler:                patientHandler,
+		CatalogHandler:                catalogHandler,
+		ReniecHandler:                 reniecHandler,
+		SisHandler:                    sisHandler,
+		FirmaPeruHandler:              firmaPeruHandler,
+		TriageHandler:                 triageHandler,
+		PrimeraAtencionHandler:        primeraAtencionHandler,
+		AuthHandler:                   authHandler,
+		EvolucionHandler:              evolucionHandler,
+		MotivoHandler:                 motivoHandler,
+		OrdenHandler:                  ordenHandler,
+		ResultadoHandler:              resultadoHandler,
+		InterconsultaHandler:          interconsultaHandler,
+		SintomaHandler:                sintomaHandler,
+		DiagnosticoHandler:            diagnosticoHandler,
+		ListaEsperaQxHandler:          listaEsperaQxHandler,
+		MedicoListaEsperaHandler:      medicoListaEsperaHandler,
+		CausaExternaMorbilidadHandler: causaExternaMorbilidadHandler,
+		AuditoriaHandler:              auditoriaHandler,
+		RefConHandler:                 refConHandler,
+		AuthService:                   authService,
+		AllowedOrigins:                cfg.AllowedOrigins,
 	})
 
 	server := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
 		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 90 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	log.Printf("listening on http://%s:%s (swagger: http://%s:%s/swagger/index.html)", cfg.ServerHost, cfg.ServerPort, cfg.ServerHost, cfg.ServerPort)

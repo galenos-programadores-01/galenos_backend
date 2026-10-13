@@ -104,7 +104,7 @@ func (uc *sisUseCase) ConsultarAfiliado(ctx context.Context, params shared.SISAf
 		}
 	} else {
 		if params.TipoDocumento == 0 {
-			params.TipoDocumento = 1
+			params.TipoDocumento = 0
 		}
 		if params.TipoDocumento != 1 && params.TipoDocumento != 3 {
 			return domain.SisAfiliado{}, domain.ErrInvalidDocumentType
@@ -120,4 +120,20 @@ func (uc *sisUseCase) ConsultarAfiliado(ctx context.Context, params shared.SISAf
 	}
 
 	return result, nil
+}
+
+// ListFiliaciones delega en el repositorio la consulta de las afiliaciones
+// registradas en la base de datos local. Se valida el documento porque el SP
+// filtra por DocumentoNumero y un valor vacío devolvería el histórico completo
+// de la tabla.
+func (uc *sisUseCase) ListFiliaciones(ctx context.Context, nroDocumento string, idTipoDoc int) ([]map[string]any, error) {
+	if nroDocumento == "" {
+		return nil, domain.ErrInvalidDocumentNumber
+	}
+
+	items, err := uc.repo.ListFiliaciones(ctx, nroDocumento, idTipoDoc)
+	if err != nil {
+		return nil, fmt.Errorf("listing sis afiliaciones: %w", err)
+	}
+	return items, nil
 }

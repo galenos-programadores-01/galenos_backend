@@ -56,18 +56,24 @@ func (h *DiagnosticoHandler) SearchDiagnosticos(c *gin.Context) {
 }
 
 // @Summary Listar diagnosticos CIE10
-// @Description Busca diagnosticos por filtro (codigo o descripcion)
+// @Description Busca diagnosticos por filtro (codigo o descripcion) invocando el SP usp_go_SelectDiagnosticos. idAtencion e idPaciente son opcionales y por defecto se envian en 0 (sin acotar)
 // @Tags Diagnosticos
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param filtro query string true "Filtro de busqueda"
+// @Param idAtencion query int false "Id de la atencion (0 = sin acotar)"
+// @Param idPaciente query int false "Id del paciente (0 = sin acotar)"
 // @Success 200 {object} httpadapter.apiResponse{data=[]domain.DiagnosticoSimple}
 // @Router /diagnosticos/listar [get]
 func (h *DiagnosticoHandler) HandleListarDiagnosticos(c *gin.Context) {
 	filtro := c.Query("filtro")
 
-	results, err := h.useCase.ListarDiagnosticos(c.Request.Context(), filtro)
+	// idAtencion e idPaciente acotan el catálogo; si no llegan se envían en 0.
+	idAtencion := queryInt(c, "idAtencion", 0)
+	idPaciente := queryInt(c, "idPaciente", 0)
+
+	results, err := h.useCase.ListarDiagnosticos(c.Request.Context(), filtro, idAtencion, idPaciente)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "ERR_LIST_DIAG", "Error listando diagnósticos")
 		return
