@@ -128,6 +128,133 @@ type ColaFiltrosCE struct {
 	Filtro     string
 }
 
+type HistorialAtencionItem struct {
+	IdAtencion         int    `json:"idAtencion"`
+	IdCuentaAtencion   int    `json:"idCuentaAtencion"`
+	IdPaciente         int    `json:"idPaciente"`
+	FechaIngreso       string `json:"fechaIngreso"`
+	HoraIngreso        string `json:"horaIngreso"`
+	HoraEgreso         string `json:"horaEgreso"`
+	ServicioNombre     string `json:"servicioNombre"`
+	IdMedico           int    `json:"idMedico"`
+	MedicoNombre       string `json:"medicoNombre"`
+	IdTipoServicio     int    `json:"idTipoServicio"`
+	TipoServicioNombre string `json:"tipoServicioNombre"`
+	TiempoProgramado   int    `json:"tiempoProgramado"`
+	TiempoAtencion     int    `json:"tiempoAtencion"`
+}
+
+type HistorialTriajeItem struct {
+	PresionArterial        string  `json:"presionArterial"`
+	FrecuenciaCardiaca     int     `json:"frecuenciaCardiaca"`
+	FrecuenciaRespiratoria int     `json:"frecuenciaRespiratoria"`
+	Temperatura            float64 `json:"temperatura"`
+	Saturacion             int     `json:"saturacion"`
+	Peso                   float64 `json:"peso"`
+	Talla                  float64 `json:"talla"`
+	IMC                    float64 `json:"imc"`
+	Hemoglobina            string  `json:"hemoglobina"`
+	FiO2                   string  `json:"fiO2"`
+	FechaRegistro          string  `json:"fechaRegistro"`
+	Observacion            string  `json:"observacion"`
+}
+
+type PacienteHistorialTriajeItem struct {
+	IdTriaje               int     `json:"idTriaje"`
+	IdAtencion             int     `json:"idAtencion"`
+	FechaRegistro          string  `json:"fechaRegistro"`
+	HoraRegistro           string  `json:"horaRegistro"`
+	PresionArterial        string  `json:"presionArterial"`
+	Pulso                  string  `json:"pulso"`
+	FrecuenciaCardiaca     int     `json:"frecuenciaCardiaca"`
+	FrecuenciaRespiratoria int     `json:"frecuenciaRespiratoria"`
+	Temperatura            float64 `json:"temperatura"`
+	Saturacion             int     `json:"saturacion"`
+	Peso                   float64 `json:"peso"`
+	Talla                  float64 `json:"talla"`
+	IMC                    float64 `json:"imc"`
+	Hemoglobina            string  `json:"hemoglobina"`
+	Observacion            string  `json:"observacion"`
+}
+
+type HistorialAtencionDetalle struct {
+	IdAtencion         int                         `json:"idAtencion"`
+	IdCuentaAtencion   int                         `json:"idCuentaAtencion"`
+	IdPaciente         int                         `json:"idPaciente"`
+	PacienteNombre     string                      `json:"pacienteNombre"`
+	NroHistoriaClinica int                         `json:"nroHistoriaClinica"`
+	NroDocumento       string                      `json:"nroDocumento"`
+	Edad               int                         `json:"edad"`
+	Sexo               string                      `json:"sexo"`
+	ServicioNombre     string                      `json:"servicioNombre"`
+	MedicoNombre       string                      `json:"medicoNombre"`
+	FechaAtencion      string                      `json:"fechaAtencion"`
+	HoraInicio         string                      `json:"horaInicio"`
+	HoraFin            string                      `json:"horaFin"`
+	Triaje             *HistorialTriajeItem        `json:"triaje"`
+	Diagnosticos       []AtencionDiagnosticoCEItem `json:"diagnosticos"`
+	InforCompDiagMed   string                      `json:"inforCompDiagMed"`
+	Motivo             string                      `json:"motivo"`
+	Tratamiento        string                      `json:"tratamiento"`
+	PlanTratamiento    string                      `json:"planTratamiento"`
+	Observaciones      string                      `json:"observaciones"`
+	ExamenClinico      string                      `json:"examenClinico"`
+	ConsumoEnServicio  string                      `json:"consumoEnServicio"`
+	ServicioApoyoAlDx  string                      `json:"servicioApoyoAlDx"`
+}
+
+type HistorialReporteOperatorioItem struct {
+	IdReporte          int    `json:"idReporte"`
+	IdAtencion         int    `json:"idAtencion"`
+	CodigoCPT          string `json:"codigoCPT"`
+	Fecha              string `json:"fecha"`
+	Descripcion        string `json:"descripcion"`
+	Cirujano           string `json:"cirujano"`
+	Servicio           string `json:"servicio"`
+	Estado             string `json:"estado"`
+	Cama               string `json:"cama"`
+	HoraInicio         string `json:"horaInicio"`
+	HoraFin            string `json:"horaFin"`
+	TiempoQuirurgico   string `json:"tiempoQuirurgico"`
+	DiagnosticoPre     string `json:"diagnosticoPre"`
+	DiagnosticoPost    string `json:"diagnosticoPost"`
+	OperacionIndicada  string `json:"operacionIndicada"`
+	OperacionRealizada string `json:"operacionRealizada"`
+	PrimerAyudante     string `json:"primerAyudante"`
+	SegundoAyudante    string `json:"segundoAyudante"`
+	Anestesiologo      string `json:"anestesiologo"`
+	Instrumentista     string `json:"instrumentista"`
+	PersonalCirculante string `json:"personalCirculante"`
+	TipoAnestesia      string `json:"tipoAnestesia"`
+	TipoOperacion      string `json:"tipoOperacion"`
+	CuentaGasas        string `json:"cuentaGasas"`
+	PiezaOperatoria    string `json:"piezaOperatoria"`
+	TipoIntervencion   string `json:"tipoIntervencion"`
+	RiesgoQuirurgico   string `json:"riesgoQuirurgico"`
+	Hallazgos          string `json:"hallazgos"`
+}
+
+type HistorialProcedimientoItem struct {
+	IdProcedimiento   int    `json:"idProcedimiento"`
+	IdAtencion        int    `json:"idAtencion"`
+	CodigoCPT         string `json:"codigoCPT"`
+	Fecha             string `json:"fecha"`
+	Descripcion       string `json:"descripcion"`
+	Medico            string `json:"medico"`
+	Servicio          string `json:"servicio"`
+	Estado            string `json:"estado"`
+	NumeroCuenta      string `json:"numeroCuenta"`
+	NumeroHistoria    string `json:"numeroHistoria"`
+	FechaHoraAtencion string `json:"fechaHoraAtencion"`
+	Especialidad      string `json:"especialidad"`
+	TipoSeguro        string `json:"tipoSeguro"`
+	Procedencia       string `json:"procedencia"`
+	CMP               string `json:"cmp"`
+	Hallazgos         string `json:"hallazgos"`
+	Diagnosticos      string `json:"diagnosticos"`
+	Observacion       string `json:"observacion"`
+}
+
 func (p *AtencionCEGuardarPayload) UnmarshalJSON(data []byte) error {
 	type Alias AtencionCEGuardarPayload
 	aux := struct {
@@ -181,4 +308,10 @@ func parsearEnteroFlexible(valor any) int {
 		}
 	}
 	return 0
+}
+
+type ServicioMedicoItem struct {
+	IdServicio              int    `json:"idServicio"`
+	DescripcionHospitalaria string `json:"descripcionHospitalaria"`
+	NombreServicio          string `json:"nombreServicio"`
 }

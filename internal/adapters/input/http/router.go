@@ -179,6 +179,12 @@ func NewRouter(p RouterParams) *gin.Engine {
 			atencionCE.GET("/cola", p.AtencionCEHandler.ListarCola)
 			atencionCE.GET("/destinos", p.AtencionCEHandler.ListarDestinos)
 			atencionCE.GET("/catalogo-labs", p.AtencionCEHandler.ListarCatalogoLabs)
+			atencionCE.GET("/historial-paciente/:idPaciente", p.AtencionCEHandler.HandleListarHistorialAtenciones)
+			atencionCE.GET("/historial-atencion-detalle/:idAtencion", p.AtencionCEHandler.HandleObtenerHistorialAtencionDetalle)
+			atencionCE.GET("/historial-quirurgico-paciente/:idPaciente", p.AtencionCEHandler.HandleListarReportesOperatorios)
+			atencionCE.GET("/historial-procedimientos-paciente/:idPaciente", p.AtencionCEHandler.HandleListarProcedimientosHistorial)
+			atencionCE.GET("/historial-triaje-paciente/:idPaciente", p.AtencionCEHandler.HandleListarHistorialTriajePaciente)
+			atencionCE.GET("/servicios-medico", p.AtencionCEHandler.ListarServiciosMedico)
 			atencionCE.GET("/:id", p.AtencionCEHandler.ObtenerFicha)
 			atencionCE.POST("", p.AtencionCEHandler.GuardarFicha)
 		}
@@ -218,6 +224,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 		}
 
 		triaje := v1.Group("/triaje")
+		triaje.Use(OptionalBearerToken(p.AuthService))
 		{
 			triaje.GET("", p.TriageHandler.List)
 			triaje.GET("/pendientes-admision", p.TriageHandler.ListPendingAdmission)

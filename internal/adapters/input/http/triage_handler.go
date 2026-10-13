@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/input"
 	"github.com/galenos-pro/appointments-api/internal/ports/shared"
 )
@@ -349,8 +350,16 @@ func (h *TriageHandler) CreateTriajeConsulta(c *gin.Context) {
 	}
 
 	domainObj := req.toDomain()
-	if idEmpleado := c.GetInt("idEmpleado"); idEmpleado != 0 {
-		domainObj.IdEmpleado = int64(idEmpleado)
+	if domainObj.IdEmpleado <= 0 {
+		if idEmpleado := c.GetInt("idEmpleado"); idEmpleado > 0 {
+			domainObj.IdEmpleado = int64(idEmpleado)
+		} else if claims, ok := c.Get("auth_claims"); ok {
+			if authClaims, ok := claims.(domain.AuthClaims); ok && authClaims.IdEmpleado > 0 {
+				domainObj.IdEmpleado = int64(authClaims.IdEmpleado)
+			}
+		} else {
+			domainObj.IdEmpleado = 1
+		}
 	}
 
 	result, err := h.service.CreateTriajeConsulta(c.Request.Context(), domainObj)
