@@ -3,6 +3,7 @@ package ftp
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -16,7 +17,7 @@ import (
 	"github.com/galenos-pro/appointments-api/internal/ports/output"
 )
 
-// client implementa output.AlmacenamientoRemoto via FTP (puerto 21 tipico).
+// client implementa output.AlmacenamientoRemoto via FTP/FTPS (puerto 21 tipico).
 type client struct {
 	cfg Config
 }
@@ -41,7 +42,20 @@ func normalizeConfig(cfg Config) Config {
 	if cfg.Timeout <= 0 {
 		cfg.Timeout = 30 * time.Second
 	}
+	cfg.TLSMode = normalizeTLSMode(cfg.TLSMode)
 	return cfg
+}
+
+func normalizeTLSMode(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "plain", "none", "off":
+		return "plain"
+	case "implicit":
+		return "implicit"
+	default:
+		// explicit: AUTH TLS antes de USER/PASS (caso IIS hospitalario).
+		return "explicit"
+	}
 }
 
 func (c *client) Enabled() bool { return true }
@@ -132,12 +146,26 @@ func (c *client) withSession(ctx context.Context, fn func(*goftp.ServerConn) err
 	}
 
 	addr := net.JoinHostPort(c.cfg.Host, fmt.Sprintf("%d", c.cfg.Port))
-	conn, err := goftp.Dial(addr,
+	opts := []goftp.DialOption{
 		goftp.DialWithTimeout(c.cfg.Timeout),
 		goftp.DialWithContext(ctx),
-	)
+	}
+
+	tlsCfg := &tls.Config{
+		ServerName:         c.cfg.Host,
+		InsecureSkipVerify: c.cfg.InsecureSkipVerify,
+		MinVersion:         tls.VersionTLS12,
+	}
+	switch c.cfg.TLSMode {
+	case "explicit":
+		opts = append(opts, goftp.DialWithExplicitTLS(tlsCfg))
+	case "implicit":
+		opts = append(opts, goftp.DialWithTLS(tlsCfg))
+	}
+
+	conn, err := goftp.Dial(addr, opts...)
 	if err != nil {
-		return fmt.Errorf("ftp dial %s: %w", addr, err)
+		return fmt.Errorf("ftp dial %s tls=%s: %w", addr, c.cfg.TLSMode, err)
 	}
 	defer conn.Quit()
 

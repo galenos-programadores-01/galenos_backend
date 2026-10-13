@@ -62,8 +62,10 @@ type Config struct {
 	RedisTTL              time.Duration
 
 	// Almacenamiento remoto de PDFs firmados (SFTP o FTP). Host/User vacíos = deshabilitado.
-	// SFTPProtocol: "sftp" (SSH :22) o "ftp" (FTP clásico :21). Mismas credenciales SFTP_*.
+	// SFTPProtocol: "sftp" (SSH :22) o "ftp" (FTP/FTPS :21). Mismas credenciales SFTP_*.
+	// SFTPFTPTLS: "explicit" (AUTH TLS, IIS) | "plain" | "implicit". Solo aplica a protocol=ftp.
 	SFTPProtocol               string
+	SFTPFTPTLS                string
 	SFTPHost                   string
 	SFTPPort                   int
 	SFTPUser                   string
@@ -164,6 +166,7 @@ func Load() (*Config, error) {
 		RedisTTL:              envDurationOrDefault("REDIS_TTL", 30*time.Minute),
 
 		SFTPProtocol:               sftpProtocol,
+		SFTPFTPTLS:                normalizeFTPTLS(envOrDefault("SFTP_FTP_TLS", "explicit")),
 		SFTPHost:                   os.Getenv("SFTP_HOST"),
 		SFTPPort:                   envIntOrDefault("SFTP_PORT", sftpDefaultPort),
 		SFTPUser:                   os.Getenv("SFTP_USER"),
@@ -184,6 +187,18 @@ func normalizeSFTPProtocol(raw string) string {
 		return "ftp"
 	default:
 		return "sftp"
+	}
+}
+
+// normalizeFTPTLS acepta explicit | plain | implicit. Default explicit (IIS FTPS).
+func normalizeFTPTLS(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "plain", "none", "off":
+		return "plain"
+	case "implicit":
+		return "implicit"
+	default:
+		return "explicit"
 	}
 }
 

@@ -129,8 +129,8 @@ func run() error {
 	})
 	archivoRemotoService := usecase.NewArchivoRemotoService(almacenamientoRemoto, rutasArchivoRemoto)
 	if archivoRemotoService.Enabled() {
-		log.Printf("almacenamiento remoto habilitado protocol=%s host=%s:%d base=%s",
-			cfg.SFTPProtocol, cfg.SFTPHost, cfg.SFTPPort, cfg.SFTPBasePath)
+		log.Printf("almacenamiento remoto habilitado protocol=%s ftp_tls=%s host=%s:%d base=%s",
+			cfg.SFTPProtocol, cfg.SFTPFTPTLS, cfg.SFTPHost, cfg.SFTPPort, cfg.SFTPBasePath)
 	} else {
 		log.Printf("almacenamiento remoto deshabilitado (SFTP_HOST/SFTP_USER vacíos)")
 	}
@@ -274,11 +274,13 @@ func newAlmacenamientoRemoto(cfg *config.Config) (output.AlmacenamientoRemoto, e
 	switch strings.ToLower(strings.TrimSpace(cfg.SFTPProtocol)) {
 	case "ftp":
 		return ftpadapter.New(ftpadapter.Config{
-			Host:     cfg.SFTPHost,
-			Port:     cfg.SFTPPort,
-			User:     cfg.SFTPUser,
-			Password: cfg.SFTPPassword,
-			Timeout:  cfg.SFTPTimeout,
+			Host:               cfg.SFTPHost,
+			Port:               cfg.SFTPPort,
+			User:               cfg.SFTPUser,
+			Password:           cfg.SFTPPassword,
+			Timeout:            cfg.SFTPTimeout,
+			TLSMode:            cfg.SFTPFTPTLS,
+			InsecureSkipVerify: cfg.SFTPInsecureIgnoreHostKey,
 		})
 	case "sftp", "":
 		return sftpadapter.New(sftpadapter.Config{
