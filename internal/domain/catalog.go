@@ -117,14 +117,15 @@ type DatosInstitucion struct {
 }
 
 // Especialidad es un registro del catálogo de especialidades
-// (SP usp_go_ListarEspecialidades).
+// (SP usp_go_ListarEspecialidades) o filtrado por tipo de servicio
+// (SP usp_go_EspecialidadesXidTipoServicio @IdTipoServicio).
 type Especialidad struct {
 	ID     int64
 	Nombre *string
 }
 
 // EspecialidadSimple contiene el id y nombre de una especialidad
-// (SP usp_go_ListarEspecialidadXDepartamento).
+// (SP usp_go_ListarEspecialidadXDepartamento / usp_go_ListarEspecialidadesQx).
 type EspecialidadSimple struct {
 	IdEspecialidad int    `json:"idEspecialidad"`
 	Nombre         string `json:"nombre"`
@@ -140,34 +141,113 @@ type Parametro struct {
 	ValorFloat *float64
 }
 
+// CatalogItem proyección genérica id+descripción (uso interno / mapper develop).
+// El JSON HTTP se define en adapters/http, no aquí.
 type CatalogItem struct {
-	ID          int64  `json:"id"`
-	Descripcion string `json:"descripcion"`
+	ID          int64
+	Descripcion string
 }
 
+// MedicamentoBusqueda proyección enriquecida de receta (develop).
+// Mismo SP que MedicamentoCatalogo; más columnas. JSON vía DTO HTTP.
 type MedicamentoBusqueda struct {
-	IdProducto          int     `json:"idProducto"`
-	Codigo              string  `json:"codigo"`
-	Nombre              string  `json:"nombre"`
-	Stock               int     `json:"stock"`
-	Precio              float64 `json:"precio"`
-	IdDosisRecetada     int     `json:"idDosisRecetada"`
-	IdUNIDDosisReceta   int     `json:"idUNIDDosisReceta"`
-	IdFrecuencia        int     `json:"idFrecuencia"`
-	IdViaAdministracion int     `json:"idViaAdministracion"`
-	TieneRecetaAnterior int     `json:"tieneRecetaAnterior"`
+	IdProducto          int
+	Codigo              string
+	Nombre              string
+	Stock               int
+	Precio              float64
+	IdDosisRecetada     int
+	IdUNIDDosisReceta   int
+	IdFrecuencia        int
+	IdViaAdministracion int
+	TieneRecetaAnterior int
 }
 
-type ExamenCatalogo struct {
-	IdProducto int    `json:"idProducto"`
-	Codigo     string `json:"codigo"`
-	Nombre     string `json:"nombre"`
-	Tipo       string `json:"tipo"`
-	EsCPT      bool   `json:"esCpt"`
-}
-
+// ParametroClinico — usp_go_Cat_ParametroClinico_Listar @IdGrupo.
+// ID = columna SQL IdParametro. IdGrupo: 1 estado, 2 hidratación, 3 conciencia, 4 egreso.
 type ParametroClinico struct {
-	IdParametro int    `json:"idParametro"`
-	Codigo      string `json:"codigo"`
-	Descripcion string `json:"descripcion"`
+	ID          int64
+	Descripcion *string
+	Codigo      *string
+}
+
+// PrioridadPrimeraAtencion — usp_go_Cat_Prioridad_PrimeraAtencion.
+// ID = IdTipoGravedad del SP (misma clave que bandeja / IdTipoPrioridad del paciente).
+type PrioridadPrimeraAtencion struct {
+	ID          int64
+	Descripcion *string
+}
+
+// SubclasificacionDiagnostico — usp_go_SubclasificacionDiagnosticos_Select
+// (@IdTipoServicio, @IdClasificacionDx).
+// Clasificación 9 = PA general; 7 = interconsulta.
+type SubclasificacionDiagnostico struct {
+	ID               int64
+	DescripcionCorta *string
+	DescripcionLarga *string
+}
+
+// DiagnosticoCatalogo — usp_go_SelectDiagnosticos (@filtro, @IdAtencion, @IdPaciente).
+type DiagnosticoCatalogo struct {
+	ID          int64
+	Descripcion string
+	CodigoCIE10 string
+}
+
+// MedicamentoCatalogo — usp_go_SelectMedicamentosFiltro (proyección slim PA).
+type MedicamentoCatalogo struct {
+	IDProducto     int64
+	Codigo         string
+	Nombre         string
+	PrecioUnitario float64 // columna Precio del SP → RecetaDetalle.Precio
+}
+
+// ExamenCatalogo — webProcedimentosRecetasFiltarNombrePuntoCarga
+// (@IdTipoFinanciamiento, @Filtro). IdProducto = IdProductoSolo del SP
+// (el IdProducto compuesto "54707|2" no se usa como PK).
+type ExamenCatalogo struct {
+	IDProducto     int64
+	Codigo         string
+	Nombre         string
+	NombreLargo    string
+	IDPuntoCarga   int64
+	PuntoCarga     string
+	Servicio       string
+	PrecioUnitario float64
+}
+
+// ProcedimientoCatalogo — usp_go_ProcedimentosFiltarNombrePuntoCarga.
+type ProcedimientoCatalogo struct {
+	IDProducto     int64
+	Codigo         string
+	Nombre         string
+	NombreLargo    string
+	IDPuntoCarga   int64
+	PuntoCarga     string
+	PrecioUnitario float64
+	EsCPT          bool
+}
+
+// RecetaDosis — usp_go_RecetaDosisSelecionarTodos.
+type RecetaDosis struct {
+	ID          int64
+	NumeroDosis string
+}
+
+// RecetaUnidadDosis — Usp_go_SelectRecetaUndDosisSelecionarTodos.
+type RecetaUnidadDosis struct {
+	ID              int64
+	NumeroUNIDDosis string
+}
+
+// RecetaFrecuencia — usp_go_SelectRecetaFrecuenciaSelecionarTodos.
+type RecetaFrecuencia struct {
+	ID          int64
+	Descripcion string
+}
+
+// ViaAdministracion — usp_go_RecetasListadoViasAdministracion.
+type ViaAdministracion struct {
+	ID          int64
+	Descripcion string
 }

@@ -27,7 +27,9 @@ import (
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/persistence/sqlserver"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/reniec"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/sis"
+	sftpadapter "github.com/galenos-pro/appointments-api/internal/adapters/output/sftp"
 	"github.com/galenos-pro/appointments-api/internal/config"
+	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/usecase"
 )
 
@@ -75,6 +77,7 @@ func run() error {
 	listaEsperaQxRepo := sqlserver.NewListaEsperaQxRepository(db)
 	medicoListaEsperaRepo := sqlserver.NewMedicoListaEsperaRepository(db)
 	refConRepo := sqlserver.NewRefConRepository(db)
+	primeraAtencionRepo := sqlserver.NewPrimeraAtencionRepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
 	reniecClient := reniec.New(reniec.Config{
@@ -104,6 +107,30 @@ func run() error {
 	firmaPeruStore := firmaperu.NewMemoryStore(cfg.FirmaPeruSignedDir)
 	firmaPeruArchive := firmaperu.NewSevenZipTool(cfg.SevenZipPath)
 
+	// --- Adaptador de salida: SFTP (PDFs firmados; noop si no hay host) ---
+	almacenamientoRemoto, err := sftpadapter.New(sftpadapter.Config{
+		Host:                  cfg.SFTPHost,
+		Port:                  cfg.SFTPPort,
+		User:                  cfg.SFTPUser,
+		Password:              cfg.SFTPPassword,
+		Timeout:               cfg.SFTPTimeout,
+		InsecureIgnoreHostKey: cfg.SFTPInsecureIgnoreHostKey,
+		KnownHostsPath:        cfg.SFTPKnownHostsPath,
+	})
+	if err != nil {
+		return err
+	}
+	rutasArchivoRemoto := domain.NuevaRutasArchivoRemoto(cfg.SFTPBasePath, map[string]string{
+		domain.PatronArchivoPrimeraAtencion: cfg.SFTPPatternPrimeraAtencion,
+		domain.PatronArchivoEvolucion:       cfg.SFTPPatternEvolucion,
+	})
+	archivoRemotoService := usecase.NewArchivoRemotoService(almacenamientoRemoto, rutasArchivoRemoto)
+	if archivoRemotoService.Enabled() {
+		log.Printf("SFTP remoto habilitado host=%s base=%s", cfg.SFTPHost, cfg.SFTPBasePath)
+	} else {
+		log.Printf("SFTP remoto deshabilitado (SFTP_HOST/SFTP_USER vacíos)")
+	}
+
 	// --- Núcleo de dominio: casos de uso implementando los puertos de entrada ---
 	appointmentService := usecase.NewAppointmentUseCase(appointmentRepo)
 	patientService := usecase.NewPatientUseCase(patientRepo)
@@ -122,6 +149,7 @@ func run() error {
 	listaEsperaQxService := usecase.NewListaEsperaQxService(listaEsperaQxRepo)
 	medicoListaEsperaService := usecase.NewMedicoListaEsperaService(medicoListaEsperaRepo)
 	refConService := usecase.NewRefConService(refConRepo)
+	primeraAtencionService := usecase.NewPrimeraAtencionUseCase(primeraAtencionRepo)
 
 	authRepo := sqlserver.NewAuthRepository(db)
 	authService := usecase.NewAuthUseCase(authRepo, cfg.AuthSecret, cfg.AuthTTL)
@@ -150,6 +178,11 @@ func run() error {
 	listaEsperaQxHandler := httpadapter.NewListaEsperaQxHandler(listaEsperaQxService)
 	medicoListaEsperaHandler := httpadapter.NewMedicoListaEsperaHandler(medicoListaEsperaService)
 	refConHandler := httpadapter.NewRefConHandler(refConService)
+	primeraAtencionHandler := httpadapter.NewPrimeraAtencionHandler(
+		primeraAtencionService,
+		archivoRemotoService,
+		firmaPeruStore,
+	)
 
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
 		AppointmentHandler:       appointmentHandler,
@@ -159,6 +192,7 @@ func run() error {
 		SisHandler:               sisHandler,
 		FirmaPeruHandler:         firmaPeruHandler,
 		TriageHandler:            triageHandler,
+		PrimeraAtencionHandler:   primeraAtencionHandler,
 		AuthHandler:              authHandler,
 		EvolucionHandler:         evolucionHandler,
 		MotivoHandler:            motivoHandler,

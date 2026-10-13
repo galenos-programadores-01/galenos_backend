@@ -46,6 +46,18 @@ type Config struct {
 	RedisPassword         string
 	RedisDB               int
 	RedisTTL              time.Duration
+
+	// SFTP (almacenamiento remoto de PDFs firmados). Vacío = deshabilitado.
+	SFTPHost                   string
+	SFTPPort                   int
+	SFTPUser                   string
+	SFTPPassword               string
+	SFTPTimeout                time.Duration
+	SFTPInsecureIgnoreHostKey  bool
+	SFTPKnownHostsPath         string
+	SFTPBasePath               string
+	SFTPPatternPrimeraAtencion string
+	SFTPPatternEvolucion       string
 }
 
 // Load lee la configuración desde el entorno aplicando valores por defecto
@@ -114,6 +126,17 @@ func Load() (*Config, error) {
 		RedisPassword:         os.Getenv("REDIS_PASSWORD"),
 		RedisDB:               envIntOrDefault("REDIS_DB", 0),
 		RedisTTL:              envDurationOrDefault("REDIS_TTL", 30*time.Minute),
+
+		SFTPHost:                   os.Getenv("SFTP_HOST"),
+		SFTPPort:                   envIntOrDefault("SFTP_PORT", 22),
+		SFTPUser:                   os.Getenv("SFTP_USER"),
+		SFTPPassword:               os.Getenv("SFTP_PASSWORD"),
+		SFTPTimeout:                envDurationOrDefault("SFTP_TIMEOUT", 30*time.Second),
+		SFTPInsecureIgnoreHostKey:  envBoolOrDefault("SFTP_INSECURE_IGNORE_HOST_KEY", true),
+		SFTPKnownHostsPath:         os.Getenv("SFTP_KNOWN_HOSTS"),
+		SFTPBasePath:               envOrDefault("SFTP_BASE_PATH", "/ftp"),
+		SFTPPatternPrimeraAtencion: envOrDefault("SFTP_PATTERN_PRIMERA_ATENCION", "primera-atencion/{id}/{uuid}.pdf"),
+		SFTPPatternEvolucion:       envOrDefault("SFTP_PATTERN_EVOLUCION", "evoluciones/{id}/{uuid}.pdf"),
 	}, nil
 }
 
@@ -190,6 +213,21 @@ func envIntOrDefault(key string, fallback int) int {
 		return fallback
 	}
 	return parsed
+}
+
+func envBoolOrDefault(key string, fallback bool) bool {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return fallback
+	}
+	switch strings.ToLower(v) {
+	case "1", "true", "yes", "y", "on":
+		return true
+	case "0", "false", "no", "n", "off":
+		return false
+	default:
+		return fallback
+	}
 }
 
 func envDurationOrDefault(key string, fallback time.Duration) time.Duration {

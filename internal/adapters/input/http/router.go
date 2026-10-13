@@ -20,6 +20,7 @@ type RouterParams struct {
 	ReniecHandler            *ReniecHandler
 	SisHandler               *SisHandler
 	TriageHandler            *TriageHandler
+	PrimeraAtencionHandler   *PrimeraAtencionHandler
 	AuthHandler              *AuthHandler
 	EvolucionHandler         *EvolucionHandler
 	MotivoHandler            *MotivoHandler
@@ -81,6 +82,39 @@ func NewRouter(p RouterParams) *gin.Engine {
 				appointments.POST("", p.AppointmentHandler.Create)
 				appointments.GET("/:id", p.AppointmentHandler.GetByID)
 			}
+
+			// Bandeja Primera Atención (emergencia) — SP web_go_GestionPrimeraAtencionFiltrar
+			primeraAtencion := protected.Group("/primera-atencion")
+			{
+				primeraAtencion.GET("", p.PrimeraAtencionHandler.ListarBandeja)
+				primeraAtencion.POST("/iniciar", p.PrimeraAtencionHandler.IniciarBorrador)
+				primeraAtencion.GET("/detalle/:idAtencion", p.PrimeraAtencionHandler.ObtenerDetalle)
+				primeraAtencion.PATCH("/:idAtencion", p.PrimeraAtencionHandler.GuardarParcial)
+				primeraAtencion.POST("/:idAtencion/cerrar-firma", p.PrimeraAtencionHandler.CerrarFirma)
+				primeraAtencion.GET("/:idAtencion/diagnosticos", p.PrimeraAtencionHandler.ListarDiagnosticos)
+				primeraAtencion.POST("/:idAtencion/diagnosticos", p.PrimeraAtencionHandler.RegistrarDiagnosticos)
+				primeraAtencion.DELETE("/:idAtencion/diagnosticos/:idAtencionDiagnostico", p.PrimeraAtencionHandler.EliminarDiagnostico)
+				primeraAtencion.POST("/:idAtencion/egreso/alta-domicilio", p.PrimeraAtencionHandler.RegistrarAltaDomicilio)
+				primeraAtencion.POST("/:idAtencion/egreso/alta-hospitalizacion", p.PrimeraAtencionHandler.RegistrarAltaHospitalizacion)
+				primeraAtencion.POST("/:idAtencion/egreso/alta-fuga", p.PrimeraAtencionHandler.RegistrarAltaFuga)
+				primeraAtencion.POST("/:idAtencion/egreso/alta-fallecido", p.PrimeraAtencionHandler.RegistrarAltaFallecido)
+				primeraAtencion.GET("/:idAtencion/plan-trabajo", p.PrimeraAtencionHandler.ListarPlanTrabajoItems)
+				primeraAtencion.POST("/:idAtencion/plan-trabajo", p.PrimeraAtencionHandler.RegistrarPlanTrabajoItem)
+				primeraAtencion.DELETE("/:idAtencion/plan-trabajo/:idPlanTrabajoItem", p.PrimeraAtencionHandler.EliminarPlanTrabajoItem)
+				primeraAtencion.GET("/:idAtencion/medicamentos", p.PrimeraAtencionHandler.ListarMedicamentos)
+				primeraAtencion.POST("/:idAtencion/medicamentos", p.PrimeraAtencionHandler.RegistrarMedicamento)
+				primeraAtencion.PATCH("/:idAtencion/medicamentos/:idReceta/:idProducto", p.PrimeraAtencionHandler.ActualizarMedicamentoCampos)
+				primeraAtencion.DELETE("/:idAtencion/medicamentos/:idReceta/:idProducto", p.PrimeraAtencionHandler.EliminarMedicamento)
+				primeraAtencion.GET("/:idAtencion/examenes", p.PrimeraAtencionHandler.ListarExamenes)
+				primeraAtencion.POST("/:idAtencion/examenes", p.PrimeraAtencionHandler.RegistrarExamen)
+				primeraAtencion.DELETE("/:idAtencion/examenes/:idReceta/:idProducto", p.PrimeraAtencionHandler.EliminarExamen)
+				primeraAtencion.GET("/:idAtencion/procedimientos", p.PrimeraAtencionHandler.ListarProcedimientos)
+				primeraAtencion.POST("/:idAtencion/procedimientos", p.PrimeraAtencionHandler.RegistrarProcedimiento)
+				primeraAtencion.DELETE("/:idAtencion/procedimientos/:idReceta/:idProducto", p.PrimeraAtencionHandler.EliminarProcedimiento)
+				primeraAtencion.GET("/:idAtencion/interconsultas", p.PrimeraAtencionHandler.ListarInterconsultas)
+				primeraAtencion.POST("/:idAtencion/interconsultas", p.PrimeraAtencionHandler.RegistrarSolicitudInterconsulta)
+				primeraAtencion.DELETE("/:idAtencion/interconsultas/:idInterconsulta", p.PrimeraAtencionHandler.EliminarSolicitudInterconsulta)
+			}
 		}
 
 		etnias := v1.Group("/etnias")
@@ -111,11 +145,25 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/especialidades", p.CatalogHandler.ListEspecialidades)
 		v1.GET("/especialidades-qx", p.CatalogHandler.HandleListarEspecialidadesQx)
 		v1.GET("/especialidades-departamento/:idDepartamento", p.CatalogHandler.HandleListarEspecialidadesPorDepartamento)
+		v1.GET("/especialidades-por-tipo-servicio/:idTipoServicio", p.CatalogHandler.ListEspecialidadesPorTipoServicio)
+		v1.GET("/especialidades-listar", p.CatalogHandler.ListEspecialidadesListar)
 		v1.GET("/parametros/:idParametro", p.CatalogHandler.GetParametro)
+		// --- Contrato PA ---
+		v1.GET("/parametros-clinicos/:idGrupo", p.CatalogHandler.ListParametrosClinicos)
+		v1.GET("/prioridades-primera-atencion", p.CatalogHandler.ListPrioridadesPrimeraAtencion)
+		v1.GET("/subclasificaciones-diagnostico", p.CatalogHandler.ListSubclasificacionesDiagnostico)
+		v1.GET("/diagnosticos-catalogo", p.CatalogHandler.ListDiagnosticosCatalogo)
+		v1.GET("/medicamentos-catalogo", p.CatalogHandler.ListMedicamentosCatalogo)
+		v1.GET("/examenes-catalogo", p.CatalogHandler.ListExamenesCatalogo)
+		v1.GET("/procedimientos-catalogo", p.CatalogHandler.ListProcedimientosCatalogo)
+		v1.GET("/receta-dosis", p.CatalogHandler.ListRecetaDosis)
+		v1.GET("/receta-unidades-dosis", p.CatalogHandler.ListRecetaUnidadesDosis)
+		v1.GET("/receta-frecuencias", p.CatalogHandler.ListRecetaFrecuencias)
+		v1.GET("/vias-administracion", p.CatalogHandler.ListViasAdministracion)
 
-		v1.GET("/receta/frecuencias", p.CatalogHandler.ListRecetaFrecuencias)
-		v1.GET("/receta/unidades-dosis", p.CatalogHandler.ListRecetaUnidadesDosis)
-		v1.GET("/receta/vias-administracion", p.CatalogHandler.ListRecetaViasAdministracion)
+		v1.GET("/receta/frecuencias", p.CatalogHandler.HandleListRecetaFrecuencias)
+		v1.GET("/receta/unidades-dosis", p.CatalogHandler.HandleListRecetaUnidadesDosis)
+		v1.GET("/receta/vias-administracion", p.CatalogHandler.HandleListRecetaViasAdministracion)
 		v1.GET("/receta/medicamentos", p.CatalogHandler.BuscarMedicamentosReceta)
 		v1.GET("/catalogos/examenes", p.CatalogHandler.BuscarExamenesCatalogo)
 		v1.GET("/catalogos/parametros-clinicos/:idGrupo", p.CatalogHandler.HandleListParametrosClinicos)
