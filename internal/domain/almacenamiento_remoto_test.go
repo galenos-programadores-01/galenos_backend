@@ -36,3 +36,15 @@ func TestRechazaDotDot(t *testing.T) {
 		t.Fatal("expected error for .. in pattern")
 	}
 }
+
+func TestPrimeraAtencionPDFNombrado(t *testing.T) {
+	r := NuevaRutasArchivoRemoto("/ftp", nil)
+	ruta, ubi, err := r.PrimeraAtencionPDFNombrado(3619840, "PA_3619840_EX_R12.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "/ftp/primera-atencion/3619840/PA_3619840_EX_R12.pdf"
+	if ruta != want || ubi != want {
+		t.Fatalf("got ruta=%q ubi=%q want %q", ruta, ubi, want)
+	}
+}

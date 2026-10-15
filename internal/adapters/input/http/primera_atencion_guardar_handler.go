@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -191,7 +192,7 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 		ubicacion = h.ubicacionLogicaPrimeraAtencion(idAtencion, uuidFirma)
 	}
 
-	// Si el almacenamiento remoto está activo: subir PDF firmado y usar la ruta real.
+	// Si el almacenamiento remoto está activo: subir PDF(s) firmados y usar la ruta del PA principal.
 	if h.archivos != nil && h.archivos.Enabled() {
 		if uuidFirma == "" {
 			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "uuidFirma es obligatorio para subir al almacenamiento remoto")
@@ -201,17 +202,42 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 			respondError(c, http.StatusInternalServerError, "REMOTE_FIRMA_STORE_MISSING", "almacén de Firma Perú no disponible")
 			return
 		}
-		pdf, errPdf := h.firmaStore.GetSigned(c.Request.Context(), uuidFirma)
-		if errPdf != nil {
-			respondError(c, http.StatusConflict, "FIRMA_PDF_NO_DISPONIBLE", "no se encontró el PDF firmado para subir al remoto: "+errPdf.Error())
-			return
+
+		loteFiles, errLote := h.firmaStore.GetLoteSignedFiles(c.Request.Context(), uuidFirma)
+		if errLote == nil && len(loteFiles) > 0 {
+			ubiPrincipal := ""
+			ubiFallback := ""
+			for _, f := range loteFiles {
+				ubi, errUp := h.archivos.SubirPrimeraAtencionNombrado(c.Request.Context(), idAtencion, f.Name, f.Content)
+				if errUp != nil {
+					respondError(c, http.StatusBadGateway, "REMOTE_UPLOAD_FAILED", "no se pudo subir el PDF del lote al remoto: "+errUp.Error())
+					return
+				}
+				if ubiFallback == "" {
+					ubiFallback = ubi
+				}
+				if esPdfPrincipalPA(idAtencion, f.Name) {
+					ubiPrincipal = ubi
+				}
+			}
+			if ubiPrincipal != "" {
+				ubicacion = ubiPrincipal
+			} else {
+				ubicacion = ubiFallback
+			}
+		} else {
+			pdf, errPdf := h.firmaStore.GetSigned(c.Request.Context(), uuidFirma)
+			if errPdf != nil {
+				respondError(c, http.StatusConflict, "FIRMA_PDF_NO_DISPONIBLE", "no se encontró el PDF firmado para subir al remoto: "+errPdf.Error())
+				return
+			}
+			ubi, errUp := h.archivos.SubirPrimeraAtencion(c.Request.Context(), idAtencion, uuidFirma, pdf)
+			if errUp != nil {
+				respondError(c, http.StatusBadGateway, "REMOTE_UPLOAD_FAILED", "no se pudo subir el PDF al almacenamiento remoto: "+errUp.Error())
+				return
+			}
+			ubicacion = ubi
 		}
-		ubi, errUp := h.archivos.SubirPrimeraAtencion(c.Request.Context(), idAtencion, uuidFirma, pdf)
-		if errUp != nil {
-			respondError(c, http.StatusBadGateway, "REMOTE_UPLOAD_FAILED", "no se pudo subir el PDF al almacenamiento remoto: "+errUp.Error())
-			return
-		}
-		ubicacion = ubi
 	}
 
 	result, err := h.service.CerrarFirma(c.Request.Context(), domain.PrimeraAtencionCerrarFirma{
@@ -234,11 +260,23 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 // ubicacionLogicaPrimeraAtencion usa el patrón SFTP configurado o el default /ftp/...
 func (h *PrimeraAtencionHandler) ubicacionLogicaPrimeraAtencion(idAtencion int, uuidFirma string) string {
 	if h.archivos != nil {
+		// Preferir nombre canónico del PDF principal del lote.
+		nombrePA := fmt.Sprintf("PA_%d.pdf", idAtencion)
+		if _, ubi, err := h.archivos.Rutas().PrimeraAtencionPDFNombrado(idAtencion, nombrePA); err == nil && ubi != "" {
+			return ubi
+		}
 		if _, ubi, err := h.archivos.Rutas().PrimeraAtencionPDF(idAtencion, uuidFirma); err == nil && ubi != "" {
 			return ubi
 		}
 	}
-	return fmt.Sprintf("/ftp/primera-atencion/%d/%s.pdf", idAtencion, uuidFirma)
+	return fmt.Sprintf("/ftp/primera-atencion/%d/PA_%d.pdf", idAtencion, idAtencion)
+}
+
+// esPdfPrincipalPA identifica PA_{id}.pdf (no satélites _EX_ / _MED_).
+func esPdfPrincipalPA(idAtencion int, nombre string) bool {
+	base := strings.ToLower(filepath.Base(strings.TrimSpace(nombre)))
+	want := strings.ToLower(fmt.Sprintf("pa_%d.pdf", idAtencion))
+	return base == want
 }
 
 func respondPrimeraAtencionWriteError(c *gin.Context, code string, err error) {

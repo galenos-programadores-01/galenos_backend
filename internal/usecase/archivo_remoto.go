@@ -59,6 +59,30 @@ func (s *ArchivoRemotoService) SubirPrimeraAtencion(
 	return ubi, nil
 }
 
+// SubirPrimeraAtencionNombrado sube un PDF del lote PA con nombre de archivo
+// (PA_123.pdf, PA_123_EX_R45.pdf, …) bajo primera-atencion/{id}/.
+func (s *ArchivoRemotoService) SubirPrimeraAtencionNombrado(
+	ctx context.Context,
+	idAtencion int,
+	nombreArchivo string,
+	pdf []byte,
+) (ubicacionLogica string, err error) {
+	if !s.Enabled() {
+		return "", domain.ErrAlmacenamientoNoConfigurado
+	}
+	if idAtencion <= 0 || nombreArchivo == "" || len(pdf) == 0 {
+		return "", fmt.Errorf("archivo remoto PA nombrado: idAtencion, nombre y pdf son obligatorios")
+	}
+	ruta, ubi, err := s.rutas.PrimeraAtencionPDFNombrado(idAtencion, nombreArchivo)
+	if err != nil {
+		return "", err
+	}
+	if err := s.store.Subir(ctx, ruta, pdf); err != nil {
+		return "", err
+	}
+	return ubi, nil
+}
+
 // SubirEvolucion sube el PDF firmado de evolución médica.
 func (s *ArchivoRemotoService) SubirEvolucion(
 	ctx context.Context,

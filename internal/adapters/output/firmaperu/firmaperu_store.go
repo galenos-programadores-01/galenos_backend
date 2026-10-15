@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
@@ -22,12 +23,13 @@ type memoryStore struct {
 }
 
 type registro struct {
-	original  domain.FirmaPeruDocument
-	signed    []byte
-	solicitud *domain.FirmaPeruSolicitud
-	stamp     []byte
-	lote      []domain.FirmaPeruDocument
-	loteSign  []byte
+	original        domain.FirmaPeruDocument
+	signed          []byte
+	solicitud       *domain.FirmaPeruSolicitud
+	stamp           []byte
+	lote            []domain.FirmaPeruDocument
+	loteSign        []byte
+	loteSignedFiles []domain.FirmaPeruDocument
 }
 
 // NewMemoryStore crea el almacén de documentos del proceso de firma. Si
@@ -173,6 +175,7 @@ func (s *memoryStore) SaveLote(ctx context.Context, uuid string, docs []domain.F
 	}
 	r.lote = append([]domain.FirmaPeruDocument(nil), docs...)
 	r.loteSign = nil
+	r.loteSignedFiles = nil
 	return nil
 }
 
@@ -213,9 +216,8 @@ func (s *memoryStore) GetLoteSigned(ctx context.Context, uuid string) ([]byte, e
 	return r.loteSign, nil
 }
 
-// SaveLoteSignedFile escribe en disco (FIRMAPERU_SIGNED_DIR) uno de los PDFs
-// firmados de un lote, usando el nombre original del triaje. No falla si el
-// directorio no está configurado (solo persiste el 7z en memoria).
+// SaveLoteSignedFile guarda en memoria (y disco si FIRMAPERU_SIGNED_DIR) uno
+// de los PDFs firmados del lote, con el nombre original del documento.
 func (s *memoryStore) SaveLoteSignedFile(ctx context.Context, uuid string, name string, content []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -227,5 +229,43 @@ func (s *memoryStore) SaveLoteSignedFile(ctx context.Context, uuid string, name 
 	if r == nil {
 		return domain.ErrFirmaPeruDocumentNotFound
 	}
-	return s.guardarEnDisco(r, uuid, name, content)
+	nombre := filepath.Base(name)
+	if nombre == "." || nombre == "" {
+		nombre = uuid + ".pdf"
+	}
+	copia := append([]byte(nil), content...)
+	reemplazado := false
+	for i := range r.loteSignedFiles {
+		if strings.EqualFold(r.loteSignedFiles[i].Name, nombre) {
+			r.loteSignedFiles[i] = domain.FirmaPeruDocument{Name: nombre, Content: copia}
+			reemplazado = true
+			break
+		}
+	}
+	if !reemplazado {
+		r.loteSignedFiles = append(r.loteSignedFiles, domain.FirmaPeruDocument{
+			Name:    nombre,
+			Content: copia,
+		})
+	}
+	return s.guardarEnDisco(r, uuid, nombre, content)
+}
+
+// GetLoteSignedFiles recupera los PDFs firmados individuales del lote.
+func (s *memoryStore) GetLoteSignedFiles(ctx context.Context, uuid string) ([]domain.FirmaPeruDocument, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	r := s.records[uuid]
+	if r == nil || len(r.loteSignedFiles) == 0 {
+		return nil, domain.ErrFirmaPeruSignedNotAvailable
+	}
+	out := make([]domain.FirmaPeruDocument, len(r.loteSignedFiles))
+	for i, f := range r.loteSignedFiles {
+		out[i] = domain.FirmaPeruDocument{
+			Name:    f.Name,
+			Content: append([]byte(nil), f.Content...),
+		}
+	}
+	return out, nil
 }

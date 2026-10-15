@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -78,6 +79,51 @@ func (r RutasArchivoRemoto) PrimeraAtencionPDF(idAtencion int, uuidFirma string)
 		"uuid": strings.TrimSpace(uuidFirma),
 		"ext":  "pdf",
 	})
+}
+
+// PrimeraAtencionPDFNombrado ruta bajo primera-atencion/{id}/{nombre}.pdf
+// para el lote (PA + satélites). nombre se sanitiza a basename seguro.
+func (r RutasArchivoRemoto) PrimeraAtencionPDFNombrado(idAtencion int, nombreArchivo string) (rutaRemota, ubicacionLogica string, err error) {
+	if idAtencion <= 0 {
+		return "", "", ErrAlmacenamientoRutaInvalida
+	}
+	nombre := sanitizeNombrePDF(nombreArchivo)
+	if nombre == "" {
+		return "", "", ErrAlmacenamientoRutaInvalida
+	}
+	rel := "primera-atencion/" + strconv.Itoa(idAtencion) + "/" + nombre
+	if containsDotDot(rel) {
+		return "", "", ErrAlmacenamientoRutaInvalida
+	}
+	rutaRemota = joinRemote(r.BasePath, rel)
+	ubicacionLogica = ensureLeadingSlash(rutaRemota)
+	return rutaRemota, ubicacionLogica, nil
+}
+
+func sanitizeNombrePDF(nombre string) string {
+	nombre = path.Base(strings.ReplaceAll(strings.TrimSpace(nombre), "\\", "/"))
+	if nombre == "." || nombre == ".." || nombre == "" {
+		return ""
+	}
+	var b strings.Builder
+	for _, r := range nombre {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '.' || r == '_' || r == '-':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('_')
+		}
+	}
+	out := b.String()
+	if out == "" || out == "." || out == ".." {
+		return ""
+	}
+	if !strings.HasSuffix(strings.ToLower(out), ".pdf") {
+		out += ".pdf"
+	}
+	return out
 }
 
 // EvolucionPDF ruta para el PDF firmado de evolución médica.
