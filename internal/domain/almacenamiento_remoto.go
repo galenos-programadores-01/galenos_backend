@@ -13,30 +13,33 @@ var (
 	ErrAlmacenamientoArchivoNoEncontrado = errors.New("archivo remoto no encontrado")
 	ErrAlmacenamientoPatronInvalido      = errors.New("patrón de ruta remota inválido")
 	ErrAlmacenamientoRutaInvalida        = errors.New("ruta remota inválida")
+	ErrAlmacenamientoVarsIncompletas     = errors.New("faltan variables del patrón de ruta")
 )
 
 // Claves de patrón configurables (env SFTP_PATTERN_*).
 const (
-	PatronArchivoPrimeraAtencion = "primera_atencion"
-	PatronArchivoEvolucion       = "evolucion"
+	PatronArchivoPrimeraAtencion       = "primera_atencion"
+	PatronArchivoPrimeraAtencionReceta = "primera_atencion_receta"
+	PatronArchivoEvolucion             = "evolucion"
 )
 
 // RutasArchivoRemoto construye rutas remotas y la ubicación lógica de BD
-// a partir de patrones configurables ({id}, {uuid}, {ext}).
-// Es puro (sin I/O): lo usan casos de uso y el adaptador SFTP.
+// a partir de patrones configurables. Es puro (sin I/O): lo usan casos de uso
+// y el adaptador SFTP/FTP. Otros módulos reutilizan Construir / helpers.
 type RutasArchivoRemoto struct {
-	// BasePath prefijo remoto, p. ej. "/ftp".
+	// BasePath prefijo remoto, p. ej. "/galenos-pro".
 	BasePath string
 	// Patterns mapa clave → plantilla relativa, p. ej.
-	// "primera_atencion" → "primera-atencion/{id}/{uuid}.pdf"
+	// "primera_atencion" → "emergencia/primera-atencion/{idPrimeraAtencion}.pdf"
 	Patterns map[string]string
 }
 
-// DefaultsRutasArchivoRemoto patrones alineados con UbicacionArchivo actuales.
+// DefaultsRutasArchivoRemoto patrones por defecto (PA + receta satélite + evolución).
 func DefaultsRutasArchivoRemoto() map[string]string {
 	return map[string]string{
-		PatronArchivoPrimeraAtencion: "primera-atencion/{id}/{uuid}.pdf",
-		PatronArchivoEvolucion:       "evoluciones/{id}/{uuid}.pdf",
+		PatronArchivoPrimeraAtencion:       "emergencia/primera-atencion/{idPrimeraAtencion}.pdf",
+		PatronArchivoPrimeraAtencionReceta: "emergencia/primera-atencion/{idPrimeraAtencion}_{idReceta}.pdf",
+		PatronArchivoEvolucion:             "evoluciones/{id}/{uuid}.pdf",
 	}
 }
 
@@ -56,14 +59,18 @@ func NuevaRutasArchivoRemoto(basePath string, patterns map[string]string) RutasA
 }
 
 // Construir resuelve un patrón por clave y variables.
-// Devuelve ruta remota (para SFTP) y ubicación lógica (para BD, p. ej. /ftp/...).
+// Devuelve ruta remota (SFTP/FTP) y ubicación lógica (BD).
+// Falla si el patrón no existe, queda algún {placeholder} sin resolver o hay "..".
 func (r RutasArchivoRemoto) Construir(clavePatron string, vars map[string]string) (rutaRemota, ubicacionLogica string, err error) {
 	clavePatron = strings.TrimSpace(clavePatron)
 	patron, ok := r.Patterns[clavePatron]
 	if !ok || patron == "" {
 		return "", "", ErrAlmacenamientoPatronInvalido
 	}
-	rel := applyPattern(patron, vars)
+	rel, err := applyPattern(patron, vars)
+	if err != nil {
+		return "", "", err
+	}
 	if rel == "" || containsDotDot(rel) {
 		return "", "", ErrAlmacenamientoRutaInvalida
 	}
@@ -72,58 +79,28 @@ func (r RutasArchivoRemoto) Construir(clavePatron string, vars map[string]string
 	return rutaRemota, ubicacionLogica, nil
 }
 
-// PrimeraAtencionPDF ruta para el PDF firmado de PA.
-func (r RutasArchivoRemoto) PrimeraAtencionPDF(idAtencion int, uuidFirma string) (rutaRemota, ubicacionLogica string, err error) {
+// PrimeraAtencionPDF ruta del PDF principal de PA (la que se guarda en Tab_PA.UbicacionArchivo).
+func (r RutasArchivoRemoto) PrimeraAtencionPDF(idPrimeraAtencion int) (rutaRemota, ubicacionLogica string, err error) {
+	if idPrimeraAtencion <= 0 {
+		return "", "", ErrAlmacenamientoRutaInvalida
+	}
 	return r.Construir(PatronArchivoPrimeraAtencion, map[string]string{
-		"id":   strconv.Itoa(idAtencion),
-		"uuid": strings.TrimSpace(uuidFirma),
-		"ext":  "pdf",
+		"idPrimeraAtencion": strconv.Itoa(idPrimeraAtencion),
+		"ext":               "pdf",
 	})
 }
 
-// PrimeraAtencionPDFNombrado ruta bajo primera-atencion/{id}/{nombre}.pdf
-// para el lote (PA + satélites). nombre se sanitiza a basename seguro.
-func (r RutasArchivoRemoto) PrimeraAtencionPDFNombrado(idAtencion int, nombreArchivo string) (rutaRemota, ubicacionLogica string, err error) {
-	if idAtencion <= 0 {
+// PrimeraAtencionRecetaPDF ruta del PDF satélite (examen/meds) por IdReceta.
+// No se persiste en Tab_PA; se reconstruye con el mismo patrón + IDs.
+func (r RutasArchivoRemoto) PrimeraAtencionRecetaPDF(idPrimeraAtencion, idReceta int) (rutaRemota, ubicacionLogica string, err error) {
+	if idPrimeraAtencion <= 0 || idReceta <= 0 {
 		return "", "", ErrAlmacenamientoRutaInvalida
 	}
-	nombre := sanitizeNombrePDF(nombreArchivo)
-	if nombre == "" {
-		return "", "", ErrAlmacenamientoRutaInvalida
-	}
-	rel := "primera-atencion/" + strconv.Itoa(idAtencion) + "/" + nombre
-	if containsDotDot(rel) {
-		return "", "", ErrAlmacenamientoRutaInvalida
-	}
-	rutaRemota = joinRemote(r.BasePath, rel)
-	ubicacionLogica = ensureLeadingSlash(rutaRemota)
-	return rutaRemota, ubicacionLogica, nil
-}
-
-func sanitizeNombrePDF(nombre string) string {
-	nombre = path.Base(strings.ReplaceAll(strings.TrimSpace(nombre), "\\", "/"))
-	if nombre == "." || nombre == ".." || nombre == "" {
-		return ""
-	}
-	var b strings.Builder
-	for _, r := range nombre {
-		switch {
-		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
-			b.WriteRune(r)
-		case r == '.' || r == '_' || r == '-':
-			b.WriteRune(r)
-		default:
-			b.WriteByte('_')
-		}
-	}
-	out := b.String()
-	if out == "" || out == "." || out == ".." {
-		return ""
-	}
-	if !strings.HasSuffix(strings.ToLower(out), ".pdf") {
-		out += ".pdf"
-	}
-	return out
+	return r.Construir(PatronArchivoPrimeraAtencionReceta, map[string]string{
+		"idPrimeraAtencion": strconv.Itoa(idPrimeraAtencion),
+		"idReceta":          strconv.Itoa(idReceta),
+		"ext":               "pdf",
+	})
 }
 
 // EvolucionPDF ruta para el PDF firmado de evolución médica.
@@ -135,7 +112,7 @@ func (r RutasArchivoRemoto) EvolucionPDF(idRegAtencion int, uuidFirma string) (r
 	})
 }
 
-// ModuloPDF patrón genérico {modulo}/{id}/{uuid}.pdf para módulos nuevos.
+// ModuloPDF patrón genérico {modulo}/{id}/{uuid}.pdf para módulos nuevos sin env propio.
 func (r RutasArchivoRemoto) ModuloPDF(modulo string, id int, uuidFirma string) (rutaRemota, ubicacionLogica string, err error) {
 	modulo = trimSlashes(strings.TrimSpace(modulo))
 	uuidFirma = strings.TrimSpace(uuidFirma)
@@ -149,6 +126,50 @@ func (r RutasArchivoRemoto) ModuloPDF(modulo string, id int, uuidFirma string) (
 	rutaRemota = joinRemote(r.BasePath, rel)
 	ubicacionLogica = ensureLeadingSlash(rutaRemota)
 	return rutaRemota, ubicacionLogica, nil
+}
+
+// ArchivoLotePA clasifica un nombre del lote Firma Perú:
+//   - "42.pdf"        → principal PA
+//   - "42_98765.pdf"  → satélite receta
+type ArchivoLotePA struct {
+	EsPrincipal       bool
+	IdPrimeraAtencion int
+	IdReceta          int
+}
+
+// ParseNombreArchivoLotePA interpreta el basename del PDF del lote.
+func ParseNombreArchivoLotePA(nombre string) (ArchivoLotePA, error) {
+	base := strings.ToLower(path.Base(strings.ReplaceAll(strings.TrimSpace(nombre), "\\", "/")))
+	if !strings.HasSuffix(base, ".pdf") {
+		return ArchivoLotePA{}, ErrAlmacenamientoRutaInvalida
+	}
+	stem := strings.TrimSuffix(base, ".pdf")
+	if stem == "" {
+		return ArchivoLotePA{}, ErrAlmacenamientoRutaInvalida
+	}
+	if i := strings.IndexByte(stem, '_'); i >= 0 {
+		idPA, err1 := strconv.Atoi(stem[:i])
+		idReceta, err2 := strconv.Atoi(stem[i+1:])
+		if err1 != nil || err2 != nil || idPA <= 0 || idReceta <= 0 {
+			return ArchivoLotePA{}, ErrAlmacenamientoRutaInvalida
+		}
+		return ArchivoLotePA{EsPrincipal: false, IdPrimeraAtencion: idPA, IdReceta: idReceta}, nil
+	}
+	idPA, err := strconv.Atoi(stem)
+	if err != nil || idPA <= 0 {
+		return ArchivoLotePA{}, ErrAlmacenamientoRutaInvalida
+	}
+	return ArchivoLotePA{EsPrincipal: true, IdPrimeraAtencion: idPA}, nil
+}
+
+// NombreArchivoLotePA nombre canónico del PDF principal en el 7z.
+func NombreArchivoLotePA(idPrimeraAtencion int) string {
+	return strconv.Itoa(idPrimeraAtencion) + ".pdf"
+}
+
+// NombreArchivoLotePAReceta nombre canónico del PDF satélite en el 7z.
+func NombreArchivoLotePAReceta(idPrimeraAtencion, idReceta int) string {
+	return strconv.Itoa(idPrimeraAtencion) + "_" + strconv.Itoa(idReceta) + ".pdf"
 }
 
 func normalizeBasePath(base string) string {
@@ -179,12 +200,15 @@ func ensureLeadingSlash(p string) string {
 	return p
 }
 
-func applyPattern(patron string, vars map[string]string) string {
+func applyPattern(patron string, vars map[string]string) (string, error) {
 	out := patron
 	for k, v := range vars {
 		out = strings.ReplaceAll(out, "{"+k+"}", v)
 	}
-	return trimSlashes(out)
+	if strings.Contains(out, "{") {
+		return "", ErrAlmacenamientoVarsIncompletas
+	}
+	return trimSlashes(out), nil
 }
 
 func containsDotDot(p string) bool {

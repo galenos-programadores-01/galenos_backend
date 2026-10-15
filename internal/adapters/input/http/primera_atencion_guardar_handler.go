@@ -1,10 +1,10 @@
 package httpadapter
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -183,16 +183,28 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 	}
 
 	uuidFirma := strings.TrimSpace(req.UuidFirma)
-	ubicacion := strings.TrimSpace(req.UbicacionArchivo)
-	if ubicacion == "" {
-		if uuidFirma == "" {
-			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "uuidFirma es obligatorio")
-			return
-		}
-		ubicacion = h.ubicacionLogicaPrimeraAtencion(idAtencion, uuidFirma)
+	if uuidFirma == "" && strings.TrimSpace(req.UbicacionArchivo) == "" {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "uuidFirma es obligatorio")
+		return
 	}
 
-	// Si el almacenamiento remoto está activo: subir PDF(s) firmados y usar la ruta del PA principal.
+	detalle, errDet := h.service.ObtenerDetalle(c.Request.Context(), idAtencion)
+	if errDet != nil || detalle == nil {
+		respondError(c, http.StatusNotFound, "NOT_FOUND", "no se encontró el borrador de primera atención")
+		return
+	}
+	idPrimeraAtencion := idPrimeraAtencionDesdeDetalle(detalle)
+	if idPrimeraAtencion <= 0 {
+		respondError(c, http.StatusConflict, "VALIDATION_ERROR", "idPrimeraAtencion no disponible para cerrar firma")
+		return
+	}
+
+	ubicacion := strings.TrimSpace(req.UbicacionArchivo)
+	if ubicacion == "" {
+		ubicacion = h.ubicacionLogicaPrimeraAtencion(idPrimeraAtencion)
+	}
+
+	// Remoto activo: subir lote (PA + recetas) o PDF único; en BD solo ruta del PA.
 	if h.archivos != nil && h.archivos.Enabled() {
 		if uuidFirma == "" {
 			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "uuidFirma es obligatorio para subir al almacenamiento remoto")
@@ -205,33 +217,19 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 
 		loteFiles, errLote := h.firmaStore.GetLoteSignedFiles(c.Request.Context(), uuidFirma)
 		if errLote == nil && len(loteFiles) > 0 {
-			ubiPrincipal := ""
-			ubiFallback := ""
-			for _, f := range loteFiles {
-				ubi, errUp := h.archivos.SubirPrimeraAtencionNombrado(c.Request.Context(), idAtencion, f.Name, f.Content)
-				if errUp != nil {
-					respondError(c, http.StatusBadGateway, "REMOTE_UPLOAD_FAILED", "no se pudo subir el PDF del lote al remoto: "+errUp.Error())
-					return
-				}
-				if ubiFallback == "" {
-					ubiFallback = ubi
-				}
-				if esPdfPrincipalPA(idAtencion, f.Name) {
-					ubiPrincipal = ubi
-				}
+			ubiPA, errUp := h.subirLotePrimeraAtencion(c.Request.Context(), idPrimeraAtencion, loteFiles)
+			if errUp != nil {
+				respondError(c, http.StatusBadGateway, "REMOTE_UPLOAD_FAILED", errUp.Error())
+				return
 			}
-			if ubiPrincipal != "" {
-				ubicacion = ubiPrincipal
-			} else {
-				ubicacion = ubiFallback
-			}
+			ubicacion = ubiPA
 		} else {
 			pdf, errPdf := h.firmaStore.GetSigned(c.Request.Context(), uuidFirma)
 			if errPdf != nil {
 				respondError(c, http.StatusConflict, "FIRMA_PDF_NO_DISPONIBLE", "no se encontró el PDF firmado para subir al remoto: "+errPdf.Error())
 				return
 			}
-			ubi, errUp := h.archivos.SubirPrimeraAtencion(c.Request.Context(), idAtencion, uuidFirma, pdf)
+			ubi, errUp := h.archivos.SubirPrimeraAtencion(c.Request.Context(), idPrimeraAtencion, pdf)
 			if errUp != nil {
 				respondError(c, http.StatusBadGateway, "REMOTE_UPLOAD_FAILED", "no se pudo subir el PDF al almacenamiento remoto: "+errUp.Error())
 				return
@@ -257,26 +255,91 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 	})
 }
 
-// ubicacionLogicaPrimeraAtencion usa el patrón SFTP configurado o el default /ftp/...
-func (h *PrimeraAtencionHandler) ubicacionLogicaPrimeraAtencion(idAtencion int, uuidFirma string) string {
+// ubicacionLogicaPrimeraAtencion ruta exacta del PDF PA según patrón env (sin subir).
+func (h *PrimeraAtencionHandler) ubicacionLogicaPrimeraAtencion(idPrimeraAtencion int) string {
 	if h.archivos != nil {
-		// Preferir nombre canónico del PDF principal del lote.
-		nombrePA := fmt.Sprintf("PA_%d.pdf", idAtencion)
-		if _, ubi, err := h.archivos.Rutas().PrimeraAtencionPDFNombrado(idAtencion, nombrePA); err == nil && ubi != "" {
-			return ubi
-		}
-		if _, ubi, err := h.archivos.Rutas().PrimeraAtencionPDF(idAtencion, uuidFirma); err == nil && ubi != "" {
+		if _, ubi, err := h.archivos.Rutas().PrimeraAtencionPDF(idPrimeraAtencion); err == nil && ubi != "" {
 			return ubi
 		}
 	}
-	return fmt.Sprintf("/ftp/primera-atencion/%d/PA_%d.pdf", idAtencion, idAtencion)
+	return fmt.Sprintf("/galenos-pro/emergencia/primera-atencion/%d.pdf", idPrimeraAtencion)
 }
 
-// esPdfPrincipalPA identifica PA_{id}.pdf (no satélites _EX_ / _MED_).
-func esPdfPrincipalPA(idAtencion int, nombre string) bool {
-	base := strings.ToLower(filepath.Base(strings.TrimSpace(nombre)))
-	want := strings.ToLower(fmt.Sprintf("pa_%d.pdf", idAtencion))
-	return base == want
+// subirLotePrimeraAtencion sube PA + satélites por patrón; devuelve solo la ubicacion del PA.
+func (h *PrimeraAtencionHandler) subirLotePrimeraAtencion(
+	ctx context.Context,
+	idPrimeraAtencion int,
+	files []domain.FirmaPeruDocument,
+) (ubicacionPA string, err error) {
+	for _, f := range files {
+		parsed, errParse := domain.ParseNombreArchivoLotePA(f.Name)
+		if errParse != nil {
+			return "", fmt.Errorf("nombre de archivo del lote inválido (%s): %w", f.Name, errParse)
+		}
+		if parsed.IdPrimeraAtencion != idPrimeraAtencion {
+			return "", fmt.Errorf(
+				"archivo %s no corresponde a idPrimeraAtencion=%d",
+				f.Name, idPrimeraAtencion,
+			)
+		}
+		if parsed.EsPrincipal {
+			ubi, errUp := h.archivos.SubirPrimeraAtencion(ctx, idPrimeraAtencion, f.Content)
+			if errUp != nil {
+				return "", fmt.Errorf("subir PDF PA: %w", errUp)
+			}
+			ubicacionPA = ubi
+			continue
+		}
+		if _, errUp := h.archivos.SubirPrimeraAtencionReceta(ctx, idPrimeraAtencion, parsed.IdReceta, f.Content); errUp != nil {
+			return "", fmt.Errorf("subir PDF receta %d: %w", parsed.IdReceta, errUp)
+		}
+	}
+	if ubicacionPA == "" {
+		return "", fmt.Errorf("el lote no incluye el PDF principal %s", domain.NombreArchivoLotePA(idPrimeraAtencion))
+	}
+	return ubicacionPA, nil
+}
+
+func idPrimeraAtencionDesdeDetalle(row map[string]any) int {
+	if row == nil {
+		return 0
+	}
+	for _, key := range []string{"IdPrimeraAtencion", "idPrimeraAtencion"} {
+		switch v := row[key].(type) {
+		case int:
+			if v > 0 {
+				return v
+			}
+		case int32:
+			if v > 0 {
+				return int(v)
+			}
+		case int64:
+			if v > 0 {
+				return int(v)
+			}
+		case float64:
+			if v > 0 {
+				return int(v)
+			}
+		}
+	}
+	for key, value := range row {
+		if !strings.EqualFold(key, "IdPrimeraAtencion") {
+			continue
+		}
+		switch v := value.(type) {
+		case int:
+			return v
+		case int32:
+			return int(v)
+		case int64:
+			return int(v)
+		case float64:
+			return int(v)
+		}
+	}
+	return 0
 }
 
 func respondPrimeraAtencionWriteError(c *gin.Context, code string, err error) {

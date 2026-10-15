@@ -73,9 +73,10 @@ type Config struct {
 	SFTPTimeout                time.Duration
 	SFTPInsecureIgnoreHostKey  bool
 	SFTPKnownHostsPath         string
-	SFTPBasePath               string
-	SFTPPatternPrimeraAtencion string
-	SFTPPatternEvolucion       string
+	SFTPBasePath                     string
+	SFTPPatternPrimeraAtencion       string
+	SFTPPatternPrimeraAtencionReceta string
+	SFTPPatternEvolucion             string
 }
 
 // Load lee la configuración desde el entorno aplicando valores por defecto
@@ -174,9 +175,16 @@ func Load() (*Config, error) {
 		SFTPTimeout:                envDurationOrDefault("SFTP_TIMEOUT", 30*time.Second),
 		SFTPInsecureIgnoreHostKey:  envBoolOrDefault("SFTP_INSECURE_IGNORE_HOST_KEY", true),
 		SFTPKnownHostsPath:         os.Getenv("SFTP_KNOWN_HOSTS"),
-		SFTPBasePath:               envOrDefault("SFTP_BASE_PATH", "/ftp"),
-		SFTPPatternPrimeraAtencion: envOrDefault("SFTP_PATTERN_PRIMERA_ATENCION", "primera-atencion/{id}/{uuid}.pdf"),
-		SFTPPatternEvolucion:       envOrDefault("SFTP_PATTERN_EVOLUCION", "evoluciones/{id}/{uuid}.pdf"),
+		SFTPBasePath: envOrDefault("SFTP_BASE_PATH", "/galenos-pro"),
+		SFTPPatternPrimeraAtencion: envOrDefault(
+			"SFTP_PATTERN_PRIMERA_ATENCION",
+			"emergencia/primera-atencion/{idPrimeraAtencion}.pdf",
+		),
+		SFTPPatternPrimeraAtencionReceta: envOrDefault(
+			"SFTP_PATTERN_PRIMERA_ATENCION_RECETA",
+			"emergencia/primera-atencion/{idPrimeraAtencion}_{idReceta}.pdf",
+		),
+		SFTPPatternEvolucion: envOrDefault("SFTP_PATTERN_EVOLUCION", "evoluciones/{id}/{uuid}.pdf"),
 	}, nil
 }
 

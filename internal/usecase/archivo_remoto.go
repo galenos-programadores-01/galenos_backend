@@ -8,13 +8,14 @@ import (
 	"github.com/galenos-pro/appointments-api/internal/ports/output"
 )
 
-// ArchivoRemotoService fachada reutilizable para subir/bajar PDFs firmados (PA hoy; evolución/módulo listos para otros flujos).
+// ArchivoRemotoService fachada reutilizable para subir/bajar PDFs firmados.
+// Los módulos resuelven rutas con patrones env vía SubirPorPatron / helpers.
 type ArchivoRemotoService struct {
 	store output.AlmacenamientoRemoto
 	rutas domain.RutasArchivoRemoto
 }
 
-// NewArchivoRemotoService cablea el adaptador (SFTP/noop) y las rutas configurables.
+// NewArchivoRemotoService cablea el adaptador (SFTP/FTP/noop) y las rutas configurables.
 func NewArchivoRemotoService(
 	store output.AlmacenamientoRemoto,
 	rutas domain.RutasArchivoRemoto,
@@ -30,26 +31,27 @@ func (s *ArchivoRemotoService) Enabled() bool {
 	return s != nil && s.store != nil && s.store.Enabled()
 }
 
-// Rutas expone el builder de paths (por si un modulo necesita la ubicación lógica sin subir).
+// Rutas expone el builder de paths (ubicación lógica sin subir).
 func (s *ArchivoRemotoService) Rutas() domain.RutasArchivoRemoto {
 	return s.rutas
 }
 
-// SubirPrimeraAtencion sube el PDF firmado de PA.
-// Devuelve ubicacionLogica para persistir en BD (p. ej. /ftp/primera-atencion/...).
-func (s *ArchivoRemotoService) SubirPrimeraAtencion(
+// SubirPorPatron resuelve SFTP_PATTERN_* + vars, sube el PDF y devuelve
+// ubicacionLogica (misma cadena que debe persistirse en BD si aplica).
+// Reutilizable por cualquier módulo: solo pasa clave de patrón y variables.
+func (s *ArchivoRemotoService) SubirPorPatron(
 	ctx context.Context,
-	idAtencion int,
-	uuidFirma string,
+	clavePatron string,
+	vars map[string]string,
 	pdf []byte,
 ) (ubicacionLogica string, err error) {
 	if !s.Enabled() {
 		return "", domain.ErrAlmacenamientoNoConfigurado
 	}
-	if idAtencion <= 0 || uuidFirma == "" || len(pdf) == 0 {
-		return "", fmt.Errorf("archivo remoto PA: idAtencion, uuidFirma y pdf son obligatorios")
+	if len(pdf) == 0 {
+		return "", fmt.Errorf("archivo remoto: pdf vacío")
 	}
-	ruta, ubi, err := s.rutas.PrimeraAtencionPDF(idAtencion, uuidFirma)
+	ruta, ubi, err := s.rutas.Construir(clavePatron, vars)
 	if err != nil {
 		return "", err
 	}
@@ -59,28 +61,37 @@ func (s *ArchivoRemotoService) SubirPrimeraAtencion(
 	return ubi, nil
 }
 
-// SubirPrimeraAtencionNombrado sube un PDF del lote PA con nombre de archivo
-// (PA_123.pdf, PA_123_EX_R45.pdf, …) bajo primera-atencion/{id}/.
-func (s *ArchivoRemotoService) SubirPrimeraAtencionNombrado(
+// SubirPrimeraAtencion sube el PDF principal de PA.
+// Devuelve ubicacionLogica para Tab_PA.UbicacionArchivo.
+func (s *ArchivoRemotoService) SubirPrimeraAtencion(
 	ctx context.Context,
-	idAtencion int,
-	nombreArchivo string,
+	idPrimeraAtencion int,
 	pdf []byte,
 ) (ubicacionLogica string, err error) {
-	if !s.Enabled() {
-		return "", domain.ErrAlmacenamientoNoConfigurado
+	if idPrimeraAtencion <= 0 {
+		return "", fmt.Errorf("archivo remoto PA: idPrimeraAtencion inválido")
 	}
-	if idAtencion <= 0 || nombreArchivo == "" || len(pdf) == 0 {
-		return "", fmt.Errorf("archivo remoto PA nombrado: idAtencion, nombre y pdf son obligatorios")
+	return s.SubirPorPatron(ctx, domain.PatronArchivoPrimeraAtencion, map[string]string{
+		"idPrimeraAtencion": fmt.Sprintf("%d", idPrimeraAtencion),
+		"ext":               "pdf",
+	}, pdf)
+}
+
+// SubirPrimeraAtencionReceta sube un PDF satélite (examen/meds) por IdReceta.
+// No se guarda en Tab_PA; la ruta se reconstruye con el patrón.
+func (s *ArchivoRemotoService) SubirPrimeraAtencionReceta(
+	ctx context.Context,
+	idPrimeraAtencion, idReceta int,
+	pdf []byte,
+) (ubicacionLogica string, err error) {
+	if idPrimeraAtencion <= 0 || idReceta <= 0 {
+		return "", fmt.Errorf("archivo remoto PA receta: idPrimeraAtencion e idReceta son obligatorios")
 	}
-	ruta, ubi, err := s.rutas.PrimeraAtencionPDFNombrado(idAtencion, nombreArchivo)
-	if err != nil {
-		return "", err
-	}
-	if err := s.store.Subir(ctx, ruta, pdf); err != nil {
-		return "", err
-	}
-	return ubi, nil
+	return s.SubirPorPatron(ctx, domain.PatronArchivoPrimeraAtencionReceta, map[string]string{
+		"idPrimeraAtencion": fmt.Sprintf("%d", idPrimeraAtencion),
+		"idReceta":          fmt.Sprintf("%d", idReceta),
+		"ext":               "pdf",
+	}, pdf)
 }
 
 // SubirEvolucion sube el PDF firmado de evolución médica.
@@ -96,14 +107,11 @@ func (s *ArchivoRemotoService) SubirEvolucion(
 	if idRegAtencion <= 0 || uuidFirma == "" || len(pdf) == 0 {
 		return "", fmt.Errorf("archivo remoto evolución: idRegAtencion, uuidFirma y pdf son obligatorios")
 	}
-	ruta, ubi, err := s.rutas.EvolucionPDF(idRegAtencion, uuidFirma)
-	if err != nil {
-		return "", err
-	}
-	if err := s.store.Subir(ctx, ruta, pdf); err != nil {
-		return "", err
-	}
-	return ubi, nil
+	return s.SubirPorPatron(ctx, domain.PatronArchivoEvolucion, map[string]string{
+		"id":   fmt.Sprintf("%d", idRegAtencion),
+		"uuid": uuidFirma,
+		"ext":  "pdf",
+	}, pdf)
 }
 
 // SubirModulo sube un PDF con patrón genérico {base}/{modulo}/{id}/{uuid}.pdf.

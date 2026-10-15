@@ -124,8 +124,9 @@ func run() error {
 		return err
 	}
 	rutasArchivoRemoto := domain.NuevaRutasArchivoRemoto(cfg.SFTPBasePath, map[string]string{
-		domain.PatronArchivoPrimeraAtencion: cfg.SFTPPatternPrimeraAtencion,
-		domain.PatronArchivoEvolucion:       cfg.SFTPPatternEvolucion,
+		domain.PatronArchivoPrimeraAtencion:       cfg.SFTPPatternPrimeraAtencion,
+		domain.PatronArchivoPrimeraAtencionReceta: cfg.SFTPPatternPrimeraAtencionReceta,
+		domain.PatronArchivoEvolucion:             cfg.SFTPPatternEvolucion,
 	})
 	archivoRemotoService := usecase.NewArchivoRemotoService(almacenamientoRemoto, rutasArchivoRemoto)
 	if archivoRemotoService.Enabled() {

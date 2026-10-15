@@ -3,12 +3,24 @@ package domain
 import "testing"
 
 func TestPrimeraAtencionPDF(t *testing.T) {
-	r := NuevaRutasArchivoRemoto("/ftp", nil)
-	ruta, ubi, err := r.PrimeraAtencionPDF(3619840, "abc-uuid")
+	r := NuevaRutasArchivoRemoto("/galenos-pro", nil)
+	ruta, ubi, err := r.PrimeraAtencionPDF(42)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "/ftp/primera-atencion/3619840/abc-uuid.pdf"
+	want := "/galenos-pro/emergencia/primera-atencion/42.pdf"
+	if ruta != want || ubi != want {
+		t.Fatalf("got ruta=%q ubi=%q want %q", ruta, ubi, want)
+	}
+}
+
+func TestPrimeraAtencionRecetaPDF(t *testing.T) {
+	r := NuevaRutasArchivoRemoto("/galenos-pro", nil)
+	ruta, ubi, err := r.PrimeraAtencionRecetaPDF(42, 98765)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "/galenos-pro/emergencia/primera-atencion/42_98765.pdf"
 	if ruta != want || ubi != want {
 		t.Fatalf("got ruta=%q ubi=%q want %q", ruta, ubi, want)
 	}
@@ -16,35 +28,43 @@ func TestPrimeraAtencionPDF(t *testing.T) {
 
 func TestPatronPersonalizado(t *testing.T) {
 	r := NuevaRutasArchivoRemoto("/docs", map[string]string{
-		PatronArchivoPrimeraAtencion: "pa/{id}/firmas/{uuid}.{ext}",
+		PatronArchivoPrimeraAtencion: "pa/{idPrimeraAtencion}/firma.pdf",
 	})
-	ruta, _, err := r.PrimeraAtencionPDF(10, "u1")
+	ruta, _, err := r.PrimeraAtencionPDF(10)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "/docs/pa/10/firmas/u1.pdf"
+	want := "/docs/pa/10/firma.pdf"
 	if ruta != want {
 		t.Fatalf("got %q want %q", ruta, want)
 	}
 }
 
+func TestRechazaVarsIncompletas(t *testing.T) {
+	r := NuevaRutasArchivoRemoto("/ftp", map[string]string{
+		PatronArchivoPrimeraAtencion: "x/{idPrimeraAtencion}/{uuid}.pdf",
+	})
+	if _, _, err := r.PrimeraAtencionPDF(1); err == nil {
+		t.Fatal("expected incomplete vars error")
+	}
+}
+
 func TestRechazaDotDot(t *testing.T) {
 	r := NuevaRutasArchivoRemoto("/ftp", map[string]string{
-		PatronArchivoPrimeraAtencion: "../etc/{uuid}.pdf",
+		PatronArchivoPrimeraAtencion: "../etc/{idPrimeraAtencion}.pdf",
 	})
-	if _, _, err := r.PrimeraAtencionPDF(1, "x"); err == nil {
+	if _, _, err := r.PrimeraAtencionPDF(1); err == nil {
 		t.Fatal("expected error for .. in pattern")
 	}
 }
 
-func TestPrimeraAtencionPDFNombrado(t *testing.T) {
-	r := NuevaRutasArchivoRemoto("/ftp", nil)
-	ruta, ubi, err := r.PrimeraAtencionPDFNombrado(3619840, "PA_3619840_EX_R12.pdf")
-	if err != nil {
-		t.Fatal(err)
+func TestParseNombreArchivoLotePA(t *testing.T) {
+	pa, err := ParseNombreArchivoLotePA("42.pdf")
+	if err != nil || !pa.EsPrincipal || pa.IdPrimeraAtencion != 42 {
+		t.Fatalf("pa: %+v err=%v", pa, err)
 	}
-	want := "/ftp/primera-atencion/3619840/PA_3619840_EX_R12.pdf"
-	if ruta != want || ubi != want {
-		t.Fatalf("got ruta=%q ubi=%q want %q", ruta, ubi, want)
+	rec, err := ParseNombreArchivoLotePA("42_98765.pdf")
+	if err != nil || rec.EsPrincipal || rec.IdPrimeraAtencion != 42 || rec.IdReceta != 98765 {
+		t.Fatalf("rec: %+v err=%v", rec, err)
 	}
 }
