@@ -34,6 +34,7 @@ type RouterParams struct {
 	MedicoListaEsperaHandler      *MedicoListaEsperaHandler
 	CausaExternaMorbilidadHandler *CausaExternaMorbilidadHandler
 	AuditoriaHandler              *AuditoriaHandler
+	AuditoriaQfHandler            *AuditoriaQfHandler
 	RefConHandler                 *refconhttp.RefConHandler
 	AuthService                   input.AuthService
 	AllowedOrigins                []string
@@ -84,6 +85,12 @@ func NewRouter(p RouterParams) *gin.Engine {
 			{
 				appointments.POST("", p.AppointmentHandler.Create)
 				appointments.GET("/:id", p.AppointmentHandler.GetByID)
+			}
+
+			auditoriaQf := protected.Group("/farmacia/auditoria-qf")
+			{
+				auditoriaQf.GET("/recetas", p.AuditoriaQfHandler.ListarBandeja)
+				auditoriaQf.GET("/estados", p.AuditoriaQfHandler.ListarEstados)
 			}
 		}
 
