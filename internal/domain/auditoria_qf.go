@@ -11,7 +11,7 @@ type BandejaRecetasParams struct {
 	IdEstado    *int
 }
 
-// DetalleRecetaParams son los argumentos de usp_go_Receta_Bandeja_Detalle.
+// DetalleRecetaParams son los argumentos de usp_go_Recetas_Bandeja_Detalle.
 // Audita_Dispensacion se envía NULL. IdUsuario es el idEmpleado de la sesión.
 type DetalleRecetaParams struct {
 	IdReceta  int

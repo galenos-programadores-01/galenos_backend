@@ -70,7 +70,7 @@ func (r *auditoriaQfRepository) ListarEstados(ctx context.Context) ([]map[string
 
 func (r *auditoriaQfRepository) ListarDetalle(ctx context.Context, params domain.DetalleRecetaParams) ([]map[string]any, error) {
 	const query = `
-EXEC dbo.usp_go_Receta_Bandeja_Detalle
+EXEC dbo.usp_go_Recetas_Bandeja_Detalle
     @IdReceta = @IdReceta,
     @Audita_Dispensacion = @Audita_Dispensacion,
     @IdUsuario = @IdUsuario`
@@ -86,7 +86,7 @@ EXEC dbo.usp_go_Receta_Bandeja_Detalle
 		sql.Named("IdUsuario", idUsuario),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("calling usp_go_Receta_Bandeja_Detalle: %w", err)
+		return nil, fmt.Errorf("calling usp_go_Recetas_Bandeja_Detalle: %w", err)
 	}
 	defer rows.Close()
 
