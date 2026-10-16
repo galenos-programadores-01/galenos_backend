@@ -255,6 +255,84 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 	})
 }
 
+// DescargarDocumento GET /api/v1/primera-atencion/:idAtencion/documento
+// Sirve el PDF firmado desde el almacenamiento remoto (FTP/SFTP).
+// Query: tipo=pa|receta&idReceta= (idReceta obligatorio si tipo=receta).
+func (h *PrimeraAtencionHandler) DescargarDocumento(c *gin.Context) {
+	idAtencion, err := strconv.Atoi(c.Param("idAtencion"))
+	if err != nil || idAtencion <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idAtencion inválido")
+		return
+	}
+	if h.archivos == nil || !h.archivos.Enabled() {
+		respondError(c, http.StatusServiceUnavailable, "REMOTE_STORAGE_DISABLED", "almacenamiento remoto no configurado")
+		return
+	}
+
+	tipo := strings.ToLower(strings.TrimSpace(c.DefaultQuery("tipo", "pa")))
+	idReceta, _ := strconv.Atoi(strings.TrimSpace(c.Query("idReceta")))
+
+	detalle, errDet := h.service.ObtenerDetalle(c.Request.Context(), idAtencion)
+	if errDet != nil || detalle == nil {
+		respondError(c, http.StatusNotFound, "NOT_FOUND", "no se encontró la primera atención")
+		return
+	}
+	if estadoFirmaDesdeDetalle(detalle) != domain.EstadoFirmaCerrada {
+		respondError(c, http.StatusConflict, "PRIMERA_ATENCION_NO_FIRMADA", "la primera atención aún no está firmada")
+		return
+	}
+	idPrimeraAtencion := idPrimeraAtencionDesdeDetalle(detalle)
+	if idPrimeraAtencion <= 0 {
+		respondError(c, http.StatusConflict, "VALIDATION_ERROR", "idPrimeraAtencion no disponible")
+		return
+	}
+
+	ubicacion := ""
+	nombre := ""
+	switch tipo {
+	case "pa", "":
+		ubicacion = strings.TrimSpace(ubicacionArchivoDesdeDetalle(detalle))
+		if ubicacion == "" {
+			ubicacion = h.ubicacionLogicaPrimeraAtencion(idPrimeraAtencion)
+		}
+		nombre = domain.NombreArchivoLotePA(idPrimeraAtencion)
+	case "receta", "examen", "medicamentos":
+		if idReceta <= 0 {
+			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idReceta es obligatorio para documentos satélite")
+			return
+		}
+		_, ubi, errRuta := h.archivos.Rutas().PrimeraAtencionRecetaPDF(idPrimeraAtencion, idReceta)
+		if errRuta != nil || ubi == "" {
+			respondError(c, http.StatusInternalServerError, "REMOTE_PATH_INVALID", "no se pudo resolver la ruta del documento")
+			return
+		}
+		ubicacion = ubi
+		nombre = domain.NombreArchivoLotePAReceta(idPrimeraAtencion, idReceta)
+	default:
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "tipo debe ser pa o receta")
+		return
+	}
+
+	pdf, errPdf := h.archivos.DescargarPorUbicacion(c.Request.Context(), ubicacion)
+	if errPdf != nil {
+		if errors.Is(errPdf, domain.ErrAlmacenamientoArchivoNoEncontrado) {
+			respondError(c, http.StatusNotFound, "DOCUMENTO_NO_ENCONTRADO", "no se encontró el PDF en el almacenamiento remoto")
+			return
+		}
+		respondError(c, http.StatusBadGateway, "REMOTE_DOWNLOAD_FAILED", "no se pudo descargar el PDF: "+errPdf.Error())
+		return
+	}
+	if len(pdf) == 0 {
+		respondError(c, http.StatusNotFound, "DOCUMENTO_VACIO", "el PDF remoto está vacío")
+		return
+	}
+
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", nombre))
+	c.Header("Cache-Control", "private, max-age=60")
+	c.Data(http.StatusOK, "application/pdf", pdf)
+}
+
 // ubicacionLogicaPrimeraAtencion ruta exacta del PDF PA según patrón env (sin subir).
 func (h *PrimeraAtencionHandler) ubicacionLogicaPrimeraAtencion(idPrimeraAtencion int) string {
 	if h.archivos != nil {
@@ -301,45 +379,84 @@ func (h *PrimeraAtencionHandler) subirLotePrimeraAtencion(
 }
 
 func idPrimeraAtencionDesdeDetalle(row map[string]any) int {
+	return enteroPositivoDesdeDetalle(row, "IdPrimeraAtencion", "idPrimeraAtencion")
+}
+
+func estadoFirmaDesdeDetalle(row map[string]any) int {
+	return enteroDesdeDetalle(row, "EstadoFirma", "estadoFirma")
+}
+
+func ubicacionArchivoDesdeDetalle(row map[string]any) string {
 	if row == nil {
-		return 0
+		return ""
 	}
-	for _, key := range []string{"IdPrimeraAtencion", "idPrimeraAtencion"} {
-		switch v := row[key].(type) {
-		case int:
-			if v > 0 {
-				return v
-			}
-		case int32:
-			if v > 0 {
-				return int(v)
-			}
-		case int64:
-			if v > 0 {
-				return int(v)
-			}
-		case float64:
-			if v > 0 {
-				return int(v)
-			}
+	for _, key := range []string{"UbicacionArchivo", "ubicacionArchivo"} {
+		if s, ok := row[key].(string); ok {
+			return strings.TrimSpace(s)
 		}
 	}
 	for key, value := range row {
-		if !strings.EqualFold(key, "IdPrimeraAtencion") {
+		if !strings.EqualFold(key, "UbicacionArchivo") {
 			continue
 		}
-		switch v := value.(type) {
-		case int:
-			return v
-		case int32:
-			return int(v)
-		case int64:
-			return int(v)
-		case float64:
-			return int(v)
+		if s, ok := value.(string); ok {
+			return strings.TrimSpace(s)
+		}
+	}
+	return ""
+}
+
+func enteroPositivoDesdeDetalle(row map[string]any, keys ...string) int {
+	v := enteroDesdeDetalle(row, keys...)
+	if v > 0 {
+		return v
+	}
+	return 0
+}
+
+func enteroDesdeDetalle(row map[string]any, keys ...string) int {
+	if row == nil {
+		return 0
+	}
+	for _, key := range keys {
+		if n, ok := coerceEntero(row[key]); ok {
+			return n
+		}
+	}
+	if len(keys) == 0 {
+		return 0
+	}
+	canon := keys[0]
+	for key, value := range row {
+		if !strings.EqualFold(key, canon) {
+			continue
+		}
+		if n, ok := coerceEntero(value); ok {
+			return n
 		}
 	}
 	return 0
+}
+
+func coerceEntero(value any) (int, bool) {
+	switch v := value.(type) {
+	case int:
+		return v, true
+	case int32:
+		return int(v), true
+	case int64:
+		return int(v), true
+	case float64:
+		return int(v), true
+	case string:
+		n, err := strconv.Atoi(strings.TrimSpace(v))
+		if err != nil {
+			return 0, false
+		}
+		return n, true
+	default:
+		return 0, false
+	}
 }
 
 func respondPrimeraAtencionWriteError(c *gin.Context, code string, err error) {
