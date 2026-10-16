@@ -25,4 +25,8 @@ var (
 	ErrInvalidCredentials                = errors.New("invalid credentials")
 	ErrInvalidToken                      = errors.New("invalid token")
 	ErrMissingEmployeeID                 = errors.New("the authenticated employee id is required")
+	// Auditoría QF — bandeja de recetas
+	ErrFechaBandejaInvalida = errors.New("fechaInicio y fechaFin deben usar el formato aaaa-mm-ddTHH:mm:ss")
+	ErrFechaBandejaOrden    = errors.New("la fecha inicio no puede ser posterior a la fecha fin")
+	ErrRangoFechasBandeja   = errors.New("el rango entre fecha inicio y fecha fin no puede superar 7 días")
 )
