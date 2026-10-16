@@ -66,3 +66,55 @@ func (h *AuditoriaQfHandler) ListarEstados(c *gin.Context) {
 	}
 	respondSuccess(c, http.StatusOK, items)
 }
+
+// ListarDetalle maneja GET /api/v1/farmacia/auditoria-qf/recetas/:idReceta/detalle.
+func (h *AuditoriaQfHandler) ListarDetalle(c *gin.Context) {
+	idReceta, err := strconv.Atoi(c.Param("idReceta"))
+	if err != nil || idReceta <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idReceta debe ser un entero")
+		return
+	}
+	idUsuario := c.GetInt("idEmpleado")
+	if idUsuario <= 0 {
+		respondError(c, http.StatusUnauthorized, "MISSING_USER", "no se encontró el usuario de la sesión")
+		return
+	}
+
+	items, err := h.service.ListarDetalle(c.Request.Context(), domain.DetalleRecetaParams{
+		IdReceta:  idReceta,
+		IdUsuario: idUsuario,
+	})
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "AUDITORIA_QF_DETALLE_FAILED", err.Error())
+		return
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
+// ListarHistorico maneja GET /api/v1/farmacia/auditoria-qf/historico.
+func (h *AuditoriaQfHandler) ListarHistorico(c *gin.Context) {
+	idPaciente, okPaciente := enteroPositivo(c.Query("idPaciente"))
+	idProducto, okProducto := enteroPositivo(c.Query("idProducto"))
+	if !okPaciente || !okProducto {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idPaciente e idProducto deben ser enteros")
+		return
+	}
+
+	items, err := h.service.ListarHistorico(c.Request.Context(), domain.HistoricoMedicamentoParams{
+		IdPaciente: idPaciente,
+		IdProducto: idProducto,
+	})
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "AUDITORIA_QF_HISTORICO_FAILED", err.Error())
+		return
+	}
+	respondSuccess(c, http.StatusOK, items)
+}
+
+func enteroPositivo(raw string) (int, bool) {
+	valor, err := strconv.Atoi(raw)
+	if err != nil || valor <= 0 {
+		return 0, false
+	}
+	return valor, true
+}

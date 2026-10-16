@@ -68,6 +68,57 @@ func (r *auditoriaQfRepository) ListarEstados(ctx context.Context) ([]map[string
 	return normalizarFilas(maps), nil
 }
 
+func (r *auditoriaQfRepository) ListarDetalle(ctx context.Context, params domain.DetalleRecetaParams) ([]map[string]any, error) {
+	const query = `
+EXEC dbo.usp_go_Receta_Bandeja_Detalle
+    @IdReceta = @IdReceta,
+    @Audita_Dispensacion = @Audita_Dispensacion,
+    @IdUsuario = @IdUsuario`
+
+	var idUsuario sql.NullInt64
+	if params.IdUsuario > 0 {
+		idUsuario = sql.NullInt64{Int64: int64(params.IdUsuario), Valid: true}
+	}
+
+	rows, err := r.db.QueryContext(ctx, query,
+		sql.Named("IdReceta", params.IdReceta),
+		sql.Named("Audita_Dispensacion", sql.NullInt64{}),
+		sql.Named("IdUsuario", idUsuario),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_Receta_Bandeja_Detalle: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading receta detalle: %w", err)
+	}
+	return normalizarFilas(maps), nil
+}
+
+func (r *auditoriaQfRepository) ListarHistorico(ctx context.Context, params domain.HistoricoMedicamentoParams) ([]map[string]any, error) {
+	const query = `
+EXEC dbo.usp_go_Recetas_Bandeja_Detalle_Historico
+    @IdPaciente = @IdPaciente,
+    @IdProducto = @IdProducto`
+
+	rows, err := r.db.QueryContext(ctx, query,
+		sql.Named("IdPaciente", params.IdPaciente),
+		sql.Named("IdProducto", params.IdProducto),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_Recetas_Bandeja_Detalle_Historico: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading receta historico: %w", err)
+	}
+	return normalizarFilas(maps), nil
+}
+
 func normalizarFilas(filas []map[string]any) []map[string]any {
 	for _, fila := range filas {
 		for clave, valor := range fila {

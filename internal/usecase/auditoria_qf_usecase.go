@@ -38,6 +38,22 @@ func (uc *auditoriaQfUseCase) ListarEstados(ctx context.Context) ([]map[string]a
 	return items, nil
 }
 
+func (uc *auditoriaQfUseCase) ListarDetalle(ctx context.Context, params domain.DetalleRecetaParams) ([]map[string]any, error) {
+	items, err := uc.repo.ListarDetalle(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("listing auditoria qf detalle: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *auditoriaQfUseCase) ListarHistorico(ctx context.Context, params domain.HistoricoMedicamentoParams) ([]map[string]any, error) {
+	items, err := uc.repo.ListarHistorico(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("listing auditoria qf historico: %w", err)
+	}
+	return items, nil
+}
+
 func validarRangoBandeja(inicioRaw, finRaw string) error {
 	inicio, errInicio := time.Parse("2006-01-02T15:04:05", inicioRaw)
 	fin, errFin := time.Parse("2006-01-02T15:04:05", finRaw)

@@ -90,6 +90,8 @@ func NewRouter(p RouterParams) *gin.Engine {
 			auditoriaQf := protected.Group("/farmacia/auditoria-qf")
 			{
 				auditoriaQf.GET("/recetas", p.AuditoriaQfHandler.ListarBandeja)
+				auditoriaQf.GET("/recetas/:idReceta/detalle", p.AuditoriaQfHandler.ListarDetalle)
+				auditoriaQf.GET("/historico", p.AuditoriaQfHandler.ListarHistorico)
 				auditoriaQf.GET("/estados", p.AuditoriaQfHandler.ListarEstados)
 			}
 		}
