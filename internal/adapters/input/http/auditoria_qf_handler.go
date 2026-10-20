@@ -91,6 +91,56 @@ func (h *AuditoriaQfHandler) ListarDetalle(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
+type guardarEstadoRecetaRequest struct {
+	IdEstado          int    `json:"idEstado"`
+	MotivoObservacion string `json:"motivoObservacion"`
+	MotivoRechazo     string `json:"motivoRechazo"`
+}
+
+// GuardarEstado maneja PUT /api/v1/farmacia/auditoria-qf/recetas/:idReceta/estado.
+func (h *AuditoriaQfHandler) GuardarEstado(c *gin.Context) {
+	idReceta, err := strconv.Atoi(c.Param("idReceta"))
+	if err != nil || idReceta <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idReceta debe ser un entero")
+		return
+	}
+	idUsuario := c.GetInt("idEmpleado")
+	if idUsuario <= 0 {
+		respondError(c, http.StatusUnauthorized, "MISSING_USER", "no se encontró el usuario de la sesión")
+		return
+	}
+
+	var req guardarEstadoRecetaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "el cuerpo de la solicitud no es válido")
+		return
+	}
+
+	resultado, err := h.service.GuardarEstado(c.Request.Context(), domain.GuardarEstadoRecetaParams{
+		IdReceta:          idReceta,
+		IdEstado:          req.IdEstado,
+		MotivoObservacion: req.MotivoObservacion,
+		MotivoRechazo:     req.MotivoRechazo,
+		IdUsuario:         idUsuario,
+	})
+	if err != nil {
+		var negocio *domain.ResultadoRecetaError
+		if errors.As(err, &negocio) {
+			respondError(c, http.StatusBadRequest, "AUDITORIA_QF_ESTADO_RECHAZADO", negocio.Error())
+			return
+		}
+		if errors.Is(err, domain.ErrEstadoRecetaInvalido) ||
+			errors.Is(err, domain.ErrMotivoRecetaRequerido) ||
+			errors.Is(err, domain.ErrMotivoRecetaLargo) {
+			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+			return
+		}
+		respondError(c, http.StatusInternalServerError, "AUDITORIA_QF_ESTADO_FAILED", err.Error())
+		return
+	}
+	respondSuccess(c, http.StatusOK, map[string]string{"resultado": resultado})
+}
+
 // ListarHistorico maneja GET /api/v1/farmacia/auditoria-qf/historico.
 func (h *AuditoriaQfHandler) ListarHistorico(c *gin.Context) {
 	idPaciente, okPaciente := enteroPositivo(c.Query("idPaciente"))

@@ -91,6 +91,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			{
 				auditoriaQf.GET("/recetas", p.AuditoriaQfHandler.ListarBandeja)
 				auditoriaQf.GET("/recetas/:idReceta/detalle", p.AuditoriaQfHandler.ListarDetalle)
+				auditoriaQf.PUT("/recetas/:idReceta/estado", p.AuditoriaQfHandler.GuardarEstado)
 				auditoriaQf.GET("/historico", p.AuditoriaQfHandler.ListarHistorico)
 				auditoriaQf.GET("/estados", p.AuditoriaQfHandler.ListarEstados)
 			}

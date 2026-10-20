@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
@@ -117,6 +118,49 @@ EXEC dbo.usp_go_Recetas_Bandeja_Detalle_Historico
 		return nil, fmt.Errorf("reading receta historico: %w", err)
 	}
 	return normalizarFilas(maps), nil
+}
+
+func (r *auditoriaQfRepository) GuardarEstado(ctx context.Context, params domain.GuardarEstadoRecetaParams) (string, error) {
+	const query = `
+EXEC dbo.usp_go_updateRecetaCabecera
+    @idReceta = @idReceta,
+    @idestado = @idestado,
+    @motivoobservacion = @motivoobservacion,
+    @fechaobservacion = @fechaobservacion,
+    @motivorechazo = @motivorechazo,
+    @fecharechazo = @fecharechazo,
+    @idusuario = @idusuario,
+    @Resultado = @Resultado OUTPUT`
+
+	var resultado string
+	_, err := r.db.ExecContext(ctx, query,
+		sql.Named("idReceta", params.IdReceta),
+		sql.Named("idestado", params.IdEstado),
+		sql.Named("motivoobservacion", textoONulo(params.MotivoObservacion)),
+		sql.Named("fechaobservacion", fechaONula(params.FechaObservacion)),
+		sql.Named("motivorechazo", textoONulo(params.MotivoRechazo)),
+		sql.Named("fecharechazo", fechaONula(params.FechaRechazo)),
+		sql.Named("idusuario", params.IdUsuario),
+		sql.Named("Resultado", sql.Out{Dest: &resultado}),
+	)
+	if err != nil {
+		return "", fmt.Errorf("calling usp_go_updateRecetaCabecera: %w", err)
+	}
+	return resultado, nil
+}
+
+func textoONulo(valor string) sql.NullString {
+	if strings.TrimSpace(valor) == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: valor, Valid: true}
+}
+
+func fechaONula(valor *time.Time) sql.NullTime {
+	if valor == nil || valor.IsZero() {
+		return sql.NullTime{}
+	}
+	return sql.NullTime{Time: *valor, Valid: true}
 }
 
 func normalizarFilas(filas []map[string]any) []map[string]any {
