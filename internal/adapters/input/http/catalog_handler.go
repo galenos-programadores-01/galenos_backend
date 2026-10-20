@@ -465,6 +465,57 @@ func (h *CatalogHandler) HandleListarEspecialidadesQx(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
+// ListEspecialidadesPorTipoServicio maneja GET /api/v1/especialidades-por-tipo-servicio/:idTipoServicio.
+//
+// @Summary Lista especialidades por tipo de servicio
+// @Description Devuelve especialidades (SP usp_go_EspecialidadesXidTipoServicio @IdTipoServicio).
+// @Tags Catalogos
+// @Produce json
+// @Param idTipoServicio path int true "Id del tipo de servicio (2 = emergencia)"
+// @Success 200 {object} apiResponse{data=[]domain.Especialidad}
+// @Failure 400 {object} apiResponse{error=apiError} "Id inválido"
+// @Failure 500 {object} apiResponse{error=apiError} "Error interno"
+// @Router /especialidades-por-tipo-servicio/{idTipoServicio} [get]
+func (h *CatalogHandler) ListEspecialidadesPorTipoServicio(c *gin.Context) {
+	idTipoServicio, err := strconv.ParseInt(c.Param("idTipoServicio"), 10, 64)
+	if err != nil || idTipoServicio <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idTipoServicio es obligatorio y debe ser un entero positivo")
+		return
+	}
+	items, err := h.service.ListEspecialidadesPorTipoServicio(c.Request.Context(), idTipoServicio)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toEspecialidadResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListEspecialidadesListar maneja GET /api/v1/especialidades-listar.
+//
+// @Summary Lista especialidades (interconsulta PA)
+// @Description Devuelve especialidades (SP usp_go_Especialidades_Listar).
+// @Tags Catalogos
+// @Produce json
+// @Success 200 {object} apiResponse{data=[]domain.Especialidad}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /especialidades-listar [get]
+func (h *CatalogHandler) ListEspecialidadesListar(c *gin.Context) {
+	items, err := h.service.ListEspecialidadesListar(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toEspecialidadResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
 // HandleListarServiciosPorPrioridad maneja GET /api/v1/servicios-prioridad/:idPrioridad y
 // GET /api/v1/servicios-prioridad/:idPrioridad/:fechaNac.
 //
@@ -528,42 +579,338 @@ func (h *CatalogHandler) GetParametro(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, toParametroResponse(*item))
 }
 
-func (h *CatalogHandler) ListRecetaFrecuencias(c *gin.Context) {
-	items, err := h.service.ListRecetaFrecuencias(c.Request.Context())
+// ListParametrosClinicos maneja GET /api/v1/parametros-clinicos/:idGrupo.
+//
+// @Summary Lista parámetros clínicos por grupo
+// @Description Devuelve opciones del catálogo clínico (SP usp_go_Cat_ParametroClinico_Listar). IdGrupo: 1=examen clínico, 2=hidratación, 3=nivel de conciencia, 4=condición de egreso, 6=motivos de interconsulta.
+// @Tags Catalogos
+// @Produce json
+// @Param idGrupo path int true "Id del grupo clínico"
+// @Success 200 {object} apiResponse{data=[]domain.ParametroClinico}
+// @Failure 400 {object} apiResponse{error=apiError} "Id inválido"
+// @Failure 500 {object} apiResponse{error=apiError} "Error interno"
+// @Router /parametros-clinicos/{idGrupo} [get]
+func (h *CatalogHandler) ListParametrosClinicos(c *gin.Context) {
+	idGrupo, err := strconv.ParseInt(c.Param("idGrupo"), 10, 64)
+	if err != nil || idGrupo <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_ID", "idGrupo inválido")
+		return
+	}
+	items, err := h.service.ListParametrosClinicos(c.Request.Context(), idGrupo)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
 	}
-	if items == nil {
-		items = make([]domain.CatalogItem, 0)
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toParametroClinicoResponse(it))
 	}
-	respondSuccess(c, http.StatusOK, items)
+	respondSuccess(c, http.StatusOK, dtoItems)
 }
 
+// HandleListParametrosClinicos es alias de ListParametrosClinicos para la ruta develop /catalogos/parametros-clinicos/:idGrupo.
+func (h *CatalogHandler) HandleListParametrosClinicos(c *gin.Context) {
+	h.ListParametrosClinicos(c)
+}
+
+// ListPrioridadesPrimeraAtencion maneja GET /api/v1/prioridades-primera-atencion.
+//
+// @Summary Lista prioridades de primera atención
+// @Description Devuelve el catálogo (SP usp_go_Cat_Prioridad_PrimeraAtencion). Id = IdTipoPrioridad.
+// @Tags Catalogos
+// @Produce json
+// @Success 200 {object} apiResponse{data=[]domain.PrioridadPrimeraAtencion}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /prioridades-primera-atencion [get]
+func (h *CatalogHandler) ListPrioridadesPrimeraAtencion(c *gin.Context) {
+	items, err := h.service.ListPrioridadesPrimeraAtencion(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toPrioridadPrimeraAtencionResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListSubclasificacionesDiagnostico maneja GET /api/v1/subclasificaciones-diagnostico.
+//
+// @Summary Lista subclasificaciones de diagnóstico (P/D/R)
+// @Description SP usp_go_SubclasificacionDiagnosticos_Select. IdClasificacionDx: 9=PA, 7=interconsulta, 3=egreso, 4=egreso fallecido. IdTipoServicio: 2=emergencia.
+// @Tags Catalogos
+// @Produce json
+// @Param idTipoServicio query int true "Id tipo servicio (2)"
+// @Param idClasificacionDx query int true "Id clasificación (9 PA / 7 IC / 3 egreso / 4 fallecido)"
+// @Success 200 {object} apiResponse{data=[]domain.SubclasificacionDiagnostico}
+// @Failure 400 {object} apiResponse{error=apiError}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /subclasificaciones-diagnostico [get]
+func (h *CatalogHandler) ListSubclasificacionesDiagnostico(c *gin.Context) {
+	idTipoServicio, err := strconv.ParseInt(c.Query("idTipoServicio"), 10, 64)
+	if err != nil || idTipoServicio <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idTipoServicio es obligatorio y debe ser un entero positivo")
+		return
+	}
+	idClasificacionDx, err := strconv.ParseInt(c.Query("idClasificacionDx"), 10, 64)
+	if err != nil || idClasificacionDx <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idClasificacionDx es obligatorio y debe ser un entero positivo")
+		return
+	}
+	items, err := h.service.ListSubclasificacionesDiagnostico(c.Request.Context(), idTipoServicio, idClasificacionDx)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toSubclasificacionDiagnosticoResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListDiagnosticosCatalogo maneja GET /api/v1/diagnosticos-catalogo.
+//
+// @Summary Busca diagnósticos CIE-10
+// @Description Invoca usp_go_SelectDiagnosticos (@filtro, @IdAtencion, @IdPaciente).
+// @Tags Catalogos
+// @Produce json
+// @Param filtro query string false "Texto de búsqueda (descripción o CIE-10)"
+// @Param idAtencion query int true "Id de atención / cuenta según SP"
+// @Param idPaciente query int true "Id del paciente"
+// @Success 200 {object} apiResponse{data=[]domain.DiagnosticoCatalogo}
+// @Failure 400 {object} apiResponse{error=apiError}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /diagnosticos-catalogo [get]
+func (h *CatalogHandler) ListDiagnosticosCatalogo(c *gin.Context) {
+	filtro := c.Query("filtro")
+
+	idAtencion, err := strconv.ParseInt(c.Query("idAtencion"), 10, 64)
+	if err != nil || idAtencion <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idAtencion es obligatorio y debe ser un entero positivo")
+		return
+	}
+	idPaciente, err := strconv.ParseInt(c.Query("idPaciente"), 10, 64)
+	if err != nil || idPaciente <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idPaciente es obligatorio y debe ser un entero positivo")
+		return
+	}
+
+	items, err := h.service.ListDiagnosticosCatalogo(c.Request.Context(), filtro, idAtencion, idPaciente)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toDiagnosticoCatalogoResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListMedicamentosCatalogo maneja GET /api/v1/medicamentos-catalogo.
+//
+// @Summary Busca medicamentos
+// @Description Invoca usp_go_SelectMedicamentosFiltro (@Filtro, @IdPaciente).
+// @Tags Catalogos
+// @Produce json
+// @Param filtro query string false "Texto de búsqueda"
+// @Param idPaciente query int true "Id del paciente"
+// @Success 200 {object} apiResponse{data=[]domain.MedicamentoCatalogo}
+// @Failure 400 {object} apiResponse{error=apiError}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /medicamentos-catalogo [get]
+func (h *CatalogHandler) ListMedicamentosCatalogo(c *gin.Context) {
+	filtro := c.Query("filtro")
+	idPaciente, err := strconv.ParseInt(c.Query("idPaciente"), 10, 64)
+	if err != nil || idPaciente <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idPaciente es obligatorio y debe ser un entero positivo")
+		return
+	}
+	items, err := h.service.ListMedicamentosCatalogo(c.Request.Context(), filtro, idPaciente)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toMedicamentoCatalogoResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListExamenesCatalogo maneja GET /api/v1/examenes-catalogo.
+//
+// @Summary Busca exámenes del catálogo (con precio por financiamiento)
+// @Description Invoca webProcedimentosRecetasFiltarNombrePuntoCarga (@IdTipoFinanciamiento, @Filtro).
+// @Tags Catalogos
+// @Produce json
+// @Param filtro query string false "Texto de búsqueda"
+// @Param idTipoFinanciamiento query int true "IdFormaPago de la bandeja → IdTipoFinanciamiento"
+// @Success 200 {object} apiResponse{data=[]domain.ExamenCatalogo}
+// @Failure 400 {object} apiResponse{error=apiError}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /examenes-catalogo [get]
+func (h *CatalogHandler) ListExamenesCatalogo(c *gin.Context) {
+	filtro := c.Query("filtro")
+
+	idTipoFinanciamiento, err := strconv.ParseInt(c.Query("idTipoFinanciamiento"), 10, 64)
+	if err != nil || idTipoFinanciamiento <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idTipoFinanciamiento es obligatorio y debe ser un entero positivo")
+		return
+	}
+
+	items, err := h.service.ListExamenesCatalogo(c.Request.Context(), idTipoFinanciamiento, filtro)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toExamenCatalogoResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListProcedimientosCatalogo maneja GET /api/v1/procedimientos-catalogo.
+//
+// @Summary Busca procedimientos por punto de carga
+// @Description Invoca usp_go_ProcedimentosFiltarNombrePuntoCarga.
+// @Tags Catalogos
+// @Produce json
+// @Param filtro query string false "Texto de búsqueda"
+// @Param idPuntoCarga query int true "IdPuntoCarga de la bandeja"
+// @Param idTipoFinanciamiento query int true "IdFormaPago de la bandeja → IdTipoFinanciamiento"
+// @Success 200 {object} apiResponse{data=[]domain.ProcedimientoCatalogo}
+// @Failure 400 {object} apiResponse{error=apiError}
+// @Failure 500 {object} apiResponse{error=apiError}
+// @Router /procedimientos-catalogo [get]
+func (h *CatalogHandler) ListProcedimientosCatalogo(c *gin.Context) {
+	filtro := c.Query("filtro")
+
+	idPuntoCarga, err := strconv.ParseInt(c.Query("idPuntoCarga"), 10, 64)
+	if err != nil || idPuntoCarga <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idPuntoCarga es obligatorio y debe ser un entero positivo")
+		return
+	}
+	idTipoFinanciamiento, err := strconv.ParseInt(c.Query("idTipoFinanciamiento"), 10, 64)
+	if err != nil || idTipoFinanciamiento <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idTipoFinanciamiento es obligatorio y debe ser un entero positivo")
+		return
+	}
+
+	items, err := h.service.ListProcedimientosCatalogo(c.Request.Context(), idPuntoCarga, idTipoFinanciamiento, filtro)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toProcedimientoCatalogoResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListRecetaDosis maneja GET /api/v1/receta-dosis.
+func (h *CatalogHandler) ListRecetaDosis(c *gin.Context) {
+	items, err := h.service.ListRecetaDosis(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toRecetaDosisResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListRecetaUnidadesDosis maneja GET /api/v1/receta-unidades-dosis.
 func (h *CatalogHandler) ListRecetaUnidadesDosis(c *gin.Context) {
 	items, err := h.service.ListRecetaUnidadesDosis(c.Request.Context())
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
 	}
-	if items == nil {
-		items = make([]domain.CatalogItem, 0)
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toRecetaUnidadDosisResponse(it))
 	}
-	respondSuccess(c, http.StatusOK, items)
+	respondSuccess(c, http.StatusOK, dtoItems)
 }
 
-func (h *CatalogHandler) ListRecetaViasAdministracion(c *gin.Context) {
-	items, err := h.service.ListRecetaViasAdministracion(c.Request.Context())
+// ListRecetaFrecuencias maneja GET /api/v1/receta-frecuencias.
+func (h *CatalogHandler) ListRecetaFrecuencias(c *gin.Context) {
+	items, err := h.service.ListRecetaFrecuencias(c.Request.Context())
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
 	}
-	if items == nil {
-		items = make([]domain.CatalogItem, 0)
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toRecetaFrecuenciaResponse(it))
 	}
-	respondSuccess(c, http.StatusOK, items)
+	respondSuccess(c, http.StatusOK, dtoItems)
 }
 
+// ListViasAdministracion maneja GET /api/v1/vias-administracion.
+func (h *CatalogHandler) ListViasAdministracion(c *gin.Context) {
+	items, err := h.service.ListViasAdministracion(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toViaAdministracionResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// HandleListRecetaFrecuencias maneja GET /api/v1/receta/frecuencias (contrato develop: id + descripcion).
+func (h *CatalogHandler) HandleListRecetaFrecuencias(c *gin.Context) {
+	items, err := h.service.ListRecetaFrecuencias(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toCatalogItemDevelop(it.ID, it.Descripcion))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// HandleListRecetaUnidadesDosis maneja GET /api/v1/receta/unidades-dosis (contrato develop: id + descripcion).
+func (h *CatalogHandler) HandleListRecetaUnidadesDosis(c *gin.Context) {
+	items, err := h.service.ListRecetaUnidadesDosis(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toCatalogItemDevelop(it.ID, it.NumeroUNIDDosis))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// HandleListRecetaViasAdministracion maneja GET /api/v1/receta/vias-administracion (contrato develop: id + descripcion).
+func (h *CatalogHandler) HandleListRecetaViasAdministracion(c *gin.Context) {
+	items, err := h.service.ListViasAdministracion(c.Request.Context())
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toCatalogItemDevelop(it.ID, it.Descripcion))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// BuscarMedicamentosReceta maneja GET /api/v1/receta/medicamentos.
 func (h *CatalogHandler) BuscarMedicamentosReceta(c *gin.Context) {
 	filtro := c.Query("q")
 	idPaciente, _ := strconv.Atoi(c.DefaultQuery("idPaciente", "0"))
@@ -575,14 +922,27 @@ func (h *CatalogHandler) BuscarMedicamentosReceta(c *gin.Context) {
 	if items == nil {
 		items = make([]domain.MedicamentoBusqueda, 0)
 	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toMedicamentoBusquedaResponse(it))
+	}
 	c.Header("X-Cache-Engine", "Redis-v9")
-	respondSuccess(c, http.StatusOK, items)
+	respondSuccess(c, http.StatusOK, dtoItems)
 }
 
+// BuscarExamenesCatalogo maneja GET /api/v1/catalogos/examenes.
+// Mismo SP que /examenes-catalogo: webProcedimentosRecetasFiltarNombrePuntoCarga.
 func (h *CatalogHandler) BuscarExamenesCatalogo(c *gin.Context) {
 	filtro := c.Query("q")
-	tipo := c.Query("tipo")
-	items, err := h.service.BuscarExamenesCatalogo(c.Request.Context(), filtro, tipo)
+	if filtro == "" {
+		filtro = c.Query("filtro")
+	}
+	idTipoFinanciamiento, err := strconv.ParseInt(c.Query("idTipoFinanciamiento"), 10, 64)
+	if err != nil || idTipoFinanciamiento <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idTipoFinanciamiento es obligatorio y debe ser un entero positivo")
+		return
+	}
+	items, err := h.service.ListExamenesCatalogo(c.Request.Context(), idTipoFinanciamiento, filtro)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
@@ -590,35 +950,12 @@ func (h *CatalogHandler) BuscarExamenesCatalogo(c *gin.Context) {
 	if items == nil {
 		items = make([]domain.ExamenCatalogo, 0)
 	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toExamenCatalogoResponse(it))
+	}
 	c.Header("X-Cache-Engine", "Redis-v9")
-	respondSuccess(c, http.StatusOK, items)
-}
-
-// @Summary Listar parámetros clínicos por grupo
-// @Description Devuelve el catálogo de parámetros clínicos según su grupo (SP usp_go_Cat_ParametroClinico_Listar).
-// @Tags Catálogos
-// @Accept json
-// @Produce json
-// @Param idGrupo path int true "ID del grupo (1: Estado General, 2: Hidratación, 3: Conciencia/Glasgow, 4: Destino Alta, 5: Tipo Atención)"
-// @Success 200 {object} apiResponse{data=[]domain.ParametroClinico}
-// @Router /catalogos/parametros-clinicos/{idGrupo} [get]
-func (h *CatalogHandler) HandleListParametrosClinicos(c *gin.Context) {
-	raw := c.Param("idGrupo")
-	idGrupo, err := strconv.Atoi(raw)
-	if err != nil || idGrupo <= 0 {
-		respondError(c, http.StatusBadRequest, "INVALID_GRUPO_ID", "ID de grupo inválido")
-		return
-	}
-
-	items, err := h.service.ListParametrosClinicos(c.Request.Context(), idGrupo)
-	if err != nil {
-		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
-		return
-	}
-	if items == nil {
-		items = make([]domain.ParametroClinico, 0)
-	}
-	respondSuccess(c, http.StatusOK, items)
+	respondSuccess(c, http.StatusOK, dtoItems)
 }
 
 // ActualizarParametroValorTexto maneja PATCH /api/v1/catalogos/parametros/:idParametro/valor-texto.

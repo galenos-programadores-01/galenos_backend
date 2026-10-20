@@ -60,6 +60,23 @@ type Config struct {
 	RedisPassword         string
 	RedisDB               int
 	RedisTTL              time.Duration
+
+	// Almacenamiento remoto de PDFs firmados (SFTP o FTP). Host/User vacíos = deshabilitado.
+	// SFTPProtocol: "sftp" (SSH :22) o "ftp" (FTP/FTPS :21). Mismas credenciales SFTP_*.
+	// SFTPFTPTLS: "explicit" (AUTH TLS, IIS) | "plain" | "implicit". Solo aplica a protocol=ftp.
+	SFTPProtocol               string
+	SFTPFTPTLS                string
+	SFTPHost                   string
+	SFTPPort                   int
+	SFTPUser                   string
+	SFTPPassword               string
+	SFTPTimeout                time.Duration
+	SFTPInsecureIgnoreHostKey  bool
+	SFTPKnownHostsPath         string
+	SFTPBasePath                     string
+	SFTPPatternPrimeraAtencion       string
+	SFTPPatternPrimeraAtencionReceta string
+	SFTPPatternEvolucion             string
 }
 
 // Load lee la configuración desde el entorno aplicando valores por defecto
@@ -93,6 +110,12 @@ func Load() (*Config, error) {
 	}
 	if redisAddr == "" {
 		redisAddr = "localhost:6379"
+	}
+
+	sftpProtocol := normalizeSFTPProtocol(envOrDefault("SFTP_PROTOCOL", "sftp"))
+	sftpDefaultPort := 22
+	if sftpProtocol == "ftp" {
+		sftpDefaultPort = 21
 	}
 
 	return &Config{
@@ -142,7 +165,49 @@ func Load() (*Config, error) {
 		RedisPassword:         os.Getenv("REDIS_PASSWORD"),
 		RedisDB:               envIntOrDefault("REDIS_DB", 0),
 		RedisTTL:              envDurationOrDefault("REDIS_TTL", 30*time.Minute),
+
+		SFTPProtocol:               sftpProtocol,
+		SFTPFTPTLS:                normalizeFTPTLS(envOrDefault("SFTP_FTP_TLS", "explicit")),
+		SFTPHost:                   os.Getenv("SFTP_HOST"),
+		SFTPPort:                   envIntOrDefault("SFTP_PORT", sftpDefaultPort),
+		SFTPUser:                   os.Getenv("SFTP_USER"),
+		SFTPPassword:               os.Getenv("SFTP_PASSWORD"),
+		SFTPTimeout:                envDurationOrDefault("SFTP_TIMEOUT", 30*time.Second),
+		SFTPInsecureIgnoreHostKey:  envBoolOrDefault("SFTP_INSECURE_IGNORE_HOST_KEY", true),
+		SFTPKnownHostsPath:         os.Getenv("SFTP_KNOWN_HOSTS"),
+		SFTPBasePath: envOrDefault("SFTP_BASE_PATH", "/galenos-pro"),
+		SFTPPatternPrimeraAtencion: envOrDefault(
+			"SFTP_PATTERN_PRIMERA_ATENCION",
+			"emergencia/primera-atencion/{idPrimeraAtencion}.pdf",
+		),
+		SFTPPatternPrimeraAtencionReceta: envOrDefault(
+			"SFTP_PATTERN_PRIMERA_ATENCION_RECETA",
+			"emergencia/primera-atencion/{idPrimeraAtencion}_{idReceta}.pdf",
+		),
+		SFTPPatternEvolucion: envOrDefault("SFTP_PATTERN_EVOLUCION", "evoluciones/{id}/{uuid}.pdf"),
 	}, nil
+}
+
+// normalizeSFTPProtocol acepta "sftp" | "ftp" (case-insensitive). Default sftp.
+func normalizeSFTPProtocol(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "ftp":
+		return "ftp"
+	default:
+		return "sftp"
+	}
+}
+
+// normalizeFTPTLS acepta explicit | plain | implicit. Default explicit (IIS FTPS).
+func normalizeFTPTLS(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "plain", "none", "off":
+		return "plain"
+	case "implicit":
+		return "implicit"
+	default:
+		return "explicit"
+	}
 }
 
 // defaultServerHost devuelve el IP de la interfaz de red principal para
@@ -218,6 +283,21 @@ func envIntOrDefault(key string, fallback int) int {
 		return fallback
 	}
 	return parsed
+}
+
+func envBoolOrDefault(key string, fallback bool) bool {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return fallback
+	}
+	switch strings.ToLower(v) {
+	case "1", "true", "yes", "y", "on":
+		return true
+	case "0", "false", "no", "n", "off":
+		return false
+	default:
+		return fallback
+	}
 }
 
 func envDurationOrDefault(key string, fallback time.Duration) time.Duration {

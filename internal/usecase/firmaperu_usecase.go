@@ -275,21 +275,31 @@ func (uc *firmaPeruUseCase) ObtenerLoteFirmado(ctx context.Context, uuid string)
 // reTriajeID extrae el número de triaje de nombres tipo TRIAJE_123.pdf.
 var reTriajeID = regexp.MustCompile(`(?i)TRIAJE[_ ]?(\d+)`)
 
-// mapearFirmadosLote empareja cada archivo firmado del 7z devuelto con el
-// documento original del lote (por número de triaje; por orden como fallback)
-// y devuelve los documentos con el nombre original limpio para guardarlos en
-// disco (TRIAJE_<id>.pdf).
+// mapearFirmadosLote empareja cada archivo firmado del 7z con el original:
+// 1) basename exacto (PA_*, TRIAJE_*), 2) id de triaje, 3) orden.
 func mapearFirmadosLote(originales, firmados []domain.FirmaPeruDocument) []domain.FirmaPeruDocument {
 	usado := make([]bool, len(originales))
 	var out []domain.FirmaPeruDocument
 
 	for _, f := range firmados {
-		id := triajeID(f.Name)
+		firmadoBase := strings.ToLower(filepath.Base(f.Name))
 		idx := -1
 		for i, o := range originales {
-			if !usado[i] && id >= 0 && triajeID(o.Name) == id {
+			if usado[i] {
+				continue
+			}
+			if strings.ToLower(filepath.Base(o.Name)) == firmadoBase {
 				idx = i
 				break
+			}
+		}
+		if idx < 0 {
+			id := triajeID(f.Name)
+			for i, o := range originales {
+				if !usado[i] && id >= 0 && triajeID(o.Name) == id {
+					idx = i
+					break
+				}
 			}
 		}
 		if idx < 0 {

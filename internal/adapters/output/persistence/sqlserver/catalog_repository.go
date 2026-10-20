@@ -1,9 +1,10 @@
-package sqlserver
+﻿package sqlserver
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/output"
@@ -13,7 +14,7 @@ type catalogRepository struct {
 	db *sql.DB
 }
 
-// NewCatalogRepository construye el adaptador de catálogos de datos
+// NewCatalogRepository construye el adaptador de catÃ¡logos de datos
 // maestros, invocando los procedimientos almacenados que el frontend
 // consume para poblar los formularios.
 func NewCatalogRepository(db *sql.DB) output.CatalogRepository {
@@ -398,8 +399,8 @@ func (r *catalogRepository) ListServicios(ctx context.Context, idTipoServicio in
 }
 
 // GetDatosInstitucion invoca el SP webParametrosDatosInstitucion, que
-// devuelve una única fila con los datos de la institución (RUC, nombre,
-// dirección, teléfono, logos, etc.). Devuelve nil si el SP no retorna filas.
+// devuelve una Ãºnica fila con los datos de la instituciÃ³n (RUC, nombre,
+// direcciÃ³n, telÃ©fono, logos, etc.). Devuelve nil si el SP no retorna filas.
 func (r *catalogRepository) GetDatosInstitucion(ctx context.Context) (*domain.DatosInstitucion, error) {
 	const procedure = `usp_go_ParametrosDatosInstitucion`
 
@@ -502,6 +503,94 @@ func (r *catalogRepository) ListarEspecialidadesQx(ctx context.Context) ([]domai
 	return items, rows.Err()
 }
 
+// ListEspecialidadesPorTipoServicio invoca usp_go_EspecialidadesXidTipoServicio.
+func (r *catalogRepository) ListEspecialidadesPorTipoServicio(ctx context.Context, idTipoServicio int64) ([]domain.Especialidad, error) {
+	const procedure = `usp_go_EspecialidadesXidTipoServicio`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdTipoServicio", idTipoServicio))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_EspecialidadesXidTipoServicio: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading especialidades por tipo servicio: %w", err)
+	}
+
+	items := make([]domain.Especialidad, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m,
+			"IdEspecialidad", "idEspecialidad",
+			"Id", "id",
+		)
+		if id == nil {
+			continue
+		}
+		nombre := rowString(m,
+			"Nombre", "nombre",
+			"Descripcion", "descripcion",
+			"Especialidad", "especialidad",
+		)
+		items = append(items, domain.Especialidad{
+			ID:     *id,
+			Nombre: nombre,
+		})
+	}
+
+	return items, nil
+}
+
+// ListEspecialidadesListar invoca usp_go_Especialidades_Listar (sin parámetros).
+// Usado por el combo de interconsulta en Primera Atención.
+func (r *catalogRepository) ListEspecialidadesListar(ctx context.Context) ([]domain.Especialidad, error) {
+	const procedure = `usp_go_Especialidades_Listar`
+
+	rows, err := r.db.QueryContext(ctx, procedure)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_Especialidades_Listar: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading especialidades listar: %w", err)
+	}
+
+	items := make([]domain.Especialidad, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m,
+			"IdEspecialidad", "idEspecialidad",
+			"Id", "id",
+		)
+		if id == nil {
+			continue
+		}
+		nombre := rowString(m,
+			"Nombre", "nombre",
+			"Descripcion", "descripcion",
+			"Especialidad", "especialidad",
+		)
+		items = append(items, domain.Especialidad{
+			ID:     *id,
+			Nombre: nombre,
+		})
+	}
+
+	if len(maps) > 0 && len(items) == 0 {
+		cols := make([]string, 0, len(maps[0]))
+		for k := range maps[0] {
+			cols = append(cols, k)
+		}
+		return nil, fmt.Errorf(
+			"usp_go_Especialidades_Listar devolvió %d fila(s) pero no se pudo mapear IdEspecialidad; columnas=%v",
+			len(maps), cols,
+		)
+	}
+
+	return items, nil
+}
+
 func (r *catalogRepository) ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error) {
 	const query = `EXEC usp_go_ListarServiciosXPrioridad @IdPrioridad = @p1, @FechaNac = @p2`
 
@@ -560,80 +649,246 @@ func (r *catalogRepository) GetParametro(ctx context.Context, idParametro int64)
 	}, nil
 }
 
-func (r *catalogRepository) ListRecetaFrecuencias(ctx context.Context) ([]domain.CatalogItem, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC usp_go_SelectRecetaFrecuenciaSelecionarTodos")
+// ListParametrosClinicos invoca usp_go_Cat_ParametroClinico_Listar @IdGrupo.
+// Identidad de fila SQL: IdParametro -> domain.ParametroClinico.ID.
+func (r *catalogRepository) ListParametrosClinicos(ctx context.Context, idGrupo int64) ([]domain.ParametroClinico, error) {
+	const procedure = `usp_go_Cat_ParametroClinico_Listar`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdGrupo", idGrupo))
 	if err != nil {
-		return nil, fmt.Errorf("calling usp_go_SelectRecetaFrecuenciaSelecionarTodos: %w", err)
+		return nil, fmt.Errorf("calling usp_go_Cat_ParametroClinico_Listar: %w", err)
 	}
 	defer rows.Close()
 
-	var items []domain.CatalogItem
-	for rows.Next() {
-		var item domain.CatalogItem
-		var id sql.NullInt64
-		var desc sql.NullString
-		if err := rows.Scan(&id, &desc); err != nil {
-			return nil, err
-		}
-		if id.Valid {
-			item.ID = id.Int64
-		}
-		if desc.Valid {
-			item.Descripcion = desc.String
-		}
-		items = append(items, item)
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading parametros clinicos: %w", err)
 	}
+
+	items := make([]domain.ParametroClinico, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m, "IdParametro", "idParametro", "Id", "id")
+		if id == nil {
+			continue
+		}
+		desc := rowString(m,
+			"Descripcion", "descripcion",
+			"Nombre", "nombre",
+			"Valor", "valor",
+		)
+		codigo := rowString(m, "Codigo", "codigo", "CODIGO")
+		items = append(items, domain.ParametroClinico{
+			ID:          *id,
+			Descripcion: desc,
+			Codigo:      codigo,
+		})
+	}
+
 	return items, nil
 }
 
-func (r *catalogRepository) ListRecetaUnidadesDosis(ctx context.Context) ([]domain.CatalogItem, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC Usp_go_SelectRecetaUndDosisSelecionarTodos")
+// ListPrioridadesPrimeraAtencion invoca usp_go_Cat_Prioridad_PrimeraAtencion.
+// Identidad de fila SQL: IdTipoGravedad (alias histórico IdTipoPrioridad en bandeja).
+func (r *catalogRepository) ListPrioridadesPrimeraAtencion(ctx context.Context) ([]domain.PrioridadPrimeraAtencion, error) {
+	const procedure = `usp_go_Cat_Prioridad_PrimeraAtencion`
+
+	rows, err := r.db.QueryContext(ctx, procedure)
 	if err != nil {
-		return nil, fmt.Errorf("calling Usp_go_SelectRecetaUndDosisSelecionarTodos: %w", err)
+		return nil, fmt.Errorf("calling usp_go_Cat_Prioridad_PrimeraAtencion: %w", err)
 	}
 	defer rows.Close()
 
-	var items []domain.CatalogItem
-	for rows.Next() {
-		var item domain.CatalogItem
-		var id sql.NullInt64
-		var desc sql.NullString
-		if err := rows.Scan(&id, &desc); err != nil {
-			return nil, err
-		}
-		if id.Valid {
-			item.ID = id.Int64
-		}
-		if desc.Valid {
-			item.Descripcion = desc.String
-		}
-		items = append(items, item)
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading prioridades primera atencion: %w", err)
 	}
+
+	items := make([]domain.PrioridadPrimeraAtencion, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m,
+			"IdTipoGravedad", "idTipoGravedad",
+			"IdTipoPrioridad", "idTipoPrioridad",
+			"IdTiposPrioridad", "idTiposPrioridad",
+			"IdPrioridad", "idPrioridad",
+			"Codigo", "codigo",
+			"Id", "id",
+		)
+		if id == nil {
+			continue
+		}
+		desc := rowString(m,
+			"Descripcion", "descripcion",
+			"TipoPrioridad", "tipoPrioridad",
+			"DescripcionPrioridad", "descripcionPrioridad",
+			"Prioridad", "prioridad",
+			"Nombre", "nombre",
+			"Label", "label",
+		)
+		items = append(items, domain.PrioridadPrimeraAtencion{
+			ID:          *id,
+			Descripcion: desc,
+		})
+	}
+
+	if len(maps) > 0 && len(items) == 0 {
+		cols := make([]string, 0, len(maps[0]))
+		for k := range maps[0] {
+			cols = append(cols, k)
+		}
+		return nil, fmt.Errorf(
+			"usp_go_Cat_Prioridad_PrimeraAtencion devolvió %d fila(s) pero no se pudo mapear el id; columnas=%v",
+			len(maps), cols,
+		)
+	}
+
 	return items, nil
 }
 
-func (r *catalogRepository) ListRecetaViasAdministracion(ctx context.Context) ([]domain.CatalogItem, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC usp_go_RecetasListadoViasAdministracion")
+// ListSubclasificacionesDiagnostico invoca usp_go_SubclasificacionDiagnosticos_Select
+// (@IdTipoServicio, @IdClasificacionDx). 9=PA, 7=IC, 3=egreso, 4=fallecido.
+func (r *catalogRepository) ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int64) ([]domain.SubclasificacionDiagnostico, error) {
+	const procedure = `usp_go_SubclasificacionDiagnosticos_Select`
+
+	rows, err := r.db.QueryContext(ctx, procedure,
+		sql.Named("IdTipoServicio", idTipoServicio),
+		sql.Named("IdClasificacionDx", idClasificacionDx),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("calling usp_go_RecetasListadoViasAdministracion: %w", err)
+		return nil, fmt.Errorf("calling usp_go_SubclasificacionDiagnosticos_Select: %w", err)
 	}
 	defer rows.Close()
 
-	var items []domain.CatalogItem
-	for rows.Next() {
-		var item domain.CatalogItem
-		var id sql.NullInt64
-		var desc sql.NullString
-		if err := rows.Scan(&id, &desc); err != nil {
-			return nil, err
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading subclasificaciones diagnostico: %w", err)
+	}
+
+	items := make([]domain.SubclasificacionDiagnostico, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m,
+			"IdSubclasificacionDx", "idSubclasificacionDx",
+			"IdSubclasificacionDiagnostico", "idSubclasificacionDiagnostico",
+			"Id", "id",
+		)
+		if id == nil {
+			continue
 		}
-		if id.Valid {
-			item.ID = id.Int64
+		corta := rowString(m, "DescripcionCorta", "descripcionCorta", "Descripcion", "descripcion")
+		larga := rowString(m, "DescripcionLarga", "descripcionLarga")
+		items = append(items, domain.SubclasificacionDiagnostico{
+			ID:               *id,
+			DescripcionCorta: corta,
+			DescripcionLarga: larga,
+		})
+	}
+
+	if len(maps) > 0 && len(items) == 0 {
+		cols := make([]string, 0, len(maps[0]))
+		for k := range maps[0] {
+			cols = append(cols, k)
 		}
-		if desc.Valid {
-			item.Descripcion = desc.String
+		return nil, fmt.Errorf(
+			"usp_go_SubclasificacionDiagnosticos_Select devolvió %d fila(s) sin IdSubclasificacionDx; columnas=%v",
+			len(maps), cols,
+		)
+	}
+
+	return items, nil
+}
+
+// ListDiagnosticosCatalogo invoca usp_go_SelectDiagnosticos.
+func (r *catalogRepository) ListDiagnosticosCatalogo(ctx context.Context, filtro string, idAtencion, idPaciente int64) ([]domain.DiagnosticoCatalogo, error) {
+	const procedure = `usp_go_SelectDiagnosticos`
+
+	rows, err := r.db.QueryContext(ctx, procedure,
+		sql.Named("filtro", filtro),
+		sql.Named("IdAtencion", idAtencion),
+		sql.Named("IdPaciente", idPaciente),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_SelectDiagnosticos: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading diagnosticos catalogo: %w", err)
+	}
+
+	items := make([]domain.DiagnosticoCatalogo, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m, "IdDiagnostico", "idDiagnostico", "Id", "id")
+		if id == nil {
+			continue
+		}
+		desc := rowString(m, "Descripcion", "descripcion")
+		cie := rowString(m, "CodigoCIE10", "codigoCIE10", "CodigoCie10")
+		item := domain.DiagnosticoCatalogo{ID: *id}
+		if desc != nil {
+			item.Descripcion = *desc
+		}
+		if cie != nil {
+			item.CodigoCIE10 = strings.TrimSpace(*cie)
 		}
 		items = append(items, item)
+	}
+
+	return items, nil
+}
+
+// ListMedicamentosCatalogo invoca usp_go_SelectMedicamentosFiltro.
+// Misma forma de llamada/lectura que BuscarMedicamentosReceta y orden_repository:
+// EXEC explícito + Scan tipado. No usar Query(nombreProc)+rowsToMaps aquí:
+// con go-mssqldb eso duplicaba filas y corrompía money (Precio → 0 / 2× ítem).
+func (r *catalogRepository) ListMedicamentosCatalogo(ctx context.Context, filtro string, idPaciente int64) ([]domain.MedicamentoCatalogo, error) {
+	const query = `EXEC usp_go_SelectMedicamentosFiltro @Filtro = @Filtro, @IdPaciente = @IdPaciente`
+
+	rows, err := r.db.QueryContext(ctx, query,
+		sql.Named("Filtro", filtro),
+		sql.Named("IdPaciente", idPaciente),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_SelectMedicamentosFiltro: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]domain.MedicamentoCatalogo, 0)
+	for rows.Next() {
+		var (
+			idProd                                                 sql.NullInt64
+			cod, nom, nomLargo, formaFarm                          sql.NullString
+			stock, tipoProd, ultCant, ultDosis, ultUnid, ultFrec   sql.NullInt64
+			ultVia, ultDur, tieneAnt, cargaFua                     sql.NullInt64
+			precio                                                 sql.NullFloat64
+			ultFecha                                               sql.NullTime
+		)
+		// Orden de columnas = SELECT final del SP.
+		if err := rows.Scan(
+			&idProd, &cod, &nom, &nomLargo,
+			&formaFarm, &stock, &precio, &tipoProd,
+			&ultFecha, &ultCant, &ultDosis,
+			&ultUnid, &ultFrec, &ultVia,
+			&ultDur, &tieneAnt, &cargaFua,
+		); err != nil {
+			return nil, fmt.Errorf("escaneando medicamento catalogo: %w", err)
+		}
+		if !idProd.Valid || idProd.Int64 <= 0 {
+			continue
+		}
+		item := domain.MedicamentoCatalogo{IDProducto: idProd.Int64}
+		if cod.Valid {
+			item.Codigo = strings.TrimSpace(cod.String)
+		}
+		if nom.Valid {
+			item.Nombre = strings.TrimSpace(nom.String)
+		}
+		if precio.Valid {
+			item.PrecioUnitario = precio.Float64
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterando medicamentos catalogo: %w", err)
 	}
 	return items, nil
 }
@@ -704,38 +959,111 @@ func (r *catalogRepository) BuscarMedicamentosReceta(ctx context.Context, filtro
 	return items, nil
 }
 
-func (r *catalogRepository) BuscarExamenesCatalogo(ctx context.Context, filtro string, tipo string) ([]domain.ExamenCatalogo, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC [dbo].[usp_go_BuscarCatalogoExamenes] @Filtro = @p1, @Tipo = @p2", sql.Named("p1", filtro), sql.Named("p2", tipo))
+// ListExamenesCatalogo invoca webProcedimentosRecetasFiltarNombrePuntoCarga
+// (@IdTipoFinanciamiento ← IdFormaPago bandeja, @Filtro).
+func (r *catalogRepository) ListExamenesCatalogo(ctx context.Context, idTipoFinanciamiento int64, filtro string) ([]domain.ExamenCatalogo, error) {
+	const procedure = `webProcedimentosRecetasFiltarNombrePuntoCarga`
+
+	rows, err := r.db.QueryContext(ctx, procedure,
+		sql.Named("IdTipoFinanciamiento", idTipoFinanciamiento),
+		sql.Named("Filtro", filtro),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("calling usp_go_BuscarCatalogoExamenes: %w", err)
+		return nil, fmt.Errorf("calling webProcedimentosRecetasFiltarNombrePuntoCarga: %w", err)
 	}
 	defer rows.Close()
 
-	var items []domain.ExamenCatalogo
-	for rows.Next() {
-		var (
-			idProd, esCpt int
-			cod, nom, tip string
-		)
-		if err := rows.Scan(&idProd, &cod, &nom, &tip, &esCpt); err != nil {
-			return nil, fmt.Errorf("escaneando examen catalogo: %w", err)
-		}
-		items = append(items, domain.ExamenCatalogo{
-			IdProducto: idProd,
-			Codigo:     cod,
-			Nombre:     nom,
-			Tipo:       tip,
-			EsCPT:      esCpt == 1,
-		})
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading examenes catalogo: %w", err)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+
+	items := make([]domain.ExamenCatalogo, 0, len(maps))
+	for _, m := range maps {
+		// IdProducto del SP es compuesto ("54707|2"); la PK útil es IdProductoSolo.
+		id := rowInt64(m, "IdProductoSolo", "idProductoSolo")
+		if id == nil {
+			continue
+		}
+		item := domain.ExamenCatalogo{IDProducto: *id}
+		if c := rowString(m, "Codigo", "codigo"); c != nil {
+			item.Codigo = strings.TrimSpace(*c)
+		}
+		if n := rowString(m, "Nombre", "nombre"); n != nil {
+			item.Nombre = strings.TrimSpace(*n)
+		}
+		if nl := rowString(m, "NombreLargo", "nombreLargo"); nl != nil {
+			item.NombreLargo = strings.TrimSpace(*nl)
+		}
+		if pc := rowInt64(m, "idPuntoCarga", "IdPuntoCarga"); pc != nil {
+			item.IDPuntoCarga = *pc
+		}
+		if pn := rowString(m, "PuntoCarga", "puntoCarga"); pn != nil {
+			item.PuntoCarga = strings.TrimSpace(*pn)
+		}
+		if s := rowString(m, "Servicio", "servicio"); s != nil {
+			item.Servicio = strings.TrimSpace(*s)
+		}
+		if p := rowFloat64(m, "PrecioUnitario", "precioUnitario"); p != nil {
+			item.PrecioUnitario = *p
+		}
+		items = append(items, item)
 	}
 	return items, nil
 }
 
-// ListEstablecimientos invoca el SP usp_go_webEstablecimientosFiltrar para
-// buscar establecimientos por filtro y tipo (1=referencia, 0=contrareferencia).
+// ListProcedimientosCatalogo invoca usp_go_ProcedimentosFiltarNombrePuntoCarga.
+func (r *catalogRepository) ListProcedimientosCatalogo(ctx context.Context, idPuntoCarga, idTipoFinanciamiento int64, filtro string) ([]domain.ProcedimientoCatalogo, error) {
+	const procedure = `usp_go_ProcedimentosFiltarNombrePuntoCarga`
+
+	rows, err := r.db.QueryContext(ctx, procedure,
+		sql.Named("IdPuntoCarga", idPuntoCarga),
+		sql.Named("IdTipoFinanciamiento", idTipoFinanciamiento),
+		sql.Named("Filtro", filtro),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ProcedimentosFiltarNombrePuntoCarga: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading procedimientos catalogo: %w", err)
+	}
+
+	items := make([]domain.ProcedimientoCatalogo, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m, "IdProducto", "idProducto")
+		if id == nil {
+			continue
+		}
+		item := domain.ProcedimientoCatalogo{IDProducto: *id}
+		if c := rowString(m, "codigo", "Codigo"); c != nil {
+			item.Codigo = strings.TrimSpace(*c)
+		}
+		if n := rowString(m, "Nombre", "nombre"); n != nil {
+			item.Nombre = strings.TrimSpace(*n)
+		}
+		if nl := rowString(m, "NombreLargo", "nombreLargo"); nl != nil {
+			item.NombreLargo = strings.TrimSpace(*nl)
+		}
+		if pc := rowInt64(m, "IdPuntoCarga", "idPuntoCarga"); pc != nil {
+			item.IDPuntoCarga = *pc
+		}
+		if pn := rowString(m, "PuntoCarga", "puntoCarga"); pn != nil {
+			item.PuntoCarga = strings.TrimSpace(*pn)
+		}
+		if p := rowFloat64(m, "PrecioUnitario", "precioUnitario"); p != nil {
+			item.PrecioUnitario = *p
+		}
+		if b := rowBool(m, "EsCPT", "esCPT"); b != nil {
+			item.EsCPT = *b
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
 // ActualizarParametroValorTexto invoca el SP usp_go_ActualizarParametroValorTextoPorId,
 // que deja ValorTexto = 'N' para el parámetro recibido.
 func (r *catalogRepository) ActualizarParametroValorTexto(ctx context.Context, idParametro int) error {
@@ -746,6 +1074,8 @@ func (r *catalogRepository) ActualizarParametroValorTexto(ctx context.Context, i
 	return nil
 }
 
+// ListEstablecimientos invoca el SP usp_go_webEstablecimientosFiltrar para
+// buscar establecimientos por filtro y tipo (1=referencia, 0=contrareferencia).
 func (r *catalogRepository) ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error) {
 	rows, err := r.db.QueryContext(ctx, "EXEC [dbo].[usp_go_webEstablecimientosFiltrar] @filtro = @p1, @Tipo = @p2", sql.Named("p1", filtro), sql.Named("p2", tipo))
 	if err != nil {
@@ -773,30 +1103,124 @@ func (r *catalogRepository) ListEstablecimientos(ctx context.Context, filtro str
 	return items, nil
 }
 
-func (r *catalogRepository) ListParametrosClinicos(ctx context.Context, idGrupo int) ([]domain.ParametroClinico, error) {
-	rows, err := r.db.QueryContext(ctx, "EXEC dbo.usp_go_Cat_ParametroClinico_Listar @IdGrupo = @p1", sql.Named("p1", idGrupo))
+// ListRecetaDosis invoca usp_go_RecetaDosisSelecionarTodos.
+func (r *catalogRepository) ListRecetaDosis(ctx context.Context) ([]domain.RecetaDosis, error) {
+	const procedure = `usp_go_RecetaDosisSelecionarTodos`
+
+	rows, err := r.db.QueryContext(ctx, procedure)
 	if err != nil {
-		return nil, fmt.Errorf("calling usp_go_Cat_ParametroClinico_Listar: %w", err)
+		return nil, fmt.Errorf("calling usp_go_RecetaDosisSelecionarTodos: %w", err)
 	}
 	defer rows.Close()
 
-	var items []domain.ParametroClinico
-	for rows.Next() {
-		var (
-			idParam   int
-			cod, desc string
-		)
-		if err := rows.Scan(&idParam, &cod, &desc); err != nil {
-			return nil, fmt.Errorf("escaneando parametro clinico: %w", err)
-		}
-		items = append(items, domain.ParametroClinico{
-			IdParametro: idParam,
-			Codigo:      cod,
-			Descripcion: desc,
-		})
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading receta dosis: %w", err)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+
+	items := make([]domain.RecetaDosis, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m, "idDosis", "IdDosis")
+		if id == nil {
+			continue
+		}
+		item := domain.RecetaDosis{ID: *id}
+		if s := rowString(m, "NumeroDosis", "numeroDosis"); s != nil {
+			item.NumeroDosis = strings.TrimSpace(*s)
+		} else if f := rowFloat64(m, "NumeroDosis", "numeroDosis"); f != nil {
+			item.NumeroDosis = strings.TrimRight(strings.TrimRight(fmt.Sprintf("%f", *f), "0"), ".")
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+// ListRecetaUnidadesDosis invoca Usp_go_SelectRecetaUndDosisSelecionarTodos.
+func (r *catalogRepository) ListRecetaUnidadesDosis(ctx context.Context) ([]domain.RecetaUnidadDosis, error) {
+	const procedure = `Usp_go_SelectRecetaUndDosisSelecionarTodos`
+
+	rows, err := r.db.QueryContext(ctx, procedure)
+	if err != nil {
+		return nil, fmt.Errorf("calling Usp_go_SelectRecetaUndDosisSelecionarTodos: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading receta unidades dosis: %w", err)
+	}
+
+	items := make([]domain.RecetaUnidadDosis, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m, "idUNIDDosis", "IdUNIDDosis", "idUnidDosis")
+		if id == nil {
+			continue
+		}
+		item := domain.RecetaUnidadDosis{ID: *id}
+		if s := rowString(m, "NumeroUNIDDosis", "numeroUNIDDosis", "NumeroUnidDosis"); s != nil {
+			item.NumeroUNIDDosis = strings.TrimSpace(*s)
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+// ListRecetaFrecuencias invoca usp_go_SelectRecetaFrecuenciaSelecionarTodos.
+func (r *catalogRepository) ListRecetaFrecuencias(ctx context.Context) ([]domain.RecetaFrecuencia, error) {
+	const procedure = `usp_go_SelectRecetaFrecuenciaSelecionarTodos`
+
+	rows, err := r.db.QueryContext(ctx, procedure)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_SelectRecetaFrecuenciaSelecionarTodos: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading receta frecuencias: %w", err)
+	}
+
+	items := make([]domain.RecetaFrecuencia, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m, "IdfRecuencia", "IdFrecuencia", "idFrecuencia")
+		if id == nil {
+			continue
+		}
+		item := domain.RecetaFrecuencia{ID: *id}
+		if s := rowString(m, "Descripcion", "descripcion"); s != nil {
+			item.Descripcion = strings.TrimSpace(*s)
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+// ListViasAdministracion invoca usp_go_RecetasListadoViasAdministracion.
+func (r *catalogRepository) ListViasAdministracion(ctx context.Context) ([]domain.ViaAdministracion, error) {
+	const procedure = `usp_go_RecetasListadoViasAdministracion`
+
+	rows, err := r.db.QueryContext(ctx, procedure)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_RecetasListadoViasAdministracion: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading vias administracion: %w", err)
+	}
+
+	items := make([]domain.ViaAdministracion, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m, "IdViaAdministracion", "idViaAdministracion")
+		if id == nil {
+			continue
+		}
+		item := domain.ViaAdministracion{ID: *id}
+		if s := rowString(m, "Descripcion", "descripcion"); s != nil {
+			item.Descripcion = strings.TrimSpace(*s)
+		}
+		items = append(items, item)
 	}
 	return items, nil
 }

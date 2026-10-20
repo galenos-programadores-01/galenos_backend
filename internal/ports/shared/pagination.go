@@ -103,6 +103,16 @@ type FichaAdmisionParams struct {
 	IdCuentaAtencion int64
 }
 
+// PrimeraAtencionParams agrupa los filtros del SP
+// web_go_GestionPrimeraAtencionFiltrar (bandeja de Primera Atención en
+// emergencia). IdEmpleado suele tomarse del JWT; IdTipoServicio tipifica
+// el área (p. ej. 2 = emergencia).
+type PrimeraAtencionParams struct {
+	Filtro         string
+	IdTipoServicio int
+	IdEmpleado     int
+}
+
 // ReporteTriajeParams agrupa los filtros del SP usp_go_ReporteTriaje, que
 // cuantifica los triajes de un empleado por servicio (tópico) en un rango
 // de fechas con hora y minuto.

@@ -62,9 +62,12 @@ type FirmaPeruStore interface {
 	// GetLoteSigned recupera el 7z firmado de un lote; devuelve
 	// domain.ErrFirmaPeruSignedNotAvailable si aún no se firmó.
 	GetLoteSigned(ctx context.Context, uuid string) ([]byte, error)
-	// SaveLoteSignedFile escribe en disco (FIRMAPERU_SIGNED_DIR) un PDF
-	// firmado de un lote con su nombre original.
+	// SaveLoteSignedFile guarda en memoria (y disco si hay FIRMAPERU_SIGNED_DIR)
+	// un PDF firmado de un lote con su nombre original.
 	SaveLoteSignedFile(ctx context.Context, uuid string, name string, content []byte) error
+	// GetLoteSignedFiles recupera los PDFs firmados individuales del lote;
+	// domain.ErrFirmaPeruSignedNotAvailable si aún no hay ninguno.
+	GetLoteSignedFiles(ctx context.Context, uuid string) ([]domain.FirmaPeruDocument, error)
 }
 
 // SevenZipArchive es el puerto de salida para crear y extraer archivos 7z

@@ -11,10 +11,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -27,7 +29,11 @@ import (
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/persistence/sqlserver"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/reniec"
 	"github.com/galenos-pro/appointments-api/internal/adapters/output/sis"
+	ftpadapter "github.com/galenos-pro/appointments-api/internal/adapters/output/ftp"
+	sftpadapter "github.com/galenos-pro/appointments-api/internal/adapters/output/sftp"
 	"github.com/galenos-pro/appointments-api/internal/config"
+	"github.com/galenos-pro/appointments-api/internal/domain"
+	"github.com/galenos-pro/appointments-api/internal/ports/output"
 	refconhttp "github.com/galenos-pro/appointments-api/internal/refcon/adapters/input/http"
 	refconminsa "github.com/galenos-pro/appointments-api/internal/refcon/adapters/output/minsa"
 	refconreports "github.com/galenos-pro/appointments-api/internal/refcon/adapters/output/refconreports"
@@ -86,6 +92,7 @@ func run() error {
 	serviciosCatalogoRepo := sqlserver.NewSqlServerServiciosCatalogoRepository(db)
 	farmaciaDisponibilidadRepo := sqlserver.NewFarmaciaDisponibilidadRepository(db)
 	atencionCERepo := sqlserver.NewAtencionCERepository(db)
+	primeraAtencionRepo := sqlserver.NewPrimeraAtencionRepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
 	reniecClient := reniec.New(reniec.Config{
@@ -114,6 +121,24 @@ func run() error {
 	})
 	firmaPeruStore := firmaperu.NewMemoryStore(cfg.FirmaPeruSignedDir)
 	firmaPeruArchive := firmaperu.NewSevenZipTool(cfg.SevenZipPath)
+
+	// --- Adaptador de salida: almacenamiento remoto (SFTP o FTP; noop si no hay host) ---
+	almacenamientoRemoto, err := newAlmacenamientoRemoto(cfg)
+	if err != nil {
+		return err
+	}
+	rutasArchivoRemoto := domain.NuevaRutasArchivoRemoto(cfg.SFTPBasePath, map[string]string{
+		domain.PatronArchivoPrimeraAtencion:       cfg.SFTPPatternPrimeraAtencion,
+		domain.PatronArchivoPrimeraAtencionReceta: cfg.SFTPPatternPrimeraAtencionReceta,
+		domain.PatronArchivoEvolucion:             cfg.SFTPPatternEvolucion,
+	})
+	archivoRemotoService := usecase.NewArchivoRemotoService(almacenamientoRemoto, rutasArchivoRemoto)
+	if archivoRemotoService.Enabled() {
+		log.Printf("almacenamiento remoto habilitado protocol=%s ftp_tls=%s host=%s:%d base=%s",
+			cfg.SFTPProtocol, cfg.SFTPFTPTLS, cfg.SFTPHost, cfg.SFTPPort, cfg.SFTPBasePath)
+	} else {
+		log.Printf("almacenamiento remoto deshabilitado (SFTP_HOST/SFTP_USER vacíos)")
+	}
 
 	// --- Núcleo de dominio: casos de uso implementando los puertos de entrada ---
 	appointmentService := usecase.NewAppointmentUseCase(appointmentRepo)
@@ -154,6 +179,7 @@ func run() error {
 	bienesInsumosService := usecase.NewBienesInsumosUseCase(bienesInsumosRepo)
 	serviciosCatalogoService := usecase.NewServiciosCatalogoUseCase(serviciosCatalogoRepo)
 	farmaciaDisponibilidadService := usecase.NewFarmaciaDisponibilidadUseCase(farmaciaDisponibilidadRepo)
+	primeraAtencionService := usecase.NewPrimeraAtencionUseCase(primeraAtencionRepo)
 
 	authRepo := sqlserver.NewAuthRepository(db)
 	authService := usecase.NewAuthUseCase(authRepo, cfg.AuthSecret, cfg.AuthTTL)
@@ -189,6 +215,11 @@ func run() error {
 	farmaciaDisponibilidadHandler := httpadapter.NewFarmaciaDisponibilidadHandler(farmaciaDisponibilidadService)
 	atencionCEService := usecase.NewAtencionCEUseCase(atencionCERepo)
 	atencionCEHandler := httpadapter.NewAtencionCEHandler(atencionCEService)
+	primeraAtencionHandler := httpadapter.NewPrimeraAtencionHandler(
+		primeraAtencionService,
+		archivoRemotoService,
+		firmaPeruStore,
+	)
 
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
 		AppointmentHandler:            appointmentHandler,
@@ -198,6 +229,7 @@ func run() error {
 		SisHandler:                    sisHandler,
 		FirmaPeruHandler:              firmaPeruHandler,
 		TriageHandler:                 triageHandler,
+		PrimeraAtencionHandler:        primeraAtencionHandler,
 		AuthHandler:                   authHandler,
 		EvolucionHandler:              evolucionHandler,
 		MotivoHandler:                 motivoHandler,
@@ -251,4 +283,33 @@ func run() error {
 	defer cancel()
 
 	return server.Shutdown(shutdownCtx)
+}
+
+// newAlmacenamientoRemoto elige el adaptador según SFTP_PROTOCOL (sftp|ftp).
+// Mismas variables SFTP_* de credenciales; solo cambia el transporte.
+func newAlmacenamientoRemoto(cfg *config.Config) (output.AlmacenamientoRemoto, error) {
+	switch strings.ToLower(strings.TrimSpace(cfg.SFTPProtocol)) {
+	case "ftp":
+		return ftpadapter.New(ftpadapter.Config{
+			Host:               cfg.SFTPHost,
+			Port:               cfg.SFTPPort,
+			User:               cfg.SFTPUser,
+			Password:           cfg.SFTPPassword,
+			Timeout:            cfg.SFTPTimeout,
+			TLSMode:            cfg.SFTPFTPTLS,
+			InsecureSkipVerify: cfg.SFTPInsecureIgnoreHostKey,
+		})
+	case "sftp", "":
+		return sftpadapter.New(sftpadapter.Config{
+			Host:                  cfg.SFTPHost,
+			Port:                  cfg.SFTPPort,
+			User:                  cfg.SFTPUser,
+			Password:              cfg.SFTPPassword,
+			Timeout:               cfg.SFTPTimeout,
+			InsecureIgnoreHostKey: cfg.SFTPInsecureIgnoreHostKey,
+			KnownHostsPath:        cfg.SFTPKnownHostsPath,
+		})
+	default:
+		return nil, fmt.Errorf("SFTP_PROTOCOL inválido %q (use sftp o ftp)", cfg.SFTPProtocol)
+	}
 }

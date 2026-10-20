@@ -369,6 +369,7 @@ func toIdiomaResponse(i domain.Idioma) idiomaResponse {
 type catalogItemResponse struct {
 	ID          int64   `json:"id"`
 	Descripcion *string `json:"descripcion,omitempty"`
+	Codigo      *string `json:"codigo,omitempty"`
 }
 
 func toTipoSexoResponse(t domain.TipoSexo) catalogItemResponse {
@@ -426,6 +427,177 @@ func toServicioResponse(s domain.Servicio) locationItemResponse {
 
 func toEspecialidadResponse(e domain.Especialidad) locationItemResponse {
 	return locationItemResponse{ID: e.ID, Nombre: e.Nombre}
+}
+
+func toParametroClinicoResponse(p domain.ParametroClinico) catalogItemResponse {
+	return catalogItemResponse{ID: p.ID, Descripcion: p.Descripcion, Codigo: p.Codigo}
+}
+
+func toPrioridadPrimeraAtencionResponse(p domain.PrioridadPrimeraAtencion) catalogItemResponse {
+	return catalogItemResponse{ID: p.ID, Descripcion: p.Descripcion}
+}
+
+type subclasificacionDiagnosticoResponse struct {
+	ID               int64   `json:"id"`
+	DescripcionCorta *string `json:"descripcionCorta,omitempty"`
+	DescripcionLarga *string `json:"descripcionLarga,omitempty"`
+}
+
+func toSubclasificacionDiagnosticoResponse(s domain.SubclasificacionDiagnostico) subclasificacionDiagnosticoResponse {
+	return subclasificacionDiagnosticoResponse{
+		ID:               s.ID,
+		DescripcionCorta: s.DescripcionCorta,
+		DescripcionLarga: s.DescripcionLarga,
+	}
+}
+
+type diagnosticoCatalogoResponse struct {
+	ID          int64  `json:"idDiagnostico"`
+	Descripcion string `json:"descripcion"`
+	CodigoCIE10 string `json:"codigoCIE10"`
+}
+
+func toDiagnosticoCatalogoResponse(d domain.DiagnosticoCatalogo) diagnosticoCatalogoResponse {
+	return diagnosticoCatalogoResponse{
+		ID:          d.ID,
+		Descripcion: d.Descripcion,
+		CodigoCIE10: d.CodigoCIE10,
+	}
+}
+
+type medicamentoCatalogoResponse struct {
+	IDProducto     int64   `json:"idProducto"`
+	Codigo         string  `json:"codigo"`
+	Nombre         string  `json:"nombre"`
+	PrecioUnitario float64 `json:"precioUnitario"`
+}
+
+func toMedicamentoCatalogoResponse(m domain.MedicamentoCatalogo) medicamentoCatalogoResponse {
+	return medicamentoCatalogoResponse{
+		IDProducto:     m.IDProducto,
+		Codigo:         m.Codigo,
+		Nombre:         m.Nombre,
+		PrecioUnitario: m.PrecioUnitario,
+	}
+}
+
+type examenCatalogoResponse struct {
+	IDProducto     int64   `json:"idProducto"`
+	Codigo         string  `json:"codigo"`
+	Nombre         string  `json:"nombre"`
+	NombreLargo    string  `json:"nombreLargo"`
+	IDPuntoCarga   int64   `json:"idPuntoCarga"`
+	PuntoCarga     string  `json:"puntoCarga"`
+	Servicio       string  `json:"servicio"`
+	PrecioUnitario float64 `json:"precioUnitario"`
+}
+
+func toExamenCatalogoResponse(e domain.ExamenCatalogo) examenCatalogoResponse {
+	return examenCatalogoResponse{
+		IDProducto:     e.IDProducto,
+		Codigo:         e.Codigo,
+		Nombre:         e.Nombre,
+		NombreLargo:    e.NombreLargo,
+		IDPuntoCarga:   e.IDPuntoCarga,
+		PuntoCarga:     e.PuntoCarga,
+		Servicio:       e.Servicio,
+		PrecioUnitario: e.PrecioUnitario,
+	}
+}
+
+type catalogItemDevelopResponse struct {
+	ID          int64  `json:"id"`
+	Descripcion string `json:"descripcion"`
+}
+
+func toCatalogItemDevelop(id int64, desc string) catalogItemDevelopResponse {
+	return catalogItemDevelopResponse{ID: id, Descripcion: desc}
+}
+
+type medicamentoBusquedaResponse struct {
+	IdProducto          int     `json:"idProducto"`
+	Codigo              string  `json:"codigo"`
+	Nombre              string  `json:"nombre"`
+	Stock               int     `json:"stock"`
+	Precio              float64 `json:"precio"`
+	IdDosisRecetada     int     `json:"idDosisRecetada"`
+	IdUNIDDosisReceta   int     `json:"idUNIDDosisReceta"`
+	IdFrecuencia        int     `json:"idFrecuencia"`
+	IdViaAdministracion int     `json:"idViaAdministracion"`
+}
+
+func toMedicamentoBusquedaResponse(m domain.MedicamentoBusqueda) medicamentoBusquedaResponse {
+	return medicamentoBusquedaResponse{
+		IdProducto:          m.IdProducto,
+		Codigo:              m.Codigo,
+		Nombre:              m.Nombre,
+		Stock:               m.Stock,
+		Precio:              m.Precio,
+		IdDosisRecetada:     m.IdDosisRecetada,
+		IdUNIDDosisReceta:   m.IdUNIDDosisReceta,
+		IdFrecuencia:        m.IdFrecuencia,
+		IdViaAdministracion: m.IdViaAdministracion,
+	}
+}
+
+type procedimientoCatalogoResponse struct {
+	IDProducto     int64   `json:"idProducto"`
+	Codigo         string  `json:"codigo"`
+	Nombre         string  `json:"nombre"`
+	NombreLargo    string  `json:"nombreLargo"`
+	IDPuntoCarga   int64   `json:"idPuntoCarga"`
+	PuntoCarga     string  `json:"puntoCarga"`
+	PrecioUnitario float64 `json:"precioUnitario"`
+	EsCPT          bool    `json:"esCPT"`
+}
+
+func toProcedimientoCatalogoResponse(p domain.ProcedimientoCatalogo) procedimientoCatalogoResponse {
+	return procedimientoCatalogoResponse{
+		IDProducto:     p.IDProducto,
+		Codigo:         p.Codigo,
+		Nombre:         p.Nombre,
+		NombreLargo:    p.NombreLargo,
+		IDPuntoCarga:   p.IDPuntoCarga,
+		PuntoCarga:     p.PuntoCarga,
+		PrecioUnitario: p.PrecioUnitario,
+		EsCPT:          p.EsCPT,
+	}
+}
+
+type recetaDosisResponse struct {
+	ID          int64  `json:"idDosis"`
+	NumeroDosis string `json:"numeroDosis"`
+}
+
+func toRecetaDosisResponse(d domain.RecetaDosis) recetaDosisResponse {
+	return recetaDosisResponse{ID: d.ID, NumeroDosis: d.NumeroDosis}
+}
+
+type recetaUnidadDosisResponse struct {
+	ID              int64  `json:"idUNIDDosis"`
+	NumeroUNIDDosis string `json:"numeroUNIDDosis"`
+}
+
+func toRecetaUnidadDosisResponse(u domain.RecetaUnidadDosis) recetaUnidadDosisResponse {
+	return recetaUnidadDosisResponse{ID: u.ID, NumeroUNIDDosis: u.NumeroUNIDDosis}
+}
+
+type recetaFrecuenciaResponse struct {
+	ID          int64  `json:"idFrecuencia"`
+	Descripcion string `json:"descripcion"`
+}
+
+func toRecetaFrecuenciaResponse(f domain.RecetaFrecuencia) recetaFrecuenciaResponse {
+	return recetaFrecuenciaResponse{ID: f.ID, Descripcion: f.Descripcion}
+}
+
+type viaAdministracionResponse struct {
+	ID          int64  `json:"idViaAdministracion"`
+	Descripcion string `json:"descripcion"`
+}
+
+func toViaAdministracionResponse(v domain.ViaAdministracion) viaAdministracionResponse {
+	return viaAdministracionResponse{ID: v.ID, Descripcion: v.Descripcion}
 }
 
 type fuenteFinanciamientoResponse struct {

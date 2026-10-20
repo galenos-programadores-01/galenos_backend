@@ -1,9 +1,8 @@
-package usecase
+﻿package usecase
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -18,7 +17,7 @@ type catalogUseCase struct {
 	cache cache.Cache
 }
 
-// NewCatalogUseCase construye el caso de uso de catálogos de datos maestros.
+// NewCatalogUseCase construye el caso de uso de catÃ¡logos de datos maestros.
 func NewCatalogUseCase(repo output.CatalogRepository, cache cache.Cache) input.CatalogService {
 	return &catalogUseCase{
 		repo:  repo,
@@ -178,6 +177,32 @@ func (uc *catalogUseCase) ListarEspecialidadesQx(ctx context.Context) ([]domain.
 	return items, nil
 }
 
+func (uc *catalogUseCase) ListEspecialidadesPorTipoServicio(ctx context.Context, idTipoServicio int64) ([]domain.Especialidad, error) {
+	items, err := uc.repo.ListEspecialidadesPorTipoServicio(ctx, idTipoServicio)
+	if err != nil {
+		return nil, fmt.Errorf("listing especialidades por tipo servicio: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListEspecialidadesListar(ctx context.Context) ([]domain.Especialidad, error) {
+	const cacheKey = "cache:especialidades:listar"
+	if uc.cache != nil {
+		var cached []domain.Especialidad
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			return cached, nil
+		}
+	}
+	items, err := uc.repo.ListEspecialidadesListar(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("listing especialidades listar: %w", err)
+	}
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 24*time.Hour)
+	}
+	return items, nil
+}
+
 func (uc *catalogUseCase) ListarServiciosPorPrioridad(ctx context.Context, idPrioridad int, fechaNac string) ([]domain.ServicioSimple, error) {
 	items, err := uc.repo.ListarServiciosPorPrioridad(ctx, idPrioridad, fechaNac)
 	if err != nil {
@@ -194,16 +219,139 @@ func (uc *catalogUseCase) GetParametro(ctx context.Context, idParametro int64) (
 	return item, nil
 }
 
-func (uc *catalogUseCase) ListRecetaFrecuencias(ctx context.Context) ([]domain.CatalogItem, error) {
-	return uc.repo.ListRecetaFrecuencias(ctx)
+func (uc *catalogUseCase) ListParametrosClinicos(ctx context.Context, idGrupo int64) ([]domain.ParametroClinico, error) {
+	cacheKey := fmt.Sprintf("cache:param_clinicos:grupo:%d", idGrupo)
+	if uc.cache != nil {
+		var cached []domain.ParametroClinico
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			return cached, nil
+		}
+	}
+	items, err := uc.repo.ListParametrosClinicos(ctx, idGrupo)
+	if err != nil {
+		return nil, fmt.Errorf("listing parametros clinicos: %w", err)
+	}
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 24*time.Hour)
+	}
+	return items, nil
 }
 
-func (uc *catalogUseCase) ListRecetaUnidadesDosis(ctx context.Context) ([]domain.CatalogItem, error) {
-	return uc.repo.ListRecetaUnidadesDosis(ctx)
+func (uc *catalogUseCase) ListPrioridadesPrimeraAtencion(ctx context.Context) ([]domain.PrioridadPrimeraAtencion, error) {
+	const cacheKey = "cache:prioridades:primera-atencion"
+	if uc.cache != nil {
+		var cached []domain.PrioridadPrimeraAtencion
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			return cached, nil
+		}
+	}
+	items, err := uc.repo.ListPrioridadesPrimeraAtencion(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("listing prioridades primera atencion: %w", err)
+	}
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 24*time.Hour)
+	}
+	return items, nil
 }
 
-func (uc *catalogUseCase) ListRecetaViasAdministracion(ctx context.Context) ([]domain.CatalogItem, error) {
-	return uc.repo.ListRecetaViasAdministracion(ctx)
+func (uc *catalogUseCase) ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int64) ([]domain.SubclasificacionDiagnostico, error) {
+	if idTipoServicio <= 0 || idClasificacionDx <= 0 {
+		return nil, fmt.Errorf("idTipoServicio e idClasificacionDx son obligatorios")
+	}
+	cacheKey := fmt.Sprintf("cache:subclasif-dx:ts:%d:clasif:%d", idTipoServicio, idClasificacionDx)
+	if uc.cache != nil {
+		var cached []domain.SubclasificacionDiagnostico
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			return cached, nil
+		}
+	}
+	items, err := uc.repo.ListSubclasificacionesDiagnostico(ctx, idTipoServicio, idClasificacionDx)
+	if err != nil {
+		return nil, fmt.Errorf("listing subclasificaciones diagnostico: %w", err)
+	}
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 24*time.Hour)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListDiagnosticosCatalogo(ctx context.Context, filtro string, idAtencion, idPaciente int64) ([]domain.DiagnosticoCatalogo, error) {
+	items, err := uc.repo.ListDiagnosticosCatalogo(ctx, filtro, idAtencion, idPaciente)
+	if err != nil {
+		return nil, fmt.Errorf("listing diagnosticos catalogo: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListMedicamentosCatalogo(ctx context.Context, filtro string, idPaciente int64) ([]domain.MedicamentoCatalogo, error) {
+	items, err := uc.repo.ListMedicamentosCatalogo(ctx, filtro, idPaciente)
+	if err != nil {
+		return nil, fmt.Errorf("listing medicamentos catalogo: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListExamenesCatalogo(ctx context.Context, idTipoFinanciamiento int64, filtro string) ([]domain.ExamenCatalogo, error) {
+	if idTipoFinanciamiento <= 0 {
+		return nil, fmt.Errorf("idTipoFinanciamiento inválido")
+	}
+	cleanFilter := strings.ToLower(strings.TrimSpace(filtro))
+	cacheKey := fmt.Sprintf("cache:examenes:fin:%d:%s", idTipoFinanciamiento, cleanFilter)
+	if uc.cache != nil {
+		var cached []domain.ExamenCatalogo
+		if uc.cache.Get(ctx, cacheKey, &cached) {
+			return cached, nil
+		}
+	}
+	items, err := uc.repo.ListExamenesCatalogo(ctx, idTipoFinanciamiento, filtro)
+	if err != nil {
+		return nil, fmt.Errorf("listing examenes catalogo: %w", err)
+	}
+	if uc.cache != nil && len(items) > 0 {
+		uc.cache.Set(ctx, cacheKey, items, 60*time.Minute)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListProcedimientosCatalogo(ctx context.Context, idPuntoCarga, idTipoFinanciamiento int64, filtro string) ([]domain.ProcedimientoCatalogo, error) {
+	items, err := uc.repo.ListProcedimientosCatalogo(ctx, idPuntoCarga, idTipoFinanciamiento, filtro)
+	if err != nil {
+		return nil, fmt.Errorf("listing procedimientos catalogo: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListRecetaDosis(ctx context.Context) ([]domain.RecetaDosis, error) {
+	items, err := uc.repo.ListRecetaDosis(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("listing receta dosis: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListRecetaUnidadesDosis(ctx context.Context) ([]domain.RecetaUnidadDosis, error) {
+	items, err := uc.repo.ListRecetaUnidadesDosis(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("listing receta unidades dosis: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListRecetaFrecuencias(ctx context.Context) ([]domain.RecetaFrecuencia, error) {
+	items, err := uc.repo.ListRecetaFrecuencias(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("listing receta frecuencias: %w", err)
+	}
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListViasAdministracion(ctx context.Context) ([]domain.ViaAdministracion, error) {
+	items, err := uc.repo.ListViasAdministracion(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("listing vias administracion: %w", err)
+	}
+	return items, nil
 }
 
 func (uc *catalogUseCase) BuscarMedicamentosReceta(ctx context.Context, filtro string, idPaciente int) ([]domain.MedicamentoBusqueda, error) {
@@ -212,69 +360,16 @@ func (uc *catalogUseCase) BuscarMedicamentosReceta(ctx context.Context, filtro s
 	if uc.cache != nil {
 		var cached []domain.MedicamentoBusqueda
 		if uc.cache.Get(ctx, cacheKey, &cached) {
-			log.Printf("[REDIS HIT] Medicamentos para '%s' (idPaciente=%d, %d items recuperados del caché)", cleanFilter, idPaciente, len(cached))
 			return cached, nil
 		}
-		log.Printf("[REDIS MISS] Medicamentos para '%s' (idPaciente=%d). Consultando BD...", cleanFilter, idPaciente)
 	}
-
 	items, err := uc.repo.BuscarMedicamentosReceta(ctx, filtro, idPaciente)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("buscar medicamentos receta: %w", err)
 	}
-
 	if uc.cache != nil && len(items) > 0 {
 		uc.cache.Set(ctx, cacheKey, items, 30*time.Minute)
-		log.Printf("[REDIS SET] Guardados %d medicamentos para clave '%s' en caché (TTL 30m)", len(items), cacheKey)
 	}
-
-	return items, nil
-}
-
-func (uc *catalogUseCase) BuscarExamenesCatalogo(ctx context.Context, filtro string, tipo string) ([]domain.ExamenCatalogo, error) {
-	cleanFilter := strings.ToLower(strings.TrimSpace(filtro))
-	cleanTipo := strings.ToLower(strings.TrimSpace(tipo))
-	cacheKey := fmt.Sprintf("cache:examenes:%s:%s", cleanFilter, cleanTipo)
-	if uc.cache != nil {
-		var cached []domain.ExamenCatalogo
-		if uc.cache.Get(ctx, cacheKey, &cached) {
-			log.Printf("[REDIS HIT] Exámenes para '%s' (tipo=%s, %d items recuperados del caché)", cleanFilter, cleanTipo, len(cached))
-			return cached, nil
-		}
-		log.Printf("[REDIS MISS] Exámenes para '%s' (tipo=%s). Consultando BD...", cleanFilter, cleanTipo)
-	}
-
-	items, err := uc.repo.BuscarExamenesCatalogo(ctx, filtro, tipo)
-	if err != nil {
-		return nil, err
-	}
-
-	if uc.cache != nil && len(items) > 0 {
-		uc.cache.Set(ctx, cacheKey, items, 60*time.Minute)
-		log.Printf("[REDIS SET] Guardados %d exámenes para clave '%s' en caché (TTL 60m)", len(items), cacheKey)
-	}
-
-	return items, nil
-}
-
-func (uc *catalogUseCase) ListParametrosClinicos(ctx context.Context, idGrupo int) ([]domain.ParametroClinico, error) {
-	cacheKey := fmt.Sprintf("cache:param_clinicos:grupo:%d", idGrupo)
-	if uc.cache != nil {
-		var cached []domain.ParametroClinico
-		if uc.cache.Get(ctx, cacheKey, &cached) {
-			return cached, nil
-		}
-	}
-
-	items, err := uc.repo.ListParametrosClinicos(ctx, idGrupo)
-	if err != nil {
-		return nil, err
-	}
-
-	if uc.cache != nil && len(items) > 0 {
-		uc.cache.Set(ctx, cacheKey, items, 24*time.Hour)
-	}
-
 	return items, nil
 }
 
