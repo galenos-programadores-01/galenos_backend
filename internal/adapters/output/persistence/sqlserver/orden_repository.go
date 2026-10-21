@@ -156,7 +156,7 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 	// 3. Insertar la cabecera de la receta
 	const idPuntoCargaFarmacia = 5
 	var respuesta string
-	err = tx.QueryRowContext(ctx, `
+	_, err = tx.ExecContext(ctx, `
 		EXEC usp_go_RecetaCabeceraAgregar
 			@Respuesta = @p1 OUTPUT,
 			@IdPuntoCarga = @p2,
@@ -178,7 +178,7 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 		sql.Named("p8", idEmpleado),
 		sql.Named("p9", 0),
 		sql.Named("p10", 0),
-	).Scan(&respuesta)
+	)
 	if err != nil {
 		return fmt.Errorf("creando cabecera de receta: %w", err)
 	}
@@ -196,7 +196,7 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 		}
 
 		var mensaje string
-		err = tx.QueryRowContext(ctx, `
+		_, err = tx.ExecContext(ctx, `
 			EXEC usp_go_RecetaDetalleAgregar
 				@Mensaje = @p1 OUTPUT,
 				@idReceta = @p2,
@@ -230,7 +230,7 @@ func (r *OrdenRepository) CrearOrden(ctx context.Context, orden domain.OrdenMedi
 			sql.Named("p14", nil),
 			sql.Named("p15", nil),
 			sql.Named("p16", nil),
-		).Scan(&mensaje)
+		)
 		if err != nil {
 			return fmt.Errorf("agregando producto %d a receta: %w", det.IdProducto, err)
 		}
@@ -332,3 +332,197 @@ func parsearRespuestaReceta(respuesta string) (int, bool) {
 	}
 	return idReceta, true
 }
+
+func (r *OrdenRepository) ObtenerFormatoImpresionReceta(
+	ctx context.Context,
+	identificadorReceta int,
+	identificadorCuentaAtencion int,
+	identificadorAtencion int,
+) (*domain.FormatoImpresionReceta, error) {
+	if identificadorCuentaAtencion <= 0 || identificadorAtencion <= 0 {
+		var cuentaObtenida sql.NullInt64
+		var atencionObtenida sql.NullInt64
+		consultaResolucion := `
+			SELECT TOP 1 idCuentaAtencion, lnIdRegistroAtencion 
+			FROM dbo.RecetaCabecera WITH (NOLOCK) 
+			WHERE idReceta = @p1`
+		errorResolucion := r.db.QueryRowContext(ctx, consultaResolucion, sql.Named("p1", identificadorReceta)).Scan(
+			&cuentaObtenida,
+			&atencionObtenida,
+		)
+		if errorResolucion == nil {
+			if identificadorCuentaAtencion <= 0 && cuentaObtenida.Valid {
+				identificadorCuentaAtencion = int(cuentaObtenida.Int64)
+			}
+			if identificadorAtencion <= 0 && atencionObtenida.Valid {
+				identificadorAtencion = int(atencionObtenida.Int64)
+			}
+		}
+	}
+
+	if identificadorAtencion <= 0 && identificadorCuentaAtencion > 0 {
+		var atencionDesdeCuenta sql.NullInt64
+		consultaAtencion := `
+			SELECT TOP 1 IdAtencion 
+			FROM dbo.Atenciones WITH (NOLOCK) 
+			WHERE IdCuentaAtencion = @p1`
+		errorAtencion := r.db.QueryRowContext(ctx, consultaAtencion, sql.Named("p1", identificadorCuentaAtencion)).Scan(&atencionDesdeCuenta)
+		if errorAtencion == nil && atencionDesdeCuenta.Valid {
+			identificadorAtencion = int(atencionDesdeCuenta.Int64)
+		}
+	}
+
+	formato := &domain.FormatoImpresionReceta{
+		IdentificadorReceta:         identificadorReceta,
+		NumeroReceta:                fmt.Sprintf("%d", identificadorReceta),
+		IdentificadorCuentaAtencion: identificadorCuentaAtencion,
+		IdentificadorAtencion:       identificadorAtencion,
+		Diagnosticos:                make([]domain.DiagnosticoImpresionReceta, 0),
+		Medicamentos:                make([]domain.MedicamentoImpresionReceta, 0),
+	}
+
+	if identificadorCuentaAtencion > 0 {
+		consultaCabecera := "EXEC dbo.usp_go_AtencionesSelecionarPorCuenta @IdCuentaAtencion = @p1"
+		filasCabecera, errorCabecera := r.db.QueryContext(ctx, consultaCabecera, sql.Named("p1", identificadorCuentaAtencion))
+		if errorCabecera == nil {
+			mapasCabecera, errorMapeo := rowsToMaps(filasCabecera)
+			filasCabecera.Close()
+			if errorMapeo == nil && len(mapasCabecera) > 0 {
+				fila := mapasCabecera[0]
+				if valor := rowString(fila, "Paciente", "NombresPaciente", "NombreCompleto", "PacienteNombre", "ApellidosNombres"); valor != nil {
+					formato.PacienteNombreCompleto = *valor
+				}
+				if valor := rowString(fila, "Direccion", "Domicilio", "DireccionPaciente"); valor != nil {
+					formato.DireccionDomicilio = *valor
+				}
+				if valor := rowString(fila, "NumeroFua", "FUA", "NroFua", "NumFua"); valor != nil {
+					formato.NumeroFormatoUnicoAtencion = *valor
+				}
+				if valor := rowString(fila, "TipoAtencion", "DesTipoAtencion", "TipoServicio"); valor != nil {
+					formato.TipoAtencion = *valor
+				}
+				if valor := rowString(fila, "TipoFinanciamiento", "FuenteFinanciamiento", "DesFuenteFinanciamiento", "Financiador", "TipoFinanc"); valor != nil {
+					formato.TipoFinanciamiento = *valor
+				}
+				if valor := rowString(fila, "Telefono", "TelefonoPaciente", "Celular"); valor != nil {
+					formato.NumeroTelefono = *valor
+				}
+				if valor := rowString(fila, "Especialidad", "DesEspecialidad", "Servicio", "DesServicio", "EspMedico"); valor != nil {
+					formato.EspecialidadMedica = *valor
+				}
+				if valor := rowString(fila, "Consultorio", "DesConsultorio", "NombreConsultorio"); valor != nil {
+					formato.Consultorio = *valor
+				}
+				if valor := rowString(fila, "NroHistoriaClinica", "HistoriaClinica", "HC", "NumHistoria"); valor != nil {
+					formato.NumeroHistoriaClinica = *valor
+				}
+				if valor := rowString(fila, "Edad", "EdadPaciente", "EdadTexto"); valor != nil {
+					formato.EdadPaciente = *valor
+				}
+				if valor := rowString(fila, "IdCuentaAtencion", "Cuenta", "CTA", "CuentaAtencion"); valor != nil {
+					formato.CuentaAtencion = *valor
+				}
+				if valor := rowString(fila, "FechaAtencion", "FechaIngreso", "Fecha", "FechaRegistro"); valor != nil {
+					formato.FechaAtencion = *valor
+				}
+				if valor := rowString(fila, "NroDocumento", "Documento", "DNI", "DocIdentidad"); valor != nil {
+					formato.DocumentoNacionalIdentidad = *valor
+				}
+				if valor := rowString(fila, "Peso", "PesoKg", "SignoPeso"); valor != nil {
+					formato.PesoKilogramos = *valor
+				}
+				if valor := rowString(fila, "Talla", "TallaCm", "SignoTalla"); valor != nil {
+					formato.TallaCentimetros = *valor
+				}
+				if valor := rowString(fila, "Medico", "MedicoTratante", "NombresMedico", "NombreMedico"); valor != nil {
+					formato.MedicoNombreCompleto = *valor
+				}
+				if valor := rowString(fila, "Colegiatura", "CMP", "NroColegiatura"); valor != nil {
+					formato.MedicoColegiatura = *valor
+				}
+				if valor := rowString(fila, "RNE", "NroRNE", "RegistroEspecialista"); valor != nil {
+					formato.MedicoRegistroEspecialidad = *valor
+				}
+				if valor := rowString(fila, "Usuario", "UsuarioAuditoria", "NomUsuario"); valor != nil {
+					formato.UsuarioResponsable = *valor
+				}
+			}
+		}
+	}
+
+	if identificadorAtencion > 0 {
+		consultaDiagnosticos := "EXEC dbo.usp_go_AtencionesDiagnosticosIdAtencion @IdAtencion = @p1"
+		filasDiagnosticos, errorDiagnosticos := r.db.QueryContext(ctx, consultaDiagnosticos, sql.Named("p1", identificadorAtencion))
+		if errorDiagnosticos != nil {
+			consultaDiagnosticosAlternativa := "EXEC dbo.usp_go_ObtenerDiagnosticosAtencion @IdAtencion = @p1, @IdPrimeraAtencion = 0, @IdTipoServicio = 0"
+			filasDiagnosticos, errorDiagnosticos = r.db.QueryContext(ctx, consultaDiagnosticosAlternativa, sql.Named("p1", identificadorAtencion))
+		}
+
+		if errorDiagnosticos == nil {
+			mapasDiagnosticos, errorMapeo := rowsToMaps(filasDiagnosticos)
+			filasDiagnosticos.Close()
+			if errorMapeo == nil {
+				textosCodigos := make([]string, 0)
+				for _, fila := range mapasDiagnosticos {
+					var itemDiagnostico domain.DiagnosticoImpresionReceta
+					if valor := rowString(fila, "CodigoCIE10", "Codigo", "CIE10", "CIE"); valor != nil {
+						itemDiagnostico.CodigoCIE10 = *valor
+					}
+					if valor := rowString(fila, "Descripcion", "Nombre", "Diagnostico"); valor != nil {
+						itemDiagnostico.Descripcion = *valor
+					}
+					if valor := rowString(fila, "Tipo", "Clasificacion", "Subclasificacion"); valor != nil {
+						itemDiagnostico.TipoDiagnostico = *valor
+					}
+					if itemDiagnostico.CodigoCIE10 != "" {
+						textosCodigos = append(textosCodigos, itemDiagnostico.CodigoCIE10)
+					}
+					formato.Diagnosticos = append(formato.Diagnosticos, itemDiagnostico)
+				}
+				formato.DiagnosticoTextoResumido = strings.Join(textosCodigos, ", ")
+			}
+		}
+	}
+
+	if identificadorReceta > 0 {
+		consultaMedicamentos := "EXEC dbo.usp_go_wMedicamentosListarIdReceta @IdReceta = @p1"
+		filasMedicamentos, errorMedicamentos := r.db.QueryContext(ctx, consultaMedicamentos, sql.Named("p1", identificadorReceta))
+		if errorMedicamentos != nil {
+			consultaMedicamentosAlternativa := "EXEC dbo.usp_go_Recetas_ListarDetallesPorEvolucion @IdCuentaAtencion = @p1"
+			filasMedicamentos, errorMedicamentos = r.db.QueryContext(ctx, consultaMedicamentosAlternativa, sql.Named("p1", identificadorCuentaAtencion))
+		}
+
+		if errorMedicamentos == nil {
+			mapasMedicamentos, errorMapeo := rowsToMaps(filasMedicamentos)
+			filasMedicamentos.Close()
+			if errorMapeo == nil {
+				for indice, fila := range mapasMedicamentos {
+					var itemMedicamento domain.MedicamentoImpresionReceta
+					itemMedicamento.NumeroItem = indice + 1
+					if valor := rowInt64(fila, "Item", "NroItem", "NumeroItem"); valor != nil && *valor > 0 {
+						itemMedicamento.NumeroItem = int(*valor)
+					}
+					if valor := rowString(fila, "Codigo", "CodigoProducto", "CodProducto", "IdProducto"); valor != nil {
+						itemMedicamento.CodigoProducto = *valor
+					}
+					if valor := rowString(fila, "Medicamento", "Nombre", "NombreProducto", "Descripcion", "NombreMedicamento"); valor != nil {
+						itemMedicamento.NombreProductoCompleto = *valor
+					}
+					if valor := rowString(fila, "FormaFarmaceutica", "FormaFarm", "Presentacion"); valor != nil {
+						itemMedicamento.FormaFarmaceutica = *valor
+					}
+					if valor := rowString(fila, "Dosis", "Posologia", "Indicaciones", "Indicacion", "DescripcionAdicional", "DescripcionadicionalReceta"); valor != nil {
+						itemMedicamento.DosisPosologiaCompleta = *valor
+					}
+					if valor := rowInt64(fila, "Cantidad", "CantidadPedida", "Cant"); valor != nil {
+						itemMedicamento.CantidadTotal = int(*valor)
+					}
+					formato.Medicamentos = append(formato.Medicamentos, itemMedicamento)
+				}
+			}
+		}
+	}
+
+	return formato, nil
+}
+

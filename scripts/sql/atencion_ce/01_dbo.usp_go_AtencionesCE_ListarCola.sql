@@ -91,7 +91,12 @@ BEGIN
             LEFT JOIN dbo.Empleados e WITH (NOLOCK) ON m.IdEmpleado = e.IdEmpleado
             LEFT JOIN dbo.FuentesFinanciamiento ff WITH (NOLOCK) ON a.idFuenteFinanciamiento = ff.IdFuenteFinanciamiento
             LEFT JOIN dbo.AtencionesCE ace WITH (NOLOCK) ON ace.idAtencion = a.IdAtencion
-            LEFT JOIN dbo.AtencionesTriaje atri WITH (NOLOCK) ON atri.IdAtencion = a.IdAtencion
+            OUTER APPLY (
+                SELECT TOP 1 atri.IdAtencion 
+                FROM dbo.AtencionesTriaje atri WITH (NOLOCK) 
+                WHERE atri.IdAtencion = a.IdAtencion 
+                ORDER BY atri.UltimoTriaje DESC, atri.IdTriaje DESC
+            ) atri
             WHERE (@FiltroLimpio IS NULL OR (
                 p.NroDocumento LIKE @FiltroLimpio
                 OR CAST(p.NroHistoriaClinica AS VARCHAR(20)) LIKE @FiltroLimpio
@@ -148,7 +153,12 @@ BEGIN
             LEFT JOIN dbo.Empleados e WITH (NOLOCK) ON m.IdEmpleado = e.IdEmpleado
             LEFT JOIN dbo.FuentesFinanciamiento ff WITH (NOLOCK) ON a.idFuenteFinanciamiento = ff.IdFuenteFinanciamiento
             LEFT JOIN dbo.AtencionesCE ace WITH (NOLOCK) ON ace.idAtencion = a.IdAtencion
-            LEFT JOIN dbo.AtencionesTriaje atri WITH (NOLOCK) ON atri.IdAtencion = a.IdAtencion
+            OUTER APPLY (
+                SELECT TOP 1 atri.IdAtencion 
+                FROM dbo.AtencionesTriaje atri WITH (NOLOCK) 
+                WHERE atri.IdAtencion = a.IdAtencion 
+                ORDER BY atri.UltimoTriaje DESC, atri.IdTriaje DESC
+            ) atri
             WHERE a.IdTipoServicio = 1
               AND (
                     p.NroDocumento LIKE @FiltroLimpio

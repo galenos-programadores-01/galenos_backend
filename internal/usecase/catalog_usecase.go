@@ -397,7 +397,7 @@ func (uc *catalogUseCase) ListEstablecimientos(ctx context.Context, filtro strin
 	return items, nil
 }
 
-func (uc *catalogUseCase) ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error) {
+func (uc *catalogUseCase) ListSubclasificacionesDiagnosticosItems(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error) {
 	cacheKey := fmt.Sprintf("cache:subclasif_dx:%d:%d", idTipoServicio, idClasificacionDx)
 	if uc.cache != nil {
 		var cached []domain.SubclasificacionDxItem
@@ -406,7 +406,7 @@ func (uc *catalogUseCase) ListSubclasificacionesDiagnostico(ctx context.Context,
 		}
 	}
 
-	items, err := uc.repo.ListSubclasificacionesDiagnostico(ctx, idTipoServicio, idClasificacionDx)
+	items, err := uc.repo.ListSubclasificacionesDiagnosticosItems(ctx, idTipoServicio, idClasificacionDx)
 	if err != nil {
 		return nil, err
 	}

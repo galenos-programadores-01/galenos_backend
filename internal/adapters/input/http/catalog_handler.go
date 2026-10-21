@@ -937,11 +937,14 @@ func (h *CatalogHandler) BuscarExamenesCatalogo(c *gin.Context) {
 	if filtro == "" {
 		filtro = c.Query("filtro")
 	}
-	idTipoFinanciamiento, err := strconv.ParseInt(c.Query("idTipoFinanciamiento"), 10, 64)
-	if err != nil || idTipoFinanciamiento <= 0 {
-		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idTipoFinanciamiento es obligatorio y debe ser un entero positivo")
-		return
+
+	var idTipoFinanciamiento int64 = 2 // SIS por defecto en hospital público
+	if val := c.Query("idTipoFinanciamiento"); val != "" {
+		if parsed, err := strconv.ParseInt(val, 10, 64); err == nil && parsed > 0 {
+			idTipoFinanciamiento = parsed
+		}
 	}
+
 	items, err := h.service.ListExamenesCatalogo(c.Request.Context(), idTipoFinanciamiento, filtro)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
@@ -1028,7 +1031,7 @@ func (h *CatalogHandler) HandleListSubclasificacionesDiagnostico(c *gin.Context)
 	idTipoServicio, _ := strconv.Atoi(c.DefaultQuery("idTipoServicio", "3"))
 	idClasificacionDx, _ := strconv.Atoi(c.DefaultQuery("idClasificacionDx", "9"))
 
-	items, err := h.service.ListSubclasificacionesDiagnostico(c.Request.Context(), idTipoServicio, idClasificacionDx)
+	items, err := h.service.ListSubclasificacionesDiagnosticosItems(c.Request.Context(), idTipoServicio, idClasificacionDx)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return

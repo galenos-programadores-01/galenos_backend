@@ -114,3 +114,25 @@ func (h *OrdenHandler) HandleBuscarProductos(c *gin.Context) {
 
 	respondSuccess(c, http.StatusOK, productos)
 }
+
+func (h *OrdenHandler) HandleObtenerFormatoImpresionReceta(c *gin.Context) {
+	identificadorRecetaTexto := c.Param("idReceta")
+	identificadorReceta, _ := strconv.Atoi(identificadorRecetaTexto)
+
+	identificadorCuentaAtencion, _ := strconv.Atoi(c.Query("idCuentaAtencion"))
+	identificadorAtencion, _ := strconv.Atoi(c.Query("idAtencion"))
+
+	formato, err := h.service.ObtenerFormatoImpresionReceta(
+		c.Request.Context(),
+		identificadorReceta,
+		identificadorCuentaAtencion,
+		identificadorAtencion,
+	)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "RECETA_IMPRESION_ERR", "Error al obtener formato de impresión de receta médica")
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, formato)
+}
+

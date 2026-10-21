@@ -74,17 +74,21 @@ func (h *AtencionCEHandler) GuardarFicha(c *gin.Context) {
 		return
 	}
 
-	if payload.IdUsuario <= 0 {
-		if idEmpleado := c.GetInt("idEmpleado"); idEmpleado > 0 {
-			payload.IdUsuario = idEmpleado
-		} else if claims, ok := c.Get("auth_claims"); ok {
+	idEmpleado := c.GetInt("idEmpleado")
+	if idEmpleado <= 0 {
+		if claims, ok := c.Get("auth_claims"); ok {
 			if authClaims, ok := claims.(domain.AuthClaims); ok && authClaims.IdEmpleado > 0 {
-				payload.IdUsuario = authClaims.IdEmpleado
+				idEmpleado = authClaims.IdEmpleado
 			}
-		} else {
-			payload.IdUsuario = 1
 		}
 	}
+
+	if idEmpleado <= 0 {
+		respondError(c, http.StatusUnauthorized, "SESION_INVALIDA", "No se encontro un identificador de empleado valido en la sesion")
+		return
+	}
+
+	payload.IdUsuario = idEmpleado
 
 	if err := h.servicio.GuardarFichaAtencion(c.Request.Context(), payload); err != nil {
 		respondError(c, http.StatusInternalServerError, "ERROR_GUARDAR_FICHA_CE", err.Error())

@@ -1225,7 +1225,7 @@ func (r *catalogRepository) ListViasAdministracion(ctx context.Context) ([]domai
 	return items, nil
 }
 
-func (r *catalogRepository) ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error) {
+func (r *catalogRepository) ListSubclasificacionesDiagnosticosItems(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error) {
 	rows, err := r.db.QueryContext(ctx, "EXEC dbo.usp_go_SubclasificacionDiagnosticos_Select @IdTipoServicio = @p1, @IdClasificacionDx = @p2",
 		sql.Named("p1", idTipoServicio),
 		sql.Named("p2", idClasificacionDx),

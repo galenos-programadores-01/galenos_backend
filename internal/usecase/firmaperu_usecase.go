@@ -121,10 +121,14 @@ func (uc *firmaPeruUseCase) ObtenerParametrosFirma(ctx context.Context, uuid str
 		params.UploadDocumentSigned = baseURL + "/api/v1/firmaperu/documentos/" + uuid
 	}
 	params.Token = token
-	if _, err := uc.store.GetStampImage(ctx, uuid); err == nil {
-		params.ImageToStamp = baseURL + "/api/v1/firmaperu/estampado/" + uuid
-	} else if params.ImageToStamp == "" {
-		params.ImageToStamp = baseURL + "/api/v1/firmaperu/estampado.png"
+	if params.SignatureStyle != 0 {
+		if _, err := uc.store.GetStampImage(ctx, uuid); err == nil {
+			params.ImageToStamp = baseURL + "/api/v1/firmaperu/estampado/" + uuid
+		} else if params.ImageToStamp == "" {
+			params.ImageToStamp = baseURL + "/api/v1/firmaperu/estampado.png"
+		}
+	} else {
+		params.ImageToStamp = ""
 	}
 
 	paramBase64, err := uc.client.BuildParamBase64(params)
@@ -272,18 +276,38 @@ func (uc *firmaPeruUseCase) ObtenerLoteFirmado(ctx context.Context, uuid string)
 	return uc.store.GetLoteSigned(ctx, uuid)
 }
 
-// reTriajeID extrae el número de triaje de nombres tipo TRIAJE_123.pdf.
+func (uc *firmaPeruUseCase) ObtenerLoteDocumentosFirmados(ctx context.Context, uuid string) ([]domain.FirmaPeruDocument, error) {
+	return uc.store.GetLoteSignedFiles(ctx, uuid)
+}
+
+func (uc *firmaPeruUseCase) ObtenerLoteArchivoFirmado(ctx context.Context, uuid string, name string) ([]byte, error) {
+	return uc.store.GetLoteSignedFile(ctx, uuid, name)
+}
+
 var reTriajeID = regexp.MustCompile(`(?i)TRIAJE[_ ]?(\d+)`)
 
 // mapearFirmadosLote empareja cada archivo firmado del 7z con el original:
 // 1) basename exacto (PA_*, TRIAJE_*), 2) id de triaje, 3) orden.
+func normalizarNombreParaEmparejar(nombre string) string {
+	limpio := strings.ToLower(filepath.Base(nombre))
+	limpio = strings.TrimPrefix(limpio, "[f]")
+	limpio = strings.TrimPrefix(limpio, "[f]_")
+	limpio = strings.TrimSuffix(limpio, "_firmado.pdf")
+	limpio = strings.TrimSuffix(limpio, "[f].pdf")
+	limpio = strings.TrimSuffix(limpio, ".pdf")
+	limpio = strings.TrimSpace(limpio)
+	return limpio
+}
+
 func mapearFirmadosLote(originales, firmados []domain.FirmaPeruDocument) []domain.FirmaPeruDocument {
 	usado := make([]bool, len(originales))
 	var out []domain.FirmaPeruDocument
 
 	for _, f := range firmados {
 		firmadoBase := strings.ToLower(filepath.Base(f.Name))
+		nombreFirmadoNormalizado := normalizarNombreParaEmparejar(f.Name)
 		idx := -1
+
 		for i, o := range originales {
 			if usado[i] {
 				continue
@@ -292,7 +316,27 @@ func mapearFirmadosLote(originales, firmados []domain.FirmaPeruDocument) []domai
 				idx = i
 				break
 			}
+			nombreOriginalNormalizado := normalizarNombreParaEmparejar(o.Name)
+			if nombreFirmadoNormalizado == nombreOriginalNormalizado ||
+				(len(nombreOriginalNormalizado) > 3 && strings.Contains(nombreFirmadoNormalizado, nombreOriginalNormalizado)) ||
+				(len(nombreFirmadoNormalizado) > 3 && strings.Contains(nombreOriginalNormalizado, nombreFirmadoNormalizado)) {
+				idx = i
+				break
+			}
 		}
+
+		if idx < 0 {
+			id := triajeID(f.Name)
+			if id >= 0 {
+				for i, o := range originales {
+					if !usado[i] && triajeID(o.Name) == id {
+						idx = i
+						break
+					}
+				}
+			}
+		}
+
 		if idx < 0 {
 			id := triajeID(f.Name)
 			for i, o := range originales {
@@ -310,6 +354,7 @@ func mapearFirmadosLote(originales, firmados []domain.FirmaPeruDocument) []domai
 				}
 			}
 		}
+
 		if idx < 0 {
 			continue
 		}
@@ -322,8 +367,6 @@ func mapearFirmadosLote(originales, firmados []domain.FirmaPeruDocument) []domai
 	return out
 }
 
-// triajeID devuelve el número de triaje contenido en un nombre de archivo o
-// -1 si no se puede identificar.
 func triajeID(nombre string) int {
 	m := reTriajeID.FindStringSubmatch(nombre)
 	if len(m) != 2 {
@@ -357,7 +400,7 @@ func aplicarDefaults(p domain.FirmaPeruSignParams) domain.FirmaPeruSignParams {
 	if p.Theme == "" {
 		p.Theme = "claro"
 	}
-	if p.SignatureStyle == 0 {
+	if p.SignatureStyle < 0 {
 		p.SignatureStyle = 1
 	}
 	if p.StampTextSize == 0 {

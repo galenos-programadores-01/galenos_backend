@@ -3,7 +3,13 @@
 // Angular. No contiene reglas de negocio: solo traduce HTTP <-> puertos.
 package httpadapter
 
-import "github.com/gin-gonic/gin"
+import (
+	"log"
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+)
 
 // apiResponse es el sobre estándar de toda respuesta de la API, para que
 // Angular pueda manejar éxito y error de forma consistente.
@@ -23,5 +29,13 @@ func respondSuccess(c *gin.Context, status int, data any) {
 }
 
 func respondError(c *gin.Context, status int, code, message string) {
-	c.JSON(status, apiResponse{Success: false, Error: &apiError{Code: code, Message: message}})
+	mensajeCliente := message
+	if status >= http.StatusInternalServerError {
+		log.Printf("ERROR SERVIDOR [%s]: %s", code, message)
+		mensajeMinuscula := strings.ToLower(message)
+		if strings.Contains(mensajeMinuscula, "mssql:") || strings.Contains(mensajeMinuscula, "sql:") {
+			mensajeCliente = "Ocurrio un error en el procesamiento de la base de datos"
+		}
+	}
+	c.JSON(status, apiResponse{Success: false, Error: &apiError{Code: code, Message: mensajeCliente}})
 }

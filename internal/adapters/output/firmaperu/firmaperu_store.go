@@ -11,11 +11,6 @@ import (
 	"github.com/galenos-pro/appointments-api/internal/domain"
 )
 
-// memoryStore implementa output.FirmaPeruStore en memoria. Es suficiente para
-// el ciclo de vida de la firma (descarga original -> firma -> subida firmado);
-// los documentos se descartan al reiniciar el proceso. Si signedDir no es
-// vacío (FIRMAPERU_SIGNED_DIR), el documento firmado también se escribe en
-// disco con el nombre del documento original.
 type memoryStore struct {
 	mu        sync.Mutex
 	records   map[string]*registro
@@ -23,13 +18,13 @@ type memoryStore struct {
 }
 
 type registro struct {
-	original        domain.FirmaPeruDocument
-	signed          []byte
-	solicitud       *domain.FirmaPeruSolicitud
-	stamp           []byte
-	lote            []domain.FirmaPeruDocument
-	loteSign        []byte
-	loteSignedFiles []domain.FirmaPeruDocument
+	original     domain.FirmaPeruDocument
+	signed       []byte
+	solicitud    *domain.FirmaPeruSolicitud
+	stamp        []byte
+	lote         []domain.FirmaPeruDocument
+	loteSign     []byte
+	loteFirmados []domain.FirmaPeruDocument
 }
 
 // NewMemoryStore crea el almacén de documentos del proceso de firma. Si
@@ -175,7 +170,7 @@ func (s *memoryStore) SaveLote(ctx context.Context, uuid string, docs []domain.F
 	}
 	r.lote = append([]domain.FirmaPeruDocument(nil), docs...)
 	r.loteSign = nil
-	r.loteSignedFiles = nil
+	r.loteFirmados = nil
 	return nil
 }
 
@@ -229,21 +224,22 @@ func (s *memoryStore) SaveLoteSignedFile(ctx context.Context, uuid string, name 
 	if r == nil {
 		return domain.ErrFirmaPeruDocumentNotFound
 	}
+
 	nombre := filepath.Base(name)
 	if nombre == "." || nombre == "" {
 		nombre = uuid + ".pdf"
 	}
 	copia := append([]byte(nil), content...)
-	reemplazado := false
-	for i := range r.loteSignedFiles {
-		if strings.EqualFold(r.loteSignedFiles[i].Name, nombre) {
-			r.loteSignedFiles[i] = domain.FirmaPeruDocument{Name: nombre, Content: copia}
-			reemplazado = true
+	actualizado := false
+	for i := range r.loteFirmados {
+		if strings.EqualFold(filepath.Base(r.loteFirmados[i].Name), nombre) {
+			r.loteFirmados[i] = domain.FirmaPeruDocument{Name: nombre, Content: copia}
+			actualizado = true
 			break
 		}
 	}
-	if !reemplazado {
-		r.loteSignedFiles = append(r.loteSignedFiles, domain.FirmaPeruDocument{
+	if !actualizado {
+		r.loteFirmados = append(r.loteFirmados, domain.FirmaPeruDocument{
 			Name:    nombre,
 			Content: copia,
 		})
@@ -251,21 +247,37 @@ func (s *memoryStore) SaveLoteSignedFile(ctx context.Context, uuid string, name 
 	return s.guardarEnDisco(r, uuid, nombre, content)
 }
 
-// GetLoteSignedFiles recupera los PDFs firmados individuales del lote.
 func (s *memoryStore) GetLoteSignedFiles(ctx context.Context, uuid string) ([]domain.FirmaPeruDocument, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	r := s.records[uuid]
-	if r == nil || len(r.loteSignedFiles) == 0 {
+	if r == nil || len(r.loteFirmados) == 0 {
 		return nil, domain.ErrFirmaPeruSignedNotAvailable
 	}
-	out := make([]domain.FirmaPeruDocument, len(r.loteSignedFiles))
-	for i, f := range r.loteSignedFiles {
-		out[i] = domain.FirmaPeruDocument{
+	salida := make([]domain.FirmaPeruDocument, len(r.loteFirmados))
+	for i, f := range r.loteFirmados {
+		salida[i] = domain.FirmaPeruDocument{
 			Name:    f.Name,
 			Content: append([]byte(nil), f.Content...),
 		}
 	}
-	return out, nil
+	return salida, nil
+}
+
+func (s *memoryStore) GetLoteSignedFile(ctx context.Context, uuid string, name string) ([]byte, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	r := s.records[uuid]
+	if r == nil || len(r.loteFirmados) == 0 {
+		return nil, domain.ErrFirmaPeruSignedNotAvailable
+	}
+	nombreBuscado := strings.ToLower(filepath.Base(name))
+	for _, doc := range r.loteFirmados {
+		if strings.ToLower(filepath.Base(doc.Name)) == nombreBuscado {
+			return append([]byte(nil), doc.Content...), nil
+		}
+	}
+	return nil, domain.ErrFirmaPeruDocumentNotFound
 }

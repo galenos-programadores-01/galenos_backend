@@ -3,6 +3,7 @@ package httpadapter
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -401,6 +402,42 @@ func (h *FirmaPeruHandler) DescargarLoteFirmado(c *gin.Context) {
 	c.Data(http.StatusOK, contentType7z, archivo)
 }
 
+type archivoFirmadoItemRespuesta struct {
+	Nombre string `json:"nombre"`
+	Tamano int    `json:"tamano"`
+}
+
+func (h *FirmaPeruHandler) ListarLoteArchivosFirmados(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	documentos, err := h.service.ObtenerLoteDocumentosFirmados(c.Request.Context(), c.Param("uuid"))
+	if err != nil {
+		respondError(c, http.StatusNotFound, "FIRMAPERU_SIGNED_NOT_AVAILABLE", err.Error())
+		return
+	}
+
+	lista := make([]archivoFirmadoItemRespuesta, 0, len(documentos))
+	for _, doc := range documentos {
+		lista = append(lista, archivoFirmadoItemRespuesta{
+			Nombre: doc.Name,
+			Tamano: len(doc.Content),
+		})
+	}
+	respondSuccess(c, http.StatusOK, lista)
+}
+
+func (h *FirmaPeruHandler) DescargarLoteArchivoFirmado(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	nombre := c.Param("nombre")
+	contenido, err := h.service.ObtenerLoteArchivoFirmado(c.Request.Context(), c.Param("uuid"), nombre)
+	if err != nil {
+		respondError(c, http.StatusNotFound, "FIRMAPERU_DOCUMENT_NOT_FOUND", err.Error())
+		return
+	}
+
+	c.Header("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, filepath.Base(nombre)))
+	c.Data(http.StatusOK, contentTypePorNombre(nombre), contenido)
+}
+
 // baseURLPublica devuelve la URL pública configurada o la deriva del Host del
 // request (respetando el header X-Forwarded-Proto).
 func (h *FirmaPeruHandler) baseURLPublica(c *gin.Context) string {
@@ -544,7 +581,7 @@ func firmaParamsDesdeForm(c *gin.Context) domain.FirmaPeruSignParams {
 		PasswordTsa:            c.PostForm("passwordTsa"),
 		ContactInfo:            c.PostForm("contactInfo"),
 		SignatureReason:        c.PostForm("signatureReason"),
-		SignatureStyle:         formIntOrDefault(c, "signatureStyle", 1),
+		SignatureStyle:         formIntOrDefault(c, "signatureStyle", -1),
 		StampTextSize:          formIntOrDefault(c, "stampTextSize", 14),
 		StampWordWrap:          formIntOrDefault(c, "stampWordWrap", 37),
 		StampPage:              formIntOrDefault(c, "stampPage", 1),

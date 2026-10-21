@@ -43,30 +43,57 @@ type AtencionDiagnosticoCEItem struct {
 	LabConfHIS3           string `json:"labConfHIS3"`
 }
 
+type ItemRecetaPrescripcion struct {
+	IdProducto        int    `json:"idProducto"`
+	Codigo            string `json:"codigo"`
+	Nombre            string `json:"nombre"`
+	FormaFarmaceutica string `json:"formaFarmaceutica"`
+	Concentracion     string `json:"concentracion"`
+	Cantidad          int    `json:"cantidad"`
+	Dosis             string `json:"dosis"`
+	Via               string `json:"via"`
+	Frecuencia        string `json:"frecuencia"`
+	Duracion          string `json:"duracion"`
+	Indicaciones      string `json:"indicaciones"`
+	UnidadMedida      string `json:"unidadMedida,omitempty"`
+	CodigoCIE10       string `json:"codigoCIE10,omitempty"`
+	IdDiagnostico     int    `json:"idDiagnostico,omitempty"`
+}
+
 type FichaAtencionCEDetalle struct {
-	IdAtencion         int                           `json:"idAtencion"`
-	IdCuentaAtencion   int                           `json:"idCuentaAtencion"`
-	IdPaciente         int                           `json:"idPaciente"`
-	PacienteNombre     string                        `json:"pacienteNombre"`
-	NroHistoriaClinica int                           `json:"nroHistoriaClinica"`
-	NroDocumento       string                        `json:"nroDocumento"`
-	Edad               int                           `json:"edad"`
-	Sexo               string                        `json:"sexo"`
-	Motivo             string                        `json:"motivo"`
-	ExamenClinico      string                        `json:"examenClinico"`
-	Antecedente        string                        `json:"antecedente"`
-	InforCompDiagMed   string                        `json:"inforCompDiagMed"`
-	Tratamiento        string                        `json:"tratamiento"`
-	PlanTratamiento    string                        `json:"planTratamiento"`
-	Observaciones      string                        `json:"observaciones"`
-	FechaProxCita      string                        `json:"fechaProxCita"`
-	IdDestinoAtencion  int                           `json:"idDestinoAtencion"`
-	DestinoNombre      string                        `json:"destinoNombre"`
-	HoraIngreso        string                        `json:"horaIngreso"`
-	HoraEgreso         string                        `json:"horaEgreso"`
-	Estado             int                           `json:"estado"`
-	Diagnosticos       []AtencionDiagnosticoCEItem   `json:"diagnosticos"`
-	Procedimientos     []AtencionProcedimientoCEItem `json:"procedimientos"`
+	IdAtencion              int                           `json:"idAtencion"`
+	IdCuentaAtencion        int                           `json:"idCuentaAtencion"`
+	IdPaciente              int                           `json:"idPaciente"`
+	PacienteNombre          string                        `json:"pacienteNombre"`
+	NroHistoriaClinica      int                           `json:"nroHistoriaClinica"`
+	NroDocumento            string                        `json:"nroDocumento"`
+	Edad                    int                           `json:"edad"`
+	Sexo                    string                        `json:"sexo"`
+	Motivo                  string                        `json:"motivo"`
+	ExamenClinico           string                        `json:"examenClinico"`
+	Antecedente             string                        `json:"antecedente"`
+	InforCompDiagMed        string                        `json:"inforCompDiagMed"`
+	Tratamiento             string                        `json:"tratamiento"`
+	PlanTratamiento         string                        `json:"planTratamiento"`
+	Observaciones           string                        `json:"observaciones"`
+	FechaProxCita           string                        `json:"fechaProxCita"`
+	IdDestinoAtencion       int                           `json:"idDestinoAtencion"`
+	DestinoNombre           string                        `json:"destinoNombre"`
+	HoraIngreso             string                        `json:"horaIngreso"`
+	HoraEgreso              string                        `json:"horaEgreso"`
+	Estado                  int                           `json:"estado"`
+	FechaAtencion           string                        `json:"fechaAtencion,omitempty"`
+	FechaIngreso            string                        `json:"fechaIngreso,omitempty"`
+	EspecialidadNombre      string                        `json:"especialidadNombre,omitempty"`
+	MedicoNombre            string                        `json:"medicoNombre,omitempty"`
+	Iafa                    string                        `json:"iafa,omitempty"`
+	Telefono                string                        `json:"telefono,omitempty"`
+	Diagnosticos            []AtencionDiagnosticoCEItem   `json:"diagnosticos"`
+	Procedimientos          []AtencionProcedimientoCEItem `json:"procedimientos"`
+	OrdenesApoyoDiagnostico []OrdenApoyoDiagnosticoItem   `json:"ordenesApoyoDiagnostico"`
+	Interconsultas          []InterconsultaCEItem         `json:"interconsultas"`
+	OrdenesProcedimientos   []OrdenProcedimientoCEItem    `json:"ordenesProcedimientos"`
+	ItemsReceta             []ItemRecetaPrescripcion      `json:"itemsReceta"`
 }
 
 type AtencionProcedimientoCEItem struct {
@@ -82,6 +109,48 @@ type AtencionProcedimientoCEItem struct {
 	Precio                         float64 `json:"precio"`
 }
 
+type OrdenApoyoDiagnosticoItem struct {
+	IdProducto          int     `json:"idProducto"`
+	Codigo              string  `json:"codigo"`
+	NombreProcedimiento string  `json:"nombreProcedimiento"`
+	Servicio            string  `json:"servicio"`
+	IdDiagnostico       int     `json:"idDiagnostico,omitempty"`
+	CodigoCIE10         string  `json:"codigoCIE10,omitempty"`
+	Cantidad            int     `json:"cantidad"`
+	Justificacion       string  `json:"justificacion"`
+	Observacion         string  `json:"observacion"`
+	Precio              float64 `json:"precio,omitempty"`
+}
+
+type InterconsultaCEItem struct {
+	IdInterconsulta        int    `json:"idInterconsulta"`
+	IdDiagnostico          int    `json:"idDiagnostico,omitempty"`
+	CodigoCIE10            string `json:"codigoCIE10,omitempty"`
+	DiagnosticoDescripcion string `json:"diagnosticoDescripcion,omitempty"`
+	IdEspecialidad         int    `json:"idEspecialidad"`
+	CodigoEspecialidad     string `json:"codigoEspecialidad,omitempty"`
+	NombreEspecialidad     string `json:"nombreEspecialidad"`
+	FechaPropuesta         string `json:"fechaPropuesta"`
+	Motivo                 string `json:"motivo"`
+	ResumenEnfermedad      string `json:"resumenEnfermedad"`
+	FechaCita              string `json:"fechaCita,omitempty"`
+	HoraCita               string `json:"horaCita,omitempty"`
+	Medico                 string `json:"medico,omitempty"`
+	IdMedico               int    `json:"idMedico,omitempty"`
+}
+
+type OrdenProcedimientoCEItem struct {
+	IdProcedimiento        int    `json:"idProcedimiento"`
+	IdProducto             int    `json:"idProducto"`
+	CodigoCPMS             string `json:"codigoCPMS,omitempty"`
+	NombreProcedimiento    string `json:"nombreProcedimiento"`
+	IdDiagnostico          int    `json:"idDiagnostico,omitempty"`
+	CodigoCIE10            string `json:"codigoCIE10,omitempty"`
+	DiagnosticoDescripcion string `json:"diagnosticoDescripcion,omitempty"`
+	Cantidad               int    `json:"cantidad"`
+	Observacion            string `json:"observacion"`
+}
+
 type AtencionDiagnosticoGuardarItem struct {
 	IdDiagnostico        int    `json:"idDiagnostico"`
 	IdClasificacionDx    int    `json:"idClasificacionDx"`
@@ -94,20 +163,24 @@ type AtencionDiagnosticoGuardarItem struct {
 }
 
 type AtencionCEGuardarPayload struct {
-	IdAtencion        int                              `json:"idAtencion"`
-	Motivo            string                           `json:"motivo"`
-	ExamenClinico     string                           `json:"examenClinico"`
-	Antecedente       string                           `json:"antecedente"`
-	InforCompDiagMed  string                           `json:"inforCompDiagMed"`
-	Tratamiento       string                           `json:"tratamiento"`
-	PlanTratamiento   string                           `json:"planTratamiento"`
-	Observaciones     string                           `json:"observaciones"`
-	FechaProxCita     string                           `json:"fechaProxCita"`
-	IdDestinoAtencion int                              `json:"idDestinoAtencion"`
-	IdUsuario         int                              `json:"idUsuario"`
-	CerrarAtencion    bool                             `json:"cerrarAtencion"`
-	Diagnosticos      []AtencionDiagnosticoGuardarItem `json:"diagnosticos"`
-	Procedimientos    []AtencionProcedimientoCEItem    `json:"procedimientos"`
+	IdAtencion              int                              `json:"idAtencion"`
+	Motivo                  string                           `json:"motivo"`
+	ExamenClinico           string                           `json:"examenClinico"`
+	Antecedente             string                           `json:"antecedente"`
+	InforCompDiagMed        string                           `json:"inforCompDiagMed"`
+	Tratamiento             string                           `json:"tratamiento"`
+	PlanTratamiento         string                           `json:"planTratamiento"`
+	Observaciones           string                           `json:"observaciones"`
+	FechaProxCita           string                           `json:"fechaProxCita"`
+	IdDestinoAtencion       int                              `json:"idDestinoAtencion"`
+	IdUsuario               int                              `json:"idUsuario"`
+	CerrarAtencion          bool                             `json:"cerrarAtencion"`
+	Diagnosticos            []AtencionDiagnosticoGuardarItem `json:"diagnosticos"`
+	Procedimientos          []AtencionProcedimientoCEItem    `json:"procedimientos"`
+	OrdenesApoyoDiagnostico []OrdenApoyoDiagnosticoItem      `json:"ordenesApoyoDiagnostico"`
+	Interconsultas          []InterconsultaCEItem            `json:"interconsultas"`
+	OrdenesProcedimientos   []OrdenProcedimientoCEItem       `json:"ordenesProcedimientos"`
+	ItemsReceta             []ItemRecetaPrescripcion         `json:"itemsReceta"`
 }
 
 type DestinoAtencionItem struct {
@@ -290,6 +363,23 @@ func (item *AtencionDiagnosticoGuardarItem) UnmarshalJSON(data []byte) error {
 	item.IdDiagnostico = parsearEnteroFlexible(aux.IdDiagnostico)
 	item.IdClasificacionDx = parsearEnteroFlexible(aux.IdClasificacionDx)
 	item.IdSubclasificacionDx = parsearEnteroFlexible(aux.IdSubclasificacionDx)
+	return nil
+}
+
+func (item *ItemRecetaPrescripcion) UnmarshalJSON(data []byte) error {
+	type Alias ItemRecetaPrescripcion
+	aux := struct {
+		IdProducto any `json:"idProducto"`
+		Cantidad   any `json:"cantidad"`
+		*Alias
+	}{
+		Alias: (*Alias)(item),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	item.IdProducto = parsearEnteroFlexible(aux.IdProducto)
+	item.Cantidad = parsearEnteroFlexible(aux.Cantidad)
 	return nil
 }
 

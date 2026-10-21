@@ -2,6 +2,7 @@ package httpadapter
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -53,10 +54,20 @@ func NewRouter(p RouterParams) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery(), gin.Logger())
 
-	router.Use(cors.New(cors.Config{
-		AllowOriginFunc: func(origin string) bool {
+	permitirOrigen := func(origen string) bool {
+		for _, origenPermitido := range p.AllowedOrigins {
+			if strings.EqualFold(origen, origenPermitido) {
+				return true
+			}
+		}
+		if strings.HasPrefix(origen, "http://localhost:") || strings.HasPrefix(origen, "http://127.0.0.1:") {
 			return true
-		},
+		}
+		return false
+	}
+
+	router.Use(cors.New(cors.Config{
+		AllowOriginFunc:  permitirOrigen,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "Cache-Control", "X-Requested-With", "X-Cache-Engine", "X-Cache-Provider"},
 		ExposeHeaders:    []string{"Content-Length", "Content-Type", "X-Cache-Engine", "X-Cache-Provider"},
@@ -184,10 +195,11 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/receta/medicamentos", p.CatalogHandler.BuscarMedicamentosReceta)
 		v1.GET("/catalogos/examenes", p.CatalogHandler.BuscarExamenesCatalogo)
 		v1.GET("/catalogos/parametros-clinicos/:idGrupo", p.CatalogHandler.HandleListParametrosClinicos)
-		v1.PATCH("/catalogos/parametros/:idParametro/valor-texto", p.CatalogHandler.ActualizarParametroValorTexto)
 		v1.GET("/catalogos/subclasificaciones-diagnosticos", p.CatalogHandler.HandleListSubclasificacionesDiagnostico)
 
-		bienesInsumos := v1.Group("/bienes-insumos")
+		protected.PATCH("/catalogos/parametros/:idParametro/valor-texto", p.CatalogHandler.ActualizarParametroValorTexto)
+
+		bienesInsumos := protected.Group("/bienes-insumos")
 		{
 			bienesInsumos.GET("", p.BienesInsumosHandler.Listar)
 			bienesInsumos.GET("/auxiliares", p.BienesInsumosHandler.ObtenerAuxiliares)
@@ -201,7 +213,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			bienesInsumos.DELETE("/:id", p.BienesInsumosHandler.Eliminar)
 		}
 
-		serviciosCatalogo := v1.Group("/servicios-catalogo")
+		serviciosCatalogo := protected.Group("/servicios-catalogo")
 		{
 			serviciosCatalogo.GET("", p.ServiciosCatalogoHandler.Listar)
 			serviciosCatalogo.GET("/grupos", p.ServiciosCatalogoHandler.ListarGrupos)
@@ -211,7 +223,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			serviciosCatalogo.DELETE("/:id", p.ServiciosCatalogoHandler.Eliminar)
 		}
 
-		farmacia := v1.Group("/farmacia")
+		farmacia := protected.Group("/farmacia")
 		{
 			farmacia.GET("/almacenes", p.FarmaciaDisponibilidadHandler.ListarAlmacenes)
 			farmacia.GET("/kpis", p.FarmaciaDisponibilidadHandler.ObtenerKpis)
@@ -238,12 +250,12 @@ func NewRouter(p RouterParams) *gin.Engine {
 			atencionCE.POST("", p.AtencionCEHandler.GuardarFicha)
 		}
 
-		reniec := v1.Group("/reniec")
+		reniec := protected.Group("/reniec")
 		{
 			reniec.GET("/:nrodoc", p.ReniecHandler.Consultar)
 		}
 
-		sis := v1.Group("/sis")
+		sis := protected.Group("/sis")
 		{
 			sis.GET("/afiliado/:nrodoc", p.SisHandler.ConsultarAfiliado)
 			sis.POST("/filiaciones", p.SisHandler.GestionarAfiliacion)
@@ -257,10 +269,14 @@ func NewRouter(p RouterParams) *gin.Engine {
 			sis.GET("/consumo", p.SisHandler.ListConsumo)
 		}
 
+		firmaperuProtected := protected.Group("/firmaperu")
+		{
+			firmaperuProtected.POST("/firmar", p.FirmaPeruHandler.Firmar)
+			firmaperuProtected.POST("/lote", p.FirmaPeruHandler.FirmarLote)
+		}
+
 		firmaperu := v1.Group("/firmaperu")
 		{
-			firmaperu.POST("/firmar", p.FirmaPeruHandler.Firmar)
-			firmaperu.POST("/lote", p.FirmaPeruHandler.FirmarLote)
 			firmaperu.POST("/params/:uuid", p.FirmaPeruHandler.ParametrosFirma)
 			firmaperu.GET("/estampado.png", p.FirmaPeruHandler.Estampado)
 			firmaperu.GET("/estampado/:uuid", p.FirmaPeruHandler.EstampadoUuid)
@@ -270,10 +286,11 @@ func NewRouter(p RouterParams) *gin.Engine {
 			firmaperu.GET("/documentos/:uuid/lote", p.FirmaPeruHandler.DescargarLoteDocumentos)
 			firmaperu.POST("/documentos/:uuid/lote", p.FirmaPeruHandler.RecibirLoteFirmado)
 			firmaperu.GET("/documentos/:uuid/lote/firmado", p.FirmaPeruHandler.DescargarLoteFirmado)
+			firmaperu.GET("/documentos/:uuid/lote/archivos", p.FirmaPeruHandler.ListarLoteArchivosFirmados)
+			firmaperu.GET("/documentos/:uuid/lote/archivos/:nombre", p.FirmaPeruHandler.DescargarLoteArchivoFirmado)
 		}
 
-		triaje := v1.Group("/triaje")
-		triaje.Use(OptionalBearerToken(p.AuthService))
+		triaje := protected.Group("/triaje")
 		{
 			triaje.GET("", p.TriageHandler.List)
 			triaje.GET("/pendientes-admision", p.TriageHandler.ListPendingAdmission)
@@ -318,6 +335,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			ordenes.GET("/cuenta/:idCuentaAtencion", p.OrdenHandler.HandleListOrdenes)
 			ordenes.POST("", p.OrdenHandler.HandleCreateOrden)
 			ordenes.GET("/productos", p.OrdenHandler.HandleBuscarProductos)
+			ordenes.GET("/receta/:idReceta/formato-impresion", p.OrdenHandler.HandleObtenerFormatoImpresionReceta)
 		}
 
 		resultados := protected.Group("/resultados")

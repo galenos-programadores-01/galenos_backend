@@ -26,3 +26,8 @@ func (s *ordenService) CrearOrden(ctx context.Context, orden domain.OrdenMedica,
 func (s *ordenService) BuscarProductos(ctx context.Context, filtro string, limite int) ([]domain.ProductoCatalogo, error) {
 	return s.repo.BuscarProductos(ctx, filtro, limite)
 }
+
+func (s *ordenService) ObtenerFormatoImpresionReceta(ctx context.Context, identificadorReceta int, identificadorCuentaAtencion int, identificadorAtencion int) (*domain.FormatoImpresionReceta, error) {
+	return s.repo.ObtenerFormatoImpresionReceta(ctx, identificadorReceta, identificadorCuentaAtencion, identificadorAtencion)
+}
+

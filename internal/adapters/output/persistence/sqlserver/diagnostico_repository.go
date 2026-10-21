@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -20,9 +21,39 @@ func NewSqlServerDiagnosticoRepository(db *sql.DB) output.DiagnosticoRepository 
 	return &sqlServerDiagnosticoRepository{db: db}
 }
 
+func calcularPuntuacionRelevanciaDiagnostico(item domain.DiagnosticoBusqueda, termino string) int {
+	terminoNormalizado := strings.ToUpper(strings.TrimSpace(termino))
+	if terminoNormalizado == "" {
+		return 100
+	}
+	codigo := strings.ToUpper(strings.TrimSpace(item.CodigoCIE10))
+	descripcion := strings.ToUpper(strings.TrimSpace(item.Descripcion))
+
+	if codigo == terminoNormalizado {
+		return 1
+	}
+	if strings.HasPrefix(codigo, terminoNormalizado) {
+		return 2
+	}
+	if strings.HasPrefix(descripcion, terminoNormalizado) {
+		return 3
+	}
+	if strings.Contains(codigo, terminoNormalizado) {
+		return 4
+	}
+	if strings.Contains(descripcion, " "+terminoNormalizado) {
+		return 5
+	}
+	if strings.Contains(descripcion, terminoNormalizado) {
+		return 6
+	}
+	return 10
+}
+
 func (r *sqlServerDiagnosticoRepository) SearchDiagnosticos(ctx context.Context, filtro string, idAtencion, idPaciente int) ([]domain.DiagnosticoBusqueda, error) {
+	filtroLimpio := strings.TrimSpace(filtro)
 	query := "EXEC usp_go_SelectDiagnosticos @Filtro = @p1, @IdAtencion = @p2, @IdPaciente = @p3"
-	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", filtro), sql.Named("p2", idAtencion), sql.Named("p3", idPaciente))
+	rows, err := r.db.QueryContext(ctx, query, sql.Named("p1", filtroLimpio), sql.Named("p2", idAtencion), sql.Named("p3", idPaciente))
 	if err != nil {
 		return nil, fmt.Errorf("error querying diagnosticos: %w", err)
 	}
@@ -95,13 +126,28 @@ func (r *sqlServerDiagnosticoRepository) SearchDiagnosticos(ctx context.Context,
 		}
 
 		results = append(results, d)
-		if len(results) >= 50 {
+		if len(results) >= 200 {
 			break
 		}
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterando diagnosticos: %w", err)
+	}
+
+	if filtroLimpio != "" && len(results) > 1 {
+		sort.SliceStable(results, func(i, j int) bool {
+			puntuacionI := calcularPuntuacionRelevanciaDiagnostico(results[i], filtroLimpio)
+			puntuacionJ := calcularPuntuacionRelevanciaDiagnostico(results[j], filtroLimpio)
+			if puntuacionI != puntuacionJ {
+				return puntuacionI < puntuacionJ
+			}
+			return results[i].Descripcion < results[j].Descripcion
+		})
+	}
+
+	if len(results) > 50 {
+		results = results[:50]
 	}
 
 	log.Printf("Repository: Returning %d rows for filtro=%q, idAtencion=%d, idPaciente=%d", len(results), filtro, idAtencion, idPaciente)
@@ -219,61 +265,74 @@ func (r *sqlServerDiagnosticoRepository) ObtenerDiagnosticosAtencion(ctx context
 }
 
 func (r *sqlServerDiagnosticoRepository) AgregarDiagnosticoAtencion(ctx context.Context, req domain.AgregarDiagnosticoAtencionRequest) (*domain.AgregarDiagnosticoAtencionResponse, error) {
-	idDx := req.IdDiagnostico
-	if idDx <= 0 && req.CodigoCIE10 != "" {
-		_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Diagnosticos_ObtenerIdPorCodigoCIE10 @CodigoCIE10 = @p1", sql.Named("p1", strings.TrimSpace(req.CodigoCIE10))).Scan(&idDx)
+	identificadorDiagnostico := req.IdDiagnostico
+	if identificadorDiagnostico <= 0 && req.CodigoCIE10 != "" {
+		_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Diagnosticos_ObtenerIdPorCodigoCIE10 @CodigoCIE10 = @p1", sql.Named("p1", strings.TrimSpace(req.CodigoCIE10))).Scan(&identificadorDiagnostico)
 	}
 
-	idPac := req.IdPaciente
-	if idPac <= 0 && req.IdAtencion > 0 {
+	identificadorPaciente := req.IdPaciente
+	if identificadorPaciente <= 0 && req.IdAtencion > 0 {
 		var idAt, idCta, idServ, idTipo int
-		_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1", sql.Named("p1", req.IdAtencion)).Scan(&idAt, &idPac, &idCta, &idServ, &idTipo)
+		_ = r.db.QueryRowContext(ctx, "EXEC dbo.usp_go_Atenciones_ObtenerDatosCabecera @IdAtencion = @p1", sql.Named("p1", req.IdAtencion)).Scan(&idAt, &identificadorPaciente, &idCta, &idServ, &idTipo)
 	}
 
-	idSubclasificacion := req.IdSubclasificacionDiagnostico
-	if idSubclasificacion <= 0 {
+	identificadorClasificacion := 1
+	if req.IdClasificacionDiagnostico > 0 {
+		identificadorClasificacion = req.IdClasificacionDiagnostico
+	}
+
+	identificadorSubclasificacion := req.IdSubclasificacionDiagnostico
+	if identificadorSubclasificacion <= 0 {
 		switch strings.ToUpper(strings.TrimSpace(req.TipoDiagnostico)) {
 		case "D", "DEFINITIVO":
-			idSubclasificacion = 2
+			identificadorSubclasificacion = 102
 		case "R", "REPETIDO":
-			idSubclasificacion = 3
+			identificadorSubclasificacion = 103
 		default:
-			idSubclasificacion = 1 // Presuntivo
+			identificadorSubclasificacion = 101
 		}
+	} else if identificadorSubclasificacion == 1 {
+		identificadorSubclasificacion = 101
+	} else if identificadorSubclasificacion == 2 {
+		identificadorSubclasificacion = 102
+	} else if identificadorSubclasificacion == 3 {
+		identificadorSubclasificacion = 103
 	}
 
 	var resultado sql.NullString
 	query := `EXEC dbo.usp_go_AtencionesDiagnosticosAgregar
 		@IdAtencionDiagnostico = @p1 OUTPUT,
-		@IdSubclasificacionDiagnostico = @p2,
-		@IdDiagnostico = @p3,
-		@IdAtencion = @p4,
-		@LabConfHIS = @p5,
-		@LabConfHIS_1 = @p6,
-		@LabConfHIS_2 = @p7,
-		@LabConfHIS_3 = @p8,
-		@GrupoHIS = @p9,
-		@SubGrupoHIS = @p10,
-		@IdEpisodio = @p11,
-		@IdEvolucion = @p12,
-		@IdPrimeraAtencion = @p13,
-		@IdPaciente = @p14`
+		@IdClasificacionDx = @p2,
+		@IdSubclasificacionDiagnostico = @p3,
+		@IdDiagnostico = @p4,
+		@IdAtencion = @p5,
+		@LabConfHIS = @p6,
+		@LabConfHIS_1 = @p7,
+		@LabConfHIS_2 = @p8,
+		@LabConfHIS_3 = @p9,
+		@GrupoHIS = @p10,
+		@SubGrupoHIS = @p11,
+		@IdEpisodio = @p12,
+		@IdEvolucion = @p13,
+		@IdPrimeraAtencion = @p14,
+		@IdPaciente = @p15`
 
 	_, err := r.db.ExecContext(ctx, query,
 		sql.Named("p1", sql.Out{Dest: &resultado}),
-		sql.Named("p2", idSubclasificacion),
-		sql.Named("p3", idDx),
-		sql.Named("p4", req.IdAtencion),
-		sql.Named("p5", req.LabConfHIS),
-		sql.Named("p6", req.LabConfHIS1),
-		sql.Named("p7", req.LabConfHIS2),
-		sql.Named("p8", req.LabConfHIS3),
-		sql.Named("p9", req.GrupoHIS),
-		sql.Named("p10", req.SubGrupoHIS),
-		sql.Named("p11", req.IdEpisodio),
-		sql.Named("p12", req.IdEvolucion),
-		sql.Named("p13", req.IdPrimeraAtencion),
-		sql.Named("p14", idPac),
+		sql.Named("p2", identificadorClasificacion),
+		sql.Named("p3", identificadorSubclasificacion),
+		sql.Named("p4", identificadorDiagnostico),
+		sql.Named("p5", req.IdAtencion),
+		sql.Named("p6", req.LabConfHIS),
+		sql.Named("p7", req.LabConfHIS1),
+		sql.Named("p8", req.LabConfHIS2),
+		sql.Named("p9", req.LabConfHIS3),
+		sql.Named("p10", req.GrupoHIS),
+		sql.Named("p11", req.SubGrupoHIS),
+		sql.Named("p12", req.IdEpisodio),
+		sql.Named("p13", req.IdEvolucion),
+		sql.Named("p14", req.IdPrimeraAtencion),
+		sql.Named("p15", identificadorPaciente),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error ejecutando usp_go_AtencionesDiagnosticosAgregar: %w", err)

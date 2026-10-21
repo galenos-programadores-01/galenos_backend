@@ -555,6 +555,12 @@ func (r *triageRepository) CreateTriajeConsulta(ctx context.Context, triaje *dom
 		return "", fmt.Errorf("calling AtencionesTriajeAgregar: %w", err)
 	}
 
+	_, _ = r.db.ExecContext(ctx, `
+		UPDATE dbo.Citas
+		SET IdEstadoCita = 6
+		WHERE IdAtencion = @p1 AND IdEstadoCita NOT IN (4, 8);
+	`, sql.Named("p1", triaje.IdAtencion))
+
 	return resultado, nil
 }
 

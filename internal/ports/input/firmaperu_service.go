@@ -46,4 +46,6 @@ type FirmaPeruService interface {
 	RecibirDocumentoFirmadoLote(ctx context.Context, uuid string, archive []byte) error
 	// ObtenerLoteFirmado devuelve el 7z firmado del lote cuando está listo.
 	ObtenerLoteFirmado(ctx context.Context, uuid string) ([]byte, error)
+	ObtenerLoteDocumentosFirmados(ctx context.Context, uuid string) ([]domain.FirmaPeruDocument, error)
+	ObtenerLoteArchivoFirmado(ctx context.Context, uuid string, name string) ([]byte, error)
 }

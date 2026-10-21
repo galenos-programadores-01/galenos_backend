@@ -11,7 +11,6 @@ BEGIN
     SET NOCOUNT ON;
 
     INSERT INTO dbo.Interconsulta (
-        IdRegAtencion,
         IdRegistroAtencion,
         IdEspecialidadSolicitada,
         idEspecialidadRespuesta,
@@ -26,7 +25,6 @@ BEGIN
         IdPrioridad,
         FechaRegistroSistema
     ) VALUES (
-        @IdAtencionOrigen,
         @IdAtencionOrigen,
         @IdEspecialidad,
         @IdEspecialidad,

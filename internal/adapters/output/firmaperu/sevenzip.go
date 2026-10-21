@@ -55,11 +55,28 @@ func resolveSevenZipExe(exePath string) string {
 	return `C:\Program Files\7-Zip\7z.exe`
 }
 
-// Build7z crea un archivo 7z con los documentos (nombre original como nombre
-// de entrada) y devuelve sus bytes.
+func (t *sevenZipTool) getExePath() (string, error) {
+	if t.exePath != "" {
+		if _, err := os.Stat(t.exePath); err == nil {
+			return t.exePath, nil
+		}
+	}
+	rutaResuelta := resolveSevenZipExe(t.exePath)
+	if _, err := os.Stat(rutaResuelta); err == nil {
+		t.exePath = rutaResuelta
+		return rutaResuelta, nil
+	}
+	return "", fmt.Errorf("ejecutable 7-Zip no encontrado. Verifique la instalacion en C:\\Program Files\\7-Zip\\7z.exe")
+}
+
 func (t *sevenZipTool) Build7z(ctx context.Context, files []domain.FirmaPeruDocument) ([]byte, error) {
 	if len(files) == 0 {
 		return nil, domain.ErrFirmaPeruDocumentRequired
+	}
+
+	rutaEjecutable, err := t.getExePath()
+	if err != nil {
+		return nil, err
 	}
 
 	tmpDir, err := os.MkdirTemp("", "galenos_firma7z_*")
@@ -77,7 +94,7 @@ func (t *sevenZipTool) Build7z(ctx context.Context, files []domain.FirmaPeruDocu
 		args = append(args, name)
 	}
 
-	cmd := exec.CommandContext(ctx, t.exePath, args...)
+	cmd := exec.CommandContext(ctx, rutaEjecutable, args...)
 	cmd.Dir = tmpDir
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("7z create: %w: %s", err, truncarSalida(string(out)))
@@ -86,9 +103,12 @@ func (t *sevenZipTool) Build7z(ctx context.Context, files []domain.FirmaPeruDocu
 	return os.ReadFile(filepath.Join(tmpDir, "lote.7z"))
 }
 
-// Extract7z extrae todos los archivos de un 7z (recorre subdirectorios) y los
-// devuelve con su nombre de entrada.
 func (t *sevenZipTool) Extract7z(ctx context.Context, archive []byte) ([]domain.FirmaPeruDocument, error) {
+	rutaEjecutable, err := t.getExePath()
+	if err != nil {
+		return nil, err
+	}
+
 	tmpDir, err := os.MkdirTemp("", "galenos_extract7z_*")
 	if err != nil {
 		return nil, fmt.Errorf("7z tmp dir: %w", err)
@@ -104,7 +124,7 @@ func (t *sevenZipTool) Extract7z(ctx context.Context, archive []byte) ([]domain.
 		return nil, fmt.Errorf("7z out dir: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, t.exePath, "x", "-t7z", "-y", "-o"+outDir, arcPath)
+	cmd := exec.CommandContext(ctx, rutaEjecutable, "x", "-t7z", "-y", "-o"+outDir, arcPath)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("7z extract: %w: %s", err, truncarSalida(string(out)))
 	}

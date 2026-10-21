@@ -489,10 +489,15 @@ type examenCatalogoResponse struct {
 	IDPuntoCarga   int64   `json:"idPuntoCarga"`
 	PuntoCarga     string  `json:"puntoCarga"`
 	Servicio       string  `json:"servicio"`
+	Tipo           string  `json:"tipo,omitempty"`
 	PrecioUnitario float64 `json:"precioUnitario"`
 }
 
 func toExamenCatalogoResponse(e domain.ExamenCatalogo) examenCatalogoResponse {
+	tipo := e.Servicio
+	if tipo == "" {
+		tipo = e.PuntoCarga
+	}
 	return examenCatalogoResponse{
 		IDProducto:     e.IDProducto,
 		Codigo:         e.Codigo,
@@ -501,6 +506,7 @@ func toExamenCatalogoResponse(e domain.ExamenCatalogo) examenCatalogoResponse {
 		IDPuntoCarga:   e.IDPuntoCarga,
 		PuntoCarga:     e.PuntoCarga,
 		Servicio:       e.Servicio,
+		Tipo:           tipo,
 		PrecioUnitario: e.PrecioUnitario,
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/input"
@@ -32,7 +33,13 @@ func NewDiagnosticoHandler(useCase input.DiagnosticoUseCase) *DiagnosticoHandler
 // @Failure 500 {object} apiResponse{error=apiError}
 // @Router /diagnosticos/search [get]
 func (h *DiagnosticoHandler) SearchDiagnosticos(c *gin.Context) {
-	filtro := c.Query("filtro")
+	filtro := strings.TrimSpace(c.Query("filtro"))
+	if filtro == "" {
+		filtro = strings.TrimSpace(c.Query("q"))
+	}
+	if filtro == "" {
+		filtro = strings.TrimSpace(c.Query("query"))
+	}
 	idAtencionStr := c.Query("idAtencion")
 	idPacienteStr := c.Query("idPaciente")
 
@@ -67,9 +74,14 @@ func (h *DiagnosticoHandler) SearchDiagnosticos(c *gin.Context) {
 // @Success 200 {object} httpadapter.apiResponse{data=[]domain.DiagnosticoSimple}
 // @Router /diagnosticos/listar [get]
 func (h *DiagnosticoHandler) HandleListarDiagnosticos(c *gin.Context) {
-	filtro := c.Query("filtro")
+	filtro := strings.TrimSpace(c.Query("filtro"))
+	if filtro == "" {
+		filtro = strings.TrimSpace(c.Query("q"))
+	}
+	if filtro == "" {
+		filtro = strings.TrimSpace(c.Query("query"))
+	}
 
-	// idAtencion e idPaciente acotan el catálogo; si no llegan se envían en 0.
 	idAtencion := queryInt(c, "idAtencion", 0)
 	idPaciente := queryInt(c, "idPaciente", 0)
 
