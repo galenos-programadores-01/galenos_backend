@@ -214,7 +214,7 @@ type RecetaCabeceraAgregar struct {
 	IdPuntoCarga       int
 	IdCuentaAtencion   int
 	IdServicioReceta   int
-	IdMedicoReceta     int // 0 por ahora
+	IdMedicoReceta     int // IdMedico de bandeja (GestionPrimeraAtencionFiltrar)
 	IdProducto         int // 0 en cabecera (exámenes); farmacia puede enviar producto
 	IdPaciente         int
 	IdUsuarioAuditoria int
@@ -271,6 +271,7 @@ type RecetaMedicamentoRegistrar struct {
 	IdPuntoCarga        int
 	IdCuentaAtencion    int // RecetaCabecera (puede diferir de IdAtencion)
 	IdServicioReceta    int
+	IdMedicoReceta      int // IdMedico bandeja → RecetaCabecera.idMedicoReceta
 	IdPaciente          int
 	IdUsuarioAuditoria  int
 	IdPrimeraAtencion   int
@@ -317,6 +318,7 @@ type RecetaExamenRegistrar struct {
 	IdPuntoCarga       int // del catálogo webProcedimentosRecetas… (lab/rayos/…)
 	IdCuentaAtencion   int // RecetaCabecera
 	IdServicioReceta   int
+	IdMedicoReceta     int // IdMedico bandeja → RecetaCabecera.idMedicoReceta
 	IdPaciente         int
 	IdUsuarioAuditoria int
 	IdPrimeraAtencion  int
@@ -342,6 +344,7 @@ type RecetaProcedimientoRegistrar struct {
 	IdAtencion         int // editable PA
 	IdCuentaAtencion   int // RecetaCabecera
 	IdServicioReceta   int
+	IdMedicoReceta     int // IdMedico bandeja → RecetaCabecera.idMedicoReceta
 	IdPaciente         int
 	IdUsuarioAuditoria int
 	IdPrimeraAtencion  int

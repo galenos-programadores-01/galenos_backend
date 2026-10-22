@@ -850,6 +850,7 @@ type medicamentoRegistrarRequest struct {
 	IdCuentaAtencion    int     `json:"idCuentaAtencion" binding:"required"`
 	IdPuntoCarga        int     `json:"idPuntoCarga" binding:"required"`
 	IdServicioReceta    int     `json:"idServicioReceta" binding:"required"`
+	IdMedicoReceta      int     `json:"idMedicoReceta" binding:"required"`
 	IdPaciente          int     `json:"idPaciente" binding:"required"`
 	IdUsuarioAuditoria  int     `json:"idUsuarioAuditoria"`
 	IdProducto          int     `json:"idProducto" binding:"required"`
@@ -883,6 +884,7 @@ func (h *PrimeraAtencionHandler) RegistrarMedicamento(c *gin.Context) {
 		IdPuntoCarga:        req.IdPuntoCarga,
 		IdCuentaAtencion:    req.IdCuentaAtencion,
 		IdServicioReceta:    req.IdServicioReceta,
+		IdMedicoReceta:      req.IdMedicoReceta,
 		IdPaciente:          req.IdPaciente,
 		IdUsuarioAuditoria:  req.IdUsuarioAuditoria,
 		IdPrimeraAtencion:   req.IdPrimeraAtencion,
@@ -1099,6 +1101,7 @@ type examenRegistrarRequest struct {
 	IdCuentaAtencion   int     `json:"idCuentaAtencion" binding:"required"`
 	IdPuntoCarga       int     `json:"idPuntoCarga" binding:"required"` // del catálogo (lab/rayos/…)
 	IdServicioReceta   int     `json:"idServicioReceta" binding:"required"`
+	IdMedicoReceta     int     `json:"idMedicoReceta" binding:"required"`
 	IdPaciente         int     `json:"idPaciente" binding:"required"`
 	IdUsuarioAuditoria int     `json:"idUsuarioAuditoria"`
 	IdProducto         int     `json:"idProducto" binding:"required"`
@@ -1127,6 +1130,7 @@ func (h *PrimeraAtencionHandler) RegistrarExamen(c *gin.Context) {
 		IdPuntoCarga:       req.IdPuntoCarga,
 		IdCuentaAtencion:   req.IdCuentaAtencion,
 		IdServicioReceta:   req.IdServicioReceta,
+		IdMedicoReceta:     req.IdMedicoReceta,
 		IdPaciente:         req.IdPaciente,
 		IdUsuarioAuditoria: req.IdUsuarioAuditoria,
 		IdPrimeraAtencion:  req.IdPrimeraAtencion,
@@ -1265,6 +1269,7 @@ type procedimientoRegistrarRequest struct {
 	IdPrimeraAtencion  int     `json:"idPrimeraAtencion" binding:"required"`
 	IdCuentaAtencion   int     `json:"idCuentaAtencion" binding:"required"`
 	IdServicioReceta   int     `json:"idServicioReceta" binding:"required"`
+	IdMedicoReceta     int     `json:"idMedicoReceta" binding:"required"`
 	IdPaciente         int     `json:"idPaciente" binding:"required"`
 	IdUsuarioAuditoria int     `json:"idUsuarioAuditoria"`
 	IdProducto         int     `json:"idProducto" binding:"required"`
@@ -1292,6 +1297,7 @@ func (h *PrimeraAtencionHandler) RegistrarProcedimiento(c *gin.Context) {
 		IdAtencion:         idAtencion,
 		IdCuentaAtencion:   req.IdCuentaAtencion,
 		IdServicioReceta:   req.IdServicioReceta,
+		IdMedicoReceta:     req.IdMedicoReceta,
 		IdPaciente:         req.IdPaciente,
 		IdUsuarioAuditoria: req.IdUsuarioAuditoria,
 		IdPrimeraAtencion:  req.IdPrimeraAtencion,

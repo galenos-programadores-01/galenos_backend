@@ -31,6 +31,9 @@ func (uc *primeraAtencionUseCase) RegistrarExamen(
 	if in.IdServicioReceta <= 0 {
 		return domain.RecetaExamenRegistrarResult{}, fmt.Errorf("idServicioReceta inválido")
 	}
+	if in.IdMedicoReceta <= 0 {
+		return domain.RecetaExamenRegistrarResult{}, fmt.Errorf("idMedicoReceta inválido")
+	}
 	if in.IdPaciente <= 0 {
 		return domain.RecetaExamenRegistrarResult{}, fmt.Errorf("idPaciente inválido")
 	}
@@ -58,7 +61,7 @@ func (uc *primeraAtencionUseCase) RegistrarExamen(
 		IdPuntoCarga:       in.IdPuntoCarga,
 		IdCuentaAtencion:   in.IdCuentaAtencion,
 		IdServicioReceta:   in.IdServicioReceta,
-		IdMedicoReceta:     0,
+		IdMedicoReceta:     in.IdMedicoReceta,
 		IdProducto:         0,
 		IdPaciente:         in.IdPaciente,
 		IdUsuarioAuditoria: in.IdUsuarioAuditoria,
