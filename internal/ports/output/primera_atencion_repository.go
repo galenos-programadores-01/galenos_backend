@@ -17,6 +17,11 @@ type PrimeraAtencionRepository interface {
 	IdsFirmados(ctx context.Context, idsAtencion []int) (map[int]bool, error)
 	GuardarUpsert(ctx context.Context, in domain.PrimeraAtencionUpsert) (domain.PrimeraAtencionUpsertResult, error)
 	ObtenerPorIdAtencion(ctx context.Context, idAtencion int) (map[string]any, error)
+	ListarDocumentosFirmados(ctx context.Context, idPrimeraAtencion int) ([]domain.DocumentoFirmadoPA, error)
+	RegistrarDocumentosFirmados(ctx context.Context, idPrimeraAtencion, nroEdicion int, docs []domain.DocumentoFirmadoPA) error
+	ActualizarEdicionVigente(ctx context.Context, idPrimeraAtencion, nroEdicion int, ubicacion string) error
+	EliminarDetalleRectificacion(ctx context.Context, idReceta, idProducto int) error
+	CabeceraRecetaAnulada(ctx context.Context, idReceta int) (bool, error)
 	AgregarDiagnostico(ctx context.Context, in domain.DiagnosticoAgregar) (domain.DiagnosticoAgregarResult, error)
 	ListarDiagnosticos(ctx context.Context, idAtencion, idPrimeraAtencion int) ([]domain.DiagnosticoAtencion, error)
 	EliminarDiagnostico(ctx context.Context, idAtencion, idPrimeraAtencion, idAtencionDiagnostico int) error

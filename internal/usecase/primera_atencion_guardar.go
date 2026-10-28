@@ -15,9 +15,9 @@ func (uc *primeraAtencionUseCase) asegurarEditable(ctx context.Context, idAtenci
 	if err != nil {
 		return fmt.Errorf("verificar estado primera atencion: %w", err)
 	}
-	if primeraAtencionEstaFirmada(row) {
-		return domain.ErrPrimeraAtencionYaFirmada
-	}
+	// Firmada sigue siendo editable: es una rectificación.
+	// El PDF vigente no cambia hasta el próximo cierre de firma.
+	_ = row
 	return nil
 }
 
@@ -101,6 +101,22 @@ func (uc *primeraAtencionUseCase) CerrarFirma(ctx context.Context, in domain.Pri
 		return domain.PrimeraAtencionCerrarFirmaResult{}, domain.ErrPrimeraAtencionSinBorrador
 	}
 
+	if primeraAtencionEstaFirmada(row) {
+		idPA := enteroDesdeValor(row["IdPrimeraAtencion"])
+		if idPA <= 0 {
+			idPA = enteroDesdeValor(row["idPrimeraAtencion"])
+		}
+		nro := enteroDesdeValor(row["NroEdicionVigente"]) + 1
+		if err := uc.repo.ActualizarEdicionVigente(ctx, idPA, nro, in.UbicacionArchivo); err != nil {
+			return domain.PrimeraAtencionCerrarFirmaResult{}, fmt.Errorf("actualizar edición vigente: %w", err)
+		}
+		return domain.PrimeraAtencionCerrarFirmaResult{
+			IdPrimeraAtencion: idPA,
+			NroEdicion:        nro,
+			Mensaje:           "rectificación firmada",
+		}, nil
+	}
+
 	estadoFirma := domain.EstadoFirmaCerrada
 	now := time.Now()
 	result, err := uc.repo.GuardarUpsert(ctx, domain.PrimeraAtencionUpsert{
@@ -119,6 +135,41 @@ func (uc *primeraAtencionUseCase) CerrarFirma(ctx context.Context, in domain.Pri
 	}
 	return domain.PrimeraAtencionCerrarFirmaResult{
 		IdPrimeraAtencion: result.IdPrimeraAtencion,
+		NroEdicion:        0,
 		Mensaje:           result.Mensaje,
 	}, nil
+}
+
+func (uc *primeraAtencionUseCase) ListarDocumentosFirmados(
+	ctx context.Context,
+	idAtencion int,
+) (int, []domain.DocumentoFirmadoPA, error) {
+	row, err := uc.repo.ObtenerPorIdAtencion(ctx, idAtencion)
+	if err != nil {
+		return 0, nil, fmt.Errorf("detalle primera atencion: %w", err)
+	}
+	idPA := enteroDesdeValor(row["IdPrimeraAtencion"])
+	if idPA <= 0 {
+		idPA = enteroDesdeValor(row["idPrimeraAtencion"])
+	}
+	if idPA <= 0 {
+		return 0, nil, fmt.Errorf("idPrimeraAtencion no disponible")
+	}
+	nro := enteroDesdeValor(row["NroEdicionVigente"])
+	if nro < 0 {
+		nro = 0
+	}
+	docs, err := uc.repo.ListarDocumentosFirmados(ctx, idPA)
+	if err != nil {
+		return nro, nil, err
+	}
+	return nro, docs, nil
+}
+
+func (uc *primeraAtencionUseCase) RegistrarDocumentosFirmados(
+	ctx context.Context,
+	idPrimeraAtencion, nroEdicion int,
+	docs []domain.DocumentoFirmadoPA,
+) error {
+	return uc.repo.RegistrarDocumentosFirmados(ctx, idPrimeraAtencion, nroEdicion, docs)
 }

@@ -135,6 +135,7 @@ type ArchivoLotePA struct {
 	EsPrincipal       bool
 	IdPrimeraAtencion int
 	IdReceta          int
+	NroEdicion        int
 }
 
 // ParseNombreArchivoLotePA interpreta el basename del PDF del lote.
@@ -147,19 +148,26 @@ func ParseNombreArchivoLotePA(nombre string) (ArchivoLotePA, error) {
 	if stem == "" {
 		return ArchivoLotePA{}, ErrAlmacenamientoRutaInvalida
 	}
+	nro := 0
+	if i := strings.LastIndex(stem, "-"); i > 0 {
+		if n, err := strconv.Atoi(stem[i+1:]); err == nil && n > 0 && !strings.Contains(stem[i+1:], "_") {
+			nro = n
+			stem = stem[:i]
+		}
+	}
 	if i := strings.IndexByte(stem, '_'); i >= 0 {
 		idPA, err1 := strconv.Atoi(stem[:i])
 		idReceta, err2 := strconv.Atoi(stem[i+1:])
 		if err1 != nil || err2 != nil || idPA <= 0 || idReceta <= 0 {
 			return ArchivoLotePA{}, ErrAlmacenamientoRutaInvalida
 		}
-		return ArchivoLotePA{EsPrincipal: false, IdPrimeraAtencion: idPA, IdReceta: idReceta}, nil
+		return ArchivoLotePA{EsPrincipal: false, IdPrimeraAtencion: idPA, IdReceta: idReceta, NroEdicion: nro}, nil
 	}
 	idPA, err := strconv.Atoi(stem)
 	if err != nil || idPA <= 0 {
 		return ArchivoLotePA{}, ErrAlmacenamientoRutaInvalida
 	}
-	return ArchivoLotePA{EsPrincipal: true, IdPrimeraAtencion: idPA}, nil
+	return ArchivoLotePA{EsPrincipal: true, IdPrimeraAtencion: idPA, NroEdicion: nro}, nil
 }
 
 // NombreArchivoLotePA nombre canónico del PDF principal en el 7z.

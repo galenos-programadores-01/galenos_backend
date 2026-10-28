@@ -71,6 +71,9 @@ func (uc *primeraAtencionUseCase) RegistrarExamen(
 	if err != nil {
 		return domain.RecetaExamenRegistrarResult{}, fmt.Errorf("cabecera receta examen: %w", err)
 	}
+	if err := uc.rechazarCabeceraAnulada(ctx, idReceta); err != nil {
+		return domain.RecetaExamenRegistrarResult{}, err
+	}
 
 	idDx := in.IdDiagnostico
 	err = uc.repo.AgregarRecetaDetalle(ctx, domain.RecetaDetalleAgregar{
@@ -152,7 +155,7 @@ func (uc *primeraAtencionUseCase) EliminarExamen(
 	if err := uc.asegurarEditable(ctx, idAtencion); err != nil {
 		return err
 	}
-	if err := uc.repo.EliminarRecetaDetalle(ctx, idReceta, idProducto, idCuentaAtencion, idPrimeraAtencion); err != nil {
+	if err := uc.eliminarDetalleReceta(ctx, idAtencion, idReceta, idProducto, idCuentaAtencion, idPrimeraAtencion); err != nil {
 		return fmt.Errorf("eliminar examen: %w", err)
 	}
 	return nil

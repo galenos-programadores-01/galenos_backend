@@ -96,6 +96,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 				primeraAtencion.PATCH("/:idAtencion", p.PrimeraAtencionHandler.GuardarParcial)
 				primeraAtencion.POST("/:idAtencion/cerrar-firma", p.PrimeraAtencionHandler.CerrarFirma)
 				primeraAtencion.GET("/:idAtencion/documento", p.PrimeraAtencionHandler.DescargarDocumento)
+				primeraAtencion.GET("/:idAtencion/documentos-firmados", p.PrimeraAtencionHandler.ListarDocumentosFirmados)
 				primeraAtencion.GET("/:idAtencion/diagnosticos", p.PrimeraAtencionHandler.ListarDiagnosticos)
 				primeraAtencion.POST("/:idAtencion/diagnosticos", p.PrimeraAtencionHandler.RegistrarDiagnosticos)
 				primeraAtencion.DELETE("/:idAtencion/diagnosticos/:idAtencionDiagnostico", p.PrimeraAtencionHandler.EliminarDiagnostico)

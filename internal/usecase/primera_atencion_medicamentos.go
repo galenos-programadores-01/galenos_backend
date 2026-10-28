@@ -68,6 +68,9 @@ func (uc *primeraAtencionUseCase) RegistrarMedicamento(
 	if err != nil {
 		return domain.RecetaMedicamentoRegistrarResult{}, fmt.Errorf("cabecera receta: %w", err)
 	}
+	if err := uc.rechazarCabeceraAnulada(ctx, idReceta); err != nil {
+		return domain.RecetaMedicamentoRegistrarResult{}, err
+	}
 
 	precio := in.Precio
 	if precio < 0 {
@@ -178,8 +181,30 @@ func (uc *primeraAtencionUseCase) EliminarMedicamento(
 	if err := uc.asegurarEditable(ctx, idAtencion); err != nil {
 		return err
 	}
-	if err := uc.repo.EliminarRecetaDetalle(ctx, idReceta, idProducto, idCuentaAtencion, idPrimeraAtencion); err != nil {
+	if err := uc.eliminarDetalleReceta(ctx, idAtencion, idReceta, idProducto, idCuentaAtencion, idPrimeraAtencion); err != nil {
 		return fmt.Errorf("eliminar medicamento: %w", err)
 	}
 	return nil
+}
+
+func (uc *primeraAtencionUseCase) rechazarCabeceraAnulada(ctx context.Context, idReceta int) error {
+	anulada, err := uc.repo.CabeceraRecetaAnulada(ctx, idReceta)
+	if err != nil {
+		return fmt.Errorf("verificar cabecera receta: %w", err)
+	}
+	if anulada {
+		return fmt.Errorf("la cabecera de receta anulada no se reutiliza")
+	}
+	return nil
+}
+
+func (uc *primeraAtencionUseCase) eliminarDetalleReceta(ctx context.Context, idAtencion, idReceta, idProducto, idCuentaAtencion, idPrimeraAtencion int) error {
+	row, err := uc.repo.ObtenerPorIdAtencion(ctx, idAtencion)
+	if err != nil {
+		return err
+	}
+	if primeraAtencionEstaFirmada(row) {
+		return uc.repo.EliminarDetalleRectificacion(ctx, idReceta, idProducto)
+	}
+	return uc.repo.EliminarRecetaDetalle(ctx, idReceta, idProducto, idCuentaAtencion, idPrimeraAtencion)
 }

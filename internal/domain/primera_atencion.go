@@ -48,6 +48,7 @@ type PrimeraAtencionCerrarFirma struct {
 // PrimeraAtencionCerrarFirmaResult resultado del cierre (mismo SP Insertar).
 type PrimeraAtencionCerrarFirmaResult struct {
 	IdPrimeraAtencion int
+	NroEdicion        int
 	Mensaje           string
 }
 

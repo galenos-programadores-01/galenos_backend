@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"path"
+	"strings"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
 	"github.com/galenos-pro/appointments-api/internal/ports/output"
@@ -79,6 +81,33 @@ func (s *ArchivoRemotoService) SubirPrimeraAtencion(
 
 // SubirPrimeraAtencionReceta sube un PDF satélite (examen/meds) por IdReceta.
 // No se guarda en Tab_PA; la ruta se reconstruye con el patrón.
+// SubirPrimeraAtencionConNombre sube el PDF con el basename ya decidido
+// (incluye -N de una edición) en la misma carpeta del PDF principal.
+func (s *ArchivoRemotoService) SubirPrimeraAtencionConNombre(
+	ctx context.Context,
+	idPrimeraAtencion int,
+	nombreArchivo string,
+	pdf []byte,
+) (ubicacionLogica string, err error) {
+	if !s.Enabled() {
+		return "", domain.ErrAlmacenamientoNoConfigurado
+	}
+	_, base, err := s.rutas.PrimeraAtencionPDF(idPrimeraAtencion)
+	if err != nil {
+		return "", err
+	}
+	nombreArchivo = path.Base(strings.ReplaceAll(nombreArchivo, "\\", "/"))
+	if nombreArchivo == "" || nombreArchivo == "." {
+		return "", domain.ErrAlmacenamientoRutaInvalida
+	}
+	dir := path.Dir(base)
+	logica := path.Join(dir, nombreArchivo)
+	if err := s.store.Subir(ctx, logica, pdf); err != nil {
+		return "", err
+	}
+	return logica, nil
+}
+
 func (s *ArchivoRemotoService) SubirPrimeraAtencionReceta(
 	ctx context.Context,
 	idPrimeraAtencion, idReceta int,

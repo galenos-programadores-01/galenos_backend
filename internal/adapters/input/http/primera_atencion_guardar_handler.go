@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -151,9 +152,17 @@ func (h *PrimeraAtencionHandler) GuardarParcial(c *gin.Context) {
 	})
 }
 
+type documentoFirmadoCierreRequest struct {
+	TipoDocumento string `json:"tipoDocumento"`
+	IdPuntoCarga  *int   `json:"idPuntoCarga"`
+	IdReceta      *int   `json:"idReceta"`
+	NombreArchivo string `json:"nombreArchivo"`
+}
+
 type primeraAtencionCerrarFirmaRequest struct {
-	UuidFirma        string `json:"uuidFirma"`
-	UbicacionArchivo string `json:"ubicacionArchivo"`
+	UuidFirma        string                         `json:"uuidFirma"`
+	UbicacionArchivo string                         `json:"ubicacionArchivo"`
+	Documentos       []documentoFirmadoCierreRequest `json:"documentos"`
 }
 
 type primeraAtencionCerrarFirmaResponse struct {
@@ -246,6 +255,19 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 	if err != nil {
 		respondPrimeraAtencionWriteError(c, "PRIMERA_ATENCION_CERRAR_FIRMA_FAILED", err)
 		return
+	}
+
+	nro := result.NroEdicion
+	if nro < 0 {
+		nro = 0
+	}
+	if errDoc := h.service.RegistrarDocumentosFirmados(
+		c.Request.Context(),
+		idPrimeraAtencion,
+		nro,
+		h.documentosFirmadosDelCierre(idPrimeraAtencion, ubicacion, req.Documentos),
+	); errDoc != nil {
+		log.Printf("documentos firmados PA no persistidos idPA=%d: %v", idPrimeraAtencion, errDoc)
 	}
 
 	respondSuccess(c, http.StatusOK, primeraAtencionCerrarFirmaResponse{
@@ -344,6 +366,70 @@ func (h *PrimeraAtencionHandler) ubicacionLogicaPrimeraAtencion(idPrimeraAtencio
 }
 
 // subirLotePrimeraAtencion sube PA + satélites por patrón; devuelve solo la ubicacion del PA.
+func (h *PrimeraAtencionHandler) ListarDocumentosFirmados(c *gin.Context) {
+	idAtencion, err := strconv.Atoi(c.Param("idAtencion"))
+	if err != nil || idAtencion <= 0 {
+		respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", "idAtencion inválido")
+		return
+	}
+	nro, docs, err := h.service.ListarDocumentosFirmados(c.Request.Context(), idAtencion)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "PRIMERA_ATENCION_DOCS_FAILED", err.Error())
+		return
+	}
+	respondSuccess(c, http.StatusOK, gin.H{
+		"nroEdicionVigente": nro,
+		"documentos":        docs,
+	})
+}
+
+func (h *PrimeraAtencionHandler) documentosFirmadosDelCierre(
+	idPrimeraAtencion int,
+	ubicacionPA string,
+	entrada []documentoFirmadoCierreRequest,
+) []domain.DocumentoFirmadoPA {
+	if len(entrada) == 0 {
+		return []domain.DocumentoFirmadoPA{{
+			IdPrimeraAtencion: idPrimeraAtencion,
+			TipoDocumento:     domain.TipoDocumentoFirmadoPA,
+			NombreArchivo:     domain.NombreArchivoLotePA(idPrimeraAtencion),
+			UbicacionArchivo:  ubicacionPA,
+		}}
+	}
+	out := make([]domain.DocumentoFirmadoPA, 0, len(entrada))
+	for _, doc := range entrada {
+		tipo := strings.ToUpper(strings.TrimSpace(doc.TipoDocumento))
+		nombre := strings.TrimSpace(doc.NombreArchivo)
+		ubi := ubicacionPA
+		if strings.Contains(nombre, "-") {
+			sep := strings.LastIndexAny(ubicacionPA, `/\`)
+			if sep >= 0 && nombre != "" {
+				ubi = ubicacionPA[:sep+1] + nombre
+			}
+		} else if tipo != domain.TipoDocumentoFirmadoPA && doc.IdReceta != nil && *doc.IdReceta > 0 && h.archivos != nil {
+			_, logica, errR := h.archivos.Rutas().PrimeraAtencionRecetaPDF(idPrimeraAtencion, *doc.IdReceta)
+			if errR == nil {
+				ubi = logica
+			}
+		}
+		if tipo == "" {
+			tipo = domain.TipoDocumentoFirmadoPA
+		}
+		if nombre == "" {
+			nombre = domain.NombreArchivoLotePA(idPrimeraAtencion)
+		}
+		out = append(out, domain.DocumentoFirmadoPA{
+			IdPrimeraAtencion: idPrimeraAtencion,
+			TipoDocumento:     tipo,
+			IdPuntoCarga:      doc.IdPuntoCarga,
+			IdReceta:          doc.IdReceta,
+			NombreArchivo:     nombre,
+			UbicacionArchivo:  ubi,
+		})
+	}
+	return out
+}
+
 func (h *PrimeraAtencionHandler) subirLotePrimeraAtencion(
 	ctx context.Context,
 	idPrimeraAtencion int,
@@ -359,6 +445,16 @@ func (h *PrimeraAtencionHandler) subirLotePrimeraAtencion(
 				"archivo %s no corresponde a idPrimeraAtencion=%d",
 				f.Name, idPrimeraAtencion,
 			)
+		}
+		if parsed.NroEdicion > 0 {
+			ubi, errUp := h.archivos.SubirPrimeraAtencionConNombre(ctx, idPrimeraAtencion, f.Name, f.Content)
+			if errUp != nil {
+				return "", fmt.Errorf("subir PDF %s: %w", f.Name, errUp)
+			}
+			if parsed.EsPrincipal {
+				ubicacionPA = ubi
+			}
+			continue
 		}
 		if parsed.EsPrincipal {
 			ubi, errUp := h.archivos.SubirPrimeraAtencion(ctx, idPrimeraAtencion, f.Content)

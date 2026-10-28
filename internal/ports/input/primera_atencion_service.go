@@ -13,6 +13,8 @@ type PrimeraAtencionService interface {
 	IniciarBorrador(ctx context.Context, idAtencion, idUsuario int) (domain.PrimeraAtencionUpsertResult, error)
 	GuardarParcial(ctx context.Context, in domain.PrimeraAtencionUpsert) (domain.PrimeraAtencionUpsertResult, error)
 	ObtenerDetalle(ctx context.Context, idAtencion int) (map[string]any, error)
+	ListarDocumentosFirmados(ctx context.Context, idAtencion int) (nroVigente int, docs []domain.DocumentoFirmadoPA, err error)
+	RegistrarDocumentosFirmados(ctx context.Context, idPrimeraAtencion, nroEdicion int, docs []domain.DocumentoFirmadoPA) error
 	CerrarFirma(ctx context.Context, in domain.PrimeraAtencionCerrarFirma) (domain.PrimeraAtencionCerrarFirmaResult, error)
 	RegistrarDiagnosticos(ctx context.Context, idAtencion, idPaciente, idPrimeraAtencion, idEpisodio, idClasificacionDx int, items []domain.DiagnosticoRegistrarItem) ([]domain.DiagnosticoAgregarResult, error)
 	ListarDiagnosticos(ctx context.Context, idAtencion, idPrimeraAtencion int) ([]domain.DiagnosticoAtencion, error)
