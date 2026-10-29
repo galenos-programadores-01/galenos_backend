@@ -224,6 +224,9 @@ func run() error {
 	hospitalizacionService := usecase.NewHospitalizacionUseCase(hospitalizacionRepo)
 	hospitalizacionHandler := httpadapter.NewHospitalizacionHandler(hospitalizacionService)
 
+	hospitalizacionService := usecase.NewHospitalizacionUseCase(hospitalizacionRepo)
+	hospitalizacionHandler := httpadapter.NewHospitalizacionHandler(hospitalizacionService)
+
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
 		AppointmentHandler:            appointmentHandler,
 		PatientHandler:                patientHandler,

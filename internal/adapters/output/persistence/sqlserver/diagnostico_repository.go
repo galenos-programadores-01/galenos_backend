@@ -305,6 +305,12 @@ func (r *sqlServerDiagnosticoRepository) AgregarDiagnosticoAtencion(ctx context.
 		idClasificacionDx = 9
 	}
 
+	// La clasificación del diagnóstico (CIE-10) va fija en 9 por defecto.
+	idClasificacionDx := req.IdClasificacionDx
+	if idClasificacionDx <= 0 {
+		idClasificacionDx = 9
+	}
+
 	var resultado sql.NullString
 	query := `EXEC dbo.usp_go_AtencionesDiagnosticosAgregar
 		@IdAtencionDiagnostico = @p1 OUTPUT,
