@@ -9,46 +9,70 @@ import (
 // --- PATIENT RESPONSES ---
 
 type patientResponse struct {
-	PatientID         int64      `json:"patientId"`
-	DocumentNumber    string     `json:"documentNumber"`
-	TipoDocumento     *string    `json:"tipoDocumento,omitempty"`
-	DocIdentityID     *int64     `json:"docIdentityId,omitempty"`
-	HistoryNumber     string     `json:"historyNumber"`
-	PaternalSurname   string     `json:"paternalSurname"`
-	MaternalSurname   string     `json:"maternalSurname"`
-	FirstName         string     `json:"firstName"`
-	SecondName        string     `json:"segundoNombre"`
-	ThirdName         string     `json:"thirdName"`
-	DateOfBirth       *time.Time `json:"dateOfBirth,omitempty"`
-	HomeDistrictID    *int64     `json:"homeDistrictId,omitempty"`
-	HomeCenterID      *int64     `json:"homeCenterId,omitempty"`
-	SexTypeID         *int64     `json:"sexTypeId,omitempty"`
-	MaritalStatusID   *int64     `json:"maritalStatusId,omitempty"`
-	EducationDegreeID *int64     `json:"educationDegreeId,omitempty"`
-	HomeAddress       *string    `json:"homeAddress,omitempty"`
-	Phone             *string    `json:"phone,omitempty"`
+	PatientID             int64      `json:"patientId"`
+	DocumentNumber        string     `json:"documentNumber"`
+	TipoDocumento         *string    `json:"tipoDocumento,omitempty"`
+	DocIdentityID         *int64     `json:"docIdentityId,omitempty"`
+	HistoryNumber         string     `json:"historyNumber"`
+	PaternalSurname       string     `json:"paternalSurname"`
+	MaternalSurname       string     `json:"maternalSurname"`
+	FirstName             string     `json:"firstName"`
+	SecondName            string     `json:"segundoNombre"`
+	ThirdName             string     `json:"thirdName"`
+	DateOfBirth           *time.Time `json:"dateOfBirth,omitempty"`
+	HomeDistrictID        *int64     `json:"homeDistrictId,omitempty"`
+	HomeCenterID          *int64     `json:"homeCenterId,omitempty"`
+	HomeCountryID         *int64     `json:"homeCountryId,omitempty"`
+	SexTypeID             *int64     `json:"sexTypeId,omitempty"`
+	MaritalStatusID       *int64     `json:"maritalStatusId,omitempty"`
+	EducationDegreeID     *int64     `json:"educationDegreeId,omitempty"`
+	HomeAddress           *string    `json:"homeAddress,omitempty"`
+	Phone                 *string    `json:"phone,omitempty"`
+	Cellphone             *string    `json:"cellphone,omitempty"`
+	Email                 *string    `json:"email,omitempty"`
+	OccupationTypeID      *int64     `json:"occupationTypeId,omitempty"`
+	EthnicityID           *string    `json:"ethnicityId,omitempty"`
+	LanguageID            *int64     `json:"languageId,omitempty"`
+	MotherDocType         *string    `json:"motherDocType,omitempty"`
+	MotherDocument        *string    `json:"motherDocument,omitempty"`
+	MotherPaternalSurname *string    `json:"motherPaternalSurname,omitempty"`
+	MotherMaternalSurname *string    `json:"motherMaternalSurname,omitempty"`
+	MotherFirstName       *string    `json:"motherFirstName,omitempty"`
+	MotherSecondName      *string    `json:"motherSecondName,omitempty"`
 }
 
 func toPatientResponse(p domain.Patient) patientResponse {
 	return patientResponse{
-		PatientID:         p.PatientID,
-		DocumentNumber:    p.DocumentNumber,
-		TipoDocumento:     p.DocumentType,
-		DocIdentityID:     p.DocIdentityID,
-		HistoryNumber:     p.HistoryNumber,
-		PaternalSurname:   p.PaternalSurname,
-		MaternalSurname:   p.MaternalSurname,
-		FirstName:         p.FirstName,
-		SecondName:        p.SecondName,
-		ThirdName:         p.ThirdName,
-		DateOfBirth:       p.DateOfBirth,
-		HomeDistrictID:    p.HomeDistrictID,
-		HomeCenterID:      p.HomeCenterID,
-		SexTypeID:         p.SexTypeID,
-		MaritalStatusID:   p.MaritalStatusID,
-		EducationDegreeID: p.EducationDegreeID,
-		HomeAddress:       p.HomeAddress,
-		Phone:             p.Phone,
+		PatientID:             p.PatientID,
+		DocumentNumber:        p.DocumentNumber,
+		TipoDocumento:         p.DocumentType,
+		DocIdentityID:         p.DocIdentityID,
+		HistoryNumber:         p.HistoryNumber,
+		PaternalSurname:       p.PaternalSurname,
+		MaternalSurname:       p.MaternalSurname,
+		FirstName:             p.FirstName,
+		SecondName:            p.SecondName,
+		ThirdName:             p.ThirdName,
+		DateOfBirth:           p.DateOfBirth,
+		HomeDistrictID:        p.HomeDistrictID,
+		HomeCenterID:          p.HomeCenterID,
+		HomeCountryID:         p.HomeCountryID,
+		SexTypeID:             p.SexTypeID,
+		MaritalStatusID:       p.MaritalStatusID,
+		EducationDegreeID:     p.EducationDegreeID,
+		HomeAddress:           p.HomeAddress,
+		Phone:                 p.Phone,
+		Cellphone:             p.Cellphone,
+		Email:                 p.Email,
+		OccupationTypeID:      p.OccupationTypeID,
+		EthnicityID:           p.EthnicityID,
+		LanguageID:            p.LanguageID,
+		MotherDocType:         p.MotherDocType,
+		MotherDocument:        p.MotherDocument,
+		MotherPaternalSurname: p.MotherPaternalSurname,
+		MotherMaternalSurname: p.MotherMaternalSurname,
+		MotherFirstName:       p.MotherFirstName,
+		MotherSecondName:      p.MotherSecondName,
 	}
 }
 
@@ -401,6 +425,43 @@ type locationItemResponse struct {
 	Nombre *string `json:"nombre,omitempty"`
 }
 
+type servicioDetalleResponse struct {
+	ID             int64   `json:"id"`
+	Nombre         *string `json:"nombre,omitempty"`
+	IdEspecialidad *int64  `json:"idEspecialidad,omitempty"`
+}
+
+func toServicioDetalleResponse(s domain.Servicio) servicioDetalleResponse {
+	return servicioDetalleResponse{ID: s.ID, Nombre: s.Nombre, IdEspecialidad: s.IdEspecialidad}
+}
+
+type origenAtencionResponse struct {
+	ID          int64   `json:"id"`
+	Descripcion *string `json:"descripcion,omitempty"`
+}
+
+func toOrigenAtencionResponse(o domain.OrigenAtencion) origenAtencionResponse {
+	return origenAtencionResponse{ID: o.ID, Descripcion: o.Descripcion}
+}
+
+type camaDisponibleResponse struct {
+	IDCama             *int64  `json:"idCama,omitempty"`
+	Estado             *string `json:"estado,omitempty"`
+	Cama               *string `json:"cama,omitempty"`
+	NroHistoriaClinica *string `json:"nroHistoriaClinica,omitempty"`
+	Paciente           *string `json:"paciente,omitempty"`
+}
+
+func toCamaDisponibleResponse(c domain.CamaDisponible) camaDisponibleResponse {
+	return camaDisponibleResponse{
+		IDCama:             c.IDCama,
+		Estado:             c.Estado,
+		Cama:               c.Cama,
+		NroHistoriaClinica: c.NroHistoriaClinica,
+		Paciente:           c.Paciente,
+	}
+}
+
 func toDepartamentoResponse(d domain.Departamento) locationItemResponse {
 	return locationItemResponse{ID: d.ID, Nombre: d.Nombre}
 }
@@ -419,10 +480,6 @@ func toCentroPobladoResponse(c domain.CentroPoblado) locationItemResponse {
 
 func toPaisResponse(p domain.Pais) locationItemResponse {
 	return locationItemResponse{ID: p.ID, Nombre: p.Nombre}
-}
-
-func toServicioResponse(s domain.Servicio) locationItemResponse {
-	return locationItemResponse{ID: s.ID, Nombre: s.Nombre}
 }
 
 func toEspecialidadResponse(e domain.Especialidad) locationItemResponse {

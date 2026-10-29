@@ -96,10 +96,30 @@ type FuenteFinanciamiento struct {
 }
 
 // Servicio es un registro del catálogo de servicios por tipo
-// (SP usp_go_ListarServicios @IdTipoServicio).
+// (SP usp_go_ListarServicios @IdTipoServicio). Incluye la especialidad
+// asociada para poder filtrar los médicos de la especialidad del servicio.
 type Servicio struct {
-	ID     int64
-	Nombre *string
+	ID             int64
+	Nombre         *string
+	IdEspecialidad *int64
+}
+
+// OrigenAtencion es un registro del catálogo de orígenes de atención por
+// tipo de servicio (SP usp_go_OrigenxTipoServicio @IdTipoServicio).
+type OrigenAtencion struct {
+	ID          int64
+	Descripcion *string
+}
+
+// CamaDisponible es una cama de un servicio con su estado y, cuando está
+// ocupada, los datos del paciente hospitalizado en ella
+// (SP usp_go_ListarCamasDisponiblesxServicio @IdServicio).
+type CamaDisponible struct {
+	IDCama             *int64
+	Estado             *string
+	Cama               *string
+	NroHistoriaClinica *string
+	Paciente           *string
 }
 
 // DatosInstitucion contiene los datos de la institución (EE.SS.) que el

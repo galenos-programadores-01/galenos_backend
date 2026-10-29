@@ -8,24 +8,36 @@ import "time"
 // SegundoNombre, TercerNombre) así como por el SP usp_go_listarpacientes
 // (IdPaciente, NroHistoriaClinica, FechaNacimiento, TipoDocumento).
 type Patient struct {
-	PatientID         int64
-	DocumentNumber    string
-	DocumentType      *string
-	DocIdentityID     *int64
-	HistoryNumber     string
-	PaternalSurname   string
-	MaternalSurname   string
-	FirstName         string
-	SecondName        string
-	ThirdName         string
-	DateOfBirth       *time.Time
-	HomeDistrictID    *int64
-	HomeCenterID      *int64
-	SexTypeID         *int64
-	MaritalStatusID   *int64
-	EducationDegreeID *int64
-	HomeAddress       *string
-	Phone             *string
+	PatientID             int64
+	DocumentNumber        string
+	DocumentType          *string
+	DocIdentityID         *int64
+	HistoryNumber         string
+	PaternalSurname       string
+	MaternalSurname       string
+	FirstName             string
+	SecondName            string
+	ThirdName             string
+	DateOfBirth           *time.Time
+	HomeDistrictID        *int64
+	HomeCenterID          *int64
+	HomeCountryID         *int64
+	SexTypeID             *int64
+	MaritalStatusID       *int64
+	EducationDegreeID     *int64
+	HomeAddress           *string
+	Phone                 *string
+	Cellphone             *string
+	Email                 *string
+	OccupationTypeID      *int64
+	EthnicityID           *string
+	LanguageID            *int64
+	MotherDocType         *string
+	MotherDocument        *string
+	MotherPaternalSurname *string
+	MotherMaternalSurname *string
+	MotherFirstName       *string
+	MotherSecondName      *string
 }
 
 // PacienteDatosAdicionales representa los datos de antecedentes retornados

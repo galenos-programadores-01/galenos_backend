@@ -267,6 +267,15 @@ func (r *ListaEsperaQxRepository) Modificar(ctx context.Context, item domain.Lis
 	return err
 }
 
+// ActualizarHospitalizado invoca el procedimiento almacenado
+// usp_go_ActualizarListaEsperaQx, que marca el registro de la lista de espera
+// quirurgica como HOSPITALIZADO (Tipo = 'HOSPITALIZADO').
+func (r *ListaEsperaQxRepository) ActualizarHospitalizado(ctx context.Context, id int) error {
+	query := "EXEC usp_go_ActualizarListaEsperaQx @IdListaEspera = @p1"
+	_, err := r.db.ExecContext(ctx, query, sql.Named("p1", id))
+	return err
+}
+
 func (r *ListaEsperaQxRepository) Crear(ctx context.Context, item domain.ListaEsperaQxCrear, idUsuario int) error {
 	query := `EXEC usp_go_GrabarListaEsperaQx
 		@FechaOrden = @p1, @IdPaciente = @p2, @Diagnostico = @p3, @IdEspecialidad = @p4,
@@ -298,78 +307,96 @@ func (r *ListaEsperaQxRepository) Reporte(ctx context.Context, fecha string, fec
 	}
 	defer rows.Close()
 
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	// Escaneo dinámico: se conserva el mapeo posicional original (índices 0..16)
+	// y se busca IdTipoSexo por nombre, para tolerar que el SP agregue la columna
+	// en cualquier posición del SELECT.
+	asString := func(v any) string {
+		switch t := v.(type) {
+		case nil:
+			return ""
+		case string:
+			return t
+		case []byte:
+			return string(t)
+		case time.Time:
+			if t.IsZero() {
+				return ""
+			}
+			return t.Format("2006-01-02")
+		default:
+			return fmt.Sprintf("%v", t)
+		}
+	}
+	asInt := func(v any) int {
+		switch t := v.(type) {
+		case int64:
+			return int(t)
+		case int32:
+			return int(t)
+		case int:
+			return t
+		case float64:
+			return int(t)
+		case []byte:
+			n, _ := strconv.Atoi(strings.TrimSpace(string(t)))
+			return n
+		case string:
+			n, _ := strconv.Atoi(strings.TrimSpace(t))
+			return n
+		default:
+			return 0
+		}
+	}
+
 	var lista []domain.ListaEsperaQxReporte
 	for rows.Next() {
-		var item domain.ListaEsperaQxReporte
-		var id sql.NullInt64
-		var nroHistoriaClinica sql.NullInt64
-		var nroDocumento sql.NullString
-		var paciente sql.NullString
-		var edad sql.NullInt64
-		var telefono sql.NullString
-		var fechaOrden sql.NullTime
-		var especialidad sql.NullString
-		var diagnostico sql.NullString
-		var fechaLab sql.NullTime
-		var fechaICCardio sql.NullTime
-		var fechaICNeumo sql.NullTime
-		var fechaICAnestesio sql.NullTime
-		var medico sql.NullString
-		var observacion sql.NullString
-		var telefonoLE sql.NullString
-		var diasTranscurridos sql.NullInt64
-
-		if err := rows.Scan(&id, &nroHistoriaClinica, &nroDocumento, &paciente, &edad, &telefono, &fechaOrden, &especialidad, &diagnostico, &fechaLab, &fechaICCardio, &fechaICNeumo, &fechaICAnestesio, &medico, &observacion, &telefonoLE, &diasTranscurridos); err != nil {
+		raw := make([]any, len(cols))
+		ptrs := make([]any, len(cols))
+		for i := range raw {
+			ptrs[i] = &raw[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
 			continue
 		}
-		if id.Valid {
-			item.Id = int(id.Int64)
+
+		at := func(i int) any {
+			if i >= 0 && i < len(raw) {
+				return raw[i]
+			}
+			return nil
 		}
-		if nroHistoriaClinica.Valid {
-			item.NroHistoriaClinica = int(nroHistoriaClinica.Int64)
+
+		var item domain.ListaEsperaQxReporte
+		item.Id = asInt(at(0))
+		item.NroHistoriaClinica = asInt(at(1))
+		item.NroDocumento = asString(at(2))
+		item.Paciente = asString(at(3))
+		item.Edad = asInt(at(4))
+		item.Telefono = asString(at(5))
+		item.FechaOrden = asString(at(6))
+		item.Especialidad = asString(at(7))
+		item.Diagnostico = asString(at(8))
+		item.FechaLab = asString(at(9))
+		item.FechaICCardio = asString(at(10))
+		item.FechaICNeumo = asString(at(11))
+		item.FechaICAnestesio = asString(at(12))
+		item.Medico = asString(at(13))
+		item.Observacion = asString(at(14))
+		// El índice 15 corresponde al teléfono alterno (no se usa).
+		item.DiasTranscurridos = asInt(at(16))
+
+		for i, c := range cols {
+			if strings.EqualFold(c, "IdTipoSexo") {
+				item.IdTipoSexo = asInt(at(i))
+				break
+			}
 		}
-		if nroDocumento.Valid {
-			item.NroDocumento = nroDocumento.String
-		}
-		if paciente.Valid {
-			item.Paciente = paciente.String
-		}
-		if edad.Valid {
-			item.Edad = int(edad.Int64)
-		}
-		if telefono.Valid {
-			item.Telefono = telefono.String
-		}
-		if fechaOrden.Valid {
-			item.FechaOrden = fechaOrden.Time.Format("2006-01-02")
-		}
-		if especialidad.Valid {
-			item.Especialidad = especialidad.String
-		}
-		if diagnostico.Valid {
-			item.Diagnostico = diagnostico.String
-		}
-		if fechaLab.Valid {
-			item.FechaLab = fechaLab.Time.Format("2006-01-02")
-		}
-		if fechaICCardio.Valid {
-			item.FechaICCardio = fechaICCardio.Time.Format("2006-01-02")
-		}
-		if fechaICNeumo.Valid {
-			item.FechaICNeumo = fechaICNeumo.Time.Format("2006-01-02")
-		}
-		if fechaICAnestesio.Valid {
-			item.FechaICAnestesio = fechaICAnestesio.Time.Format("2006-01-02")
-		}
-		if medico.Valid {
-			item.Medico = medico.String
-		}
-		if observacion.Valid {
-			item.Observacion = observacion.String
-		}
-		if diasTranscurridos.Valid {
-			item.DiasTranscurridos = int(diasTranscurridos.Int64)
-		}
+
 		lista = append(lista, item)
 	}
 	return r.actualizarTelefonosListaEspera(ctx, lista), rows.Err()

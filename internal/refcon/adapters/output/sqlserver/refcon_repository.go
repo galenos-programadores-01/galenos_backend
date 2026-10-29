@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/galenos-pro/appointments-api/internal/refcon/domain"
 )
@@ -20,58 +21,38 @@ func NewRefConRepository(db *sql.DB) *RefConRepository {
 }
 
 // ListarReferenciasPorMes ejecuta usp_go_ListarReferenciasPorMesyAnio.
-// El SP devuelve 3 columnas para opcion=1 (mes, nombre del mes, cantidad) y
-// 5 columnas para opcion 2, 3 y 4 (estado, conteo, mes, nombre mes, cantidad);
-// por eso el mapeo se hace por posición según la cantidad de columnas.
-func (r *RefConRepository) ListarReferenciasPorMes(ctx context.Context, mes, anio, estado, opcion int, ups string) ([]domain.ReferenciaPorMes, error) {
-	query := "EXEC dbo.usp_go_ListarReferenciasPorMesyAnio @mes = @p1, @anio = @p2, @estado = @p3, @ups = @p4, @opcion = @p5"
+// El SP recibe un rango de fechas (@FechaInicio, @FechaFin) y, opcionalmente,
+// un estado de referencia (@estadoreferencia, 0 = todos). Devuelve siempre 5
+// columnas: descripción del estado, conteo, número de mes, nombre del mes y
+// cantidad; el mapeo se hace por nombre de columna.
+func (r *RefConRepository) ListarReferenciasPorMes(ctx context.Context, fechaInicio, fechaFin time.Time, estadoReferencia int) ([]domain.ReferenciaPorMes, error) {
+	query := "EXEC dbo.usp_go_ListarReferenciasPorMesyAnio @FechaInicio = @p1, @FechaFin = @p2, @estadoreferencia = @p3"
 	rows, err := r.db.QueryContext(ctx, query,
-		sql.Named("p1", mes),
-		sql.Named("p2", anio),
-		sql.Named("p3", estado),
-		sql.Named("p4", ups),
-		sql.Named("p5", opcion),
+		sql.Named("p1", fechaInicio),
+		sql.Named("p2", fechaFin),
+		sql.Named("p3", estadoReferencia),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("calling usp_go_ListarReferenciasPorMesyAnio: %w", err)
 	}
 	defer rows.Close()
 
-	columns, err := rows.Columns()
+	maps, err := rowsToMaps(rows)
 	if err != nil {
-		return nil, fmt.Errorf("reading columns: %w", err)
+		return nil, fmt.Errorf("reading usp_go_ListarReferenciasPorMesyAnio rows: %w", err)
 	}
 
-	var lista []domain.ReferenciaPorMes
-	for rows.Next() {
-		values, err := rowValues(rows, len(columns))
-		if err != nil {
-			return nil, err
-		}
-
-		switch len(columns) {
-		case 3:
-			// columnas: month(FechaReferencia), Mes, Cantidad
-			lista = append(lista, domain.ReferenciaPorMes{
-				Mes:       valueToInt(values[0]),
-				NombreMes: valueToString(values[1]),
-				Cantidad:  valueToInt(values[2]),
-			})
-		case 5:
-			// columnas: descripcion, count(...), month(FechaReferencia), Mes, Cantidad
-			estadoDesc := valueToString(values[0])
-			item := domain.ReferenciaPorMes{
-				Mes:       valueToInt(values[2]),
-				NombreMes: valueToString(values[3]),
-				Cantidad:  valueToInt(values[4]),
-			}
-			if estadoDesc != "" {
-				item.Estado = &estadoDesc
-			}
-			lista = append(lista, item)
-		}
+	lista := make([]domain.ReferenciaPorMes, 0, len(maps))
+	for _, m := range maps {
+		lista = append(lista, domain.ReferenciaPorMes{
+			Estado:    valueToString(m["Descripcion"]),
+			Conteo:    valueToInt(m["Conteo"]),
+			Mes:       valueToInt(m["MesNum"]),
+			NombreMes: valueToString(m["Mes"]),
+			Cantidad:  valueToInt(m["Cantidad"]),
+		})
 	}
-	return lista, rows.Err()
+	return lista, nil
 }
 
 func (r *RefConRepository) ListarUps(ctx context.Context) ([]domain.Ups, error) {
@@ -186,19 +167,6 @@ func (r *RefConRepository) ListarDistritosPorIdReniec(ctx context.Context, idRen
 		})
 	}
 	return lista, nil
-}
-
-// rowValues escanea una fila completa del result set en un slice de valores.
-func rowValues(rows *sql.Rows, n int) ([]any, error) {
-	values := make([]any, n)
-	pointers := make([]any, n)
-	for i := range values {
-		pointers[i] = &values[i]
-	}
-	if err := rows.Scan(pointers...); err != nil {
-		return nil, err
-	}
-	return values, nil
 }
 
 // valueToInt convierte un valor crudo de database/sql a entero (0 si es nil).

@@ -68,6 +68,7 @@ type ListaEsperaQxReporte struct {
 	NroDocumento       string `json:"nroDocumento"`
 	Paciente           string `json:"paciente"`
 	Edad               int    `json:"edad"`
+	IdTipoSexo         int    `json:"idTipoSexo"`
 	Telefono           string `json:"telefono"`
 	FechaOrden         string `json:"fechaOrden"`
 	Especialidad       string `json:"especialidad"`

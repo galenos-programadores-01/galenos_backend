@@ -8,6 +8,8 @@ definitions:
         type: integer
       idAtencion:
         type: integer
+      idClasificacionDx:
+        type: integer
       idDiagnostico:
         type: integer
       idEpisodio:
@@ -78,6 +80,19 @@ definitions:
       cpt_2:
         type: string
       cpt_3:
+        type: string
+    type: object
+  domain.CamaDisponible:
+    properties:
+      cama:
+        type: string
+      estado:
+        type: string
+      idcama:
+        type: integer
+      nroHistoriaClinica:
+        type: string
+      paciente:
         type: string
     type: object
   domain.CentroPoblado:
@@ -552,6 +567,8 @@ definitions:
         type: string
       id:
         type: integer
+      idTipoSexo:
+        type: integer
       medico:
         type: string
       nroDocumento:
@@ -598,6 +615,13 @@ definitions:
         type: string
       obsmotivoref:
         type: string
+    type: object
+  domain.OrigenAtencion:
+    properties:
+      descripcion:
+        type: string
+      id:
+        type: integer
     type: object
   domain.PacienteDatosAdicionales:
     properties:
@@ -729,6 +753,8 @@ definitions:
     type: object
   domain.Patient:
     properties:
+      cellphone:
+        type: string
       dateOfBirth:
         type: string
       docIdentityID:
@@ -739,6 +765,10 @@ definitions:
         type: string
       educationDegreeID:
         type: integer
+      email:
+        type: string
+      ethnicityID:
+        type: string
       firstName:
         type: string
       historyNumber:
@@ -747,12 +777,30 @@ definitions:
         type: string
       homeCenterID:
         type: integer
+      homeCountryID:
+        type: integer
       homeDistrictID:
+        type: integer
+      languageID:
         type: integer
       maritalStatusID:
         type: integer
       maternalSurname:
         type: string
+      motherDocType:
+        type: string
+      motherDocument:
+        type: string
+      motherFirstName:
+        type: string
+      motherMaternalSurname:
+        type: string
+      motherPaternalSurname:
+        type: string
+      motherSecondName:
+        type: string
+      occupationTypeID:
+        type: integer
       paternalSurname:
         type: string
       patientID:
@@ -982,6 +1030,8 @@ definitions:
     properties:
       cantidad:
         type: integer
+      conteo:
+        type: integer
       estado:
         type: string
       mes:
@@ -1042,6 +1092,27 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  domain.ReporteTicketHospitalizacion:
+    properties:
+      fecha:
+        type: string
+      hora:
+        type: string
+      iafa:
+        type: string
+      idCuentaAtencion:
+        type: integer
+      medico:
+        type: string
+      nroDocumento:
+        type: string
+      nroHistoriaClinica:
+        type: string
+      paciente:
+        type: string
+      servicio:
+        type: string
     type: object
   domain.ResponsableReferencia:
     properties:
@@ -1111,6 +1182,8 @@ definitions:
     properties:
       id:
         type: integer
+      idEspecialidad:
+        type: integer
       nombre:
         type: string
     type: object
@@ -1129,6 +1202,15 @@ definitions:
         type: string
       sistema:
         type: string
+    type: object
+  domain.SubclasificacionDxItem:
+    properties:
+      descripcionCorta:
+        type: string
+      descripcionLarga:
+        type: string
+      idSubclasificacionDx:
+        type: integer
     type: object
   domain.TimeSlot:
     properties:
@@ -1233,6 +1315,8 @@ definitions:
         type: integer
       motivo:
         type: string
+      resumenHC:
+        type: string
     required:
     - idAtencionOrigen
     - motivo
@@ -1335,6 +1419,93 @@ definitions:
     - idMedico
     - idPaciente
     type: object
+  httpadapter.createAdmisionHospitalizacionRequest:
+    properties:
+      apellidoMaterno:
+        type: string
+      apellidoPaterno:
+        type: string
+      correo:
+        type: string
+      direccion:
+        type: string
+      estadoCivil:
+        type: integer
+      fechaIngreso:
+        type: string
+      fechaNacimiento:
+        type: string
+      gradoInstruccion:
+        type: integer
+      horaIngreso:
+        type: string
+      idCama:
+        type: integer
+      idComunidadDomicilio:
+        type: integer
+      idDepartamento:
+        type: integer
+      idDistrito:
+        type: integer
+      idDocIdentidad:
+        type: integer
+      idEmpleado:
+        type: integer
+      idEstablecimientoReferenciaOrigen:
+        type: integer
+      idEstadollego:
+        type: integer
+      idEtnia:
+        type: integer
+      idFuenteFinanciamiento:
+        type: integer
+      idIdioma:
+        type: integer
+      idMedicoIngreso:
+        type: integer
+      idNacionalidad:
+        type: integer
+      idOrigen:
+        type: integer
+      idPaciente:
+        type: integer
+      idProvincia:
+        type: integer
+      idServicio:
+        type: integer
+      idTipoPrioridad:
+        type: integer
+      idTipoSexo:
+        type: integer
+      madreApeMaterno:
+        type: string
+      madreApePaterno:
+        type: string
+      madreNroDoc:
+        type: string
+      madrePrimerNombre:
+        type: string
+      madreSegundoNombre:
+        type: string
+      madreTipoDoc:
+        type: integer
+      nombrePadre:
+        type: string
+      nroDocumento:
+        type: string
+      nroReferencia:
+        type: string
+      ocupacion:
+        type: integer
+      primerNombre:
+        type: string
+      segundoNombre:
+        type: string
+      telefono:
+        type: string
+      tercerNombre:
+        type: string
+    type: object
   httpadapter.createAppointmentRequest:
     properties:
       doctorId:
@@ -1414,9 +1585,13 @@ definitions:
         type: integer
       idEstadoCivil:
         type: integer
+      idEtnia:
+        type: integer
       idFuenteFinanciamiento:
         type: integer
       idGradoInstruccion:
+        type: integer
+      idIdioma:
         type: integer
       idOcupacion:
         type: integer
@@ -1426,6 +1601,17 @@ definitions:
         type: integer
       incapacidad:
         type: integer
+      madreApellidoMaterno:
+        type: string
+      madreApellidoPaterno:
+        type: string
+      madreNroDocumento:
+        description: Datos de la madre tutor (@Madre* de usp_go_PacienteHistoriaClinicaAgregar).
+        type: string
+      madrePrimerNombre:
+        type: string
+      madreSegundoNombre:
+        type: string
       nroDocumento:
         type: string
       primerNombre:
@@ -1686,6 +1872,8 @@ definitions:
     type: object
   httpadapter.patientResponse:
     properties:
+      cellphone:
+        type: string
       dateOfBirth:
         type: string
       docIdentityId:
@@ -1694,6 +1882,10 @@ definitions:
         type: string
       educationDegreeId:
         type: integer
+      email:
+        type: string
+      ethnicityId:
+        type: string
       firstName:
         type: string
       historyNumber:
@@ -1702,12 +1894,30 @@ definitions:
         type: string
       homeCenterId:
         type: integer
+      homeCountryId:
+        type: integer
       homeDistrictId:
+        type: integer
+      languageId:
         type: integer
       maritalStatusId:
         type: integer
       maternalSurname:
         type: string
+      motherDocType:
+        type: string
+      motherDocument:
+        type: string
+      motherFirstName:
+        type: string
+      motherMaternalSurname:
+        type: string
+      motherPaternalSurname:
+        type: string
+      motherSecondName:
+        type: string
+      occupationTypeId:
+        type: integer
       paternalSurname:
         type: string
       patientId:
@@ -1857,7 +2067,18 @@ definitions:
         type: integer
       maternalSurname:
         type: string
+      motherDocumentNumber:
+        description: Datos de la madre tutor (@Madre* de usp_go_ModificarPaciente).
+        type: string
+      motherFirstName:
+        type: string
+      motherMaternalSurname:
+        type: string
       motherName:
+        type: string
+      motherPaternalSurname:
+        type: string
+      motherSecondName:
         type: string
       occupationTypeId:
         type: integer
@@ -2085,6 +2306,51 @@ paths:
       summary: Registrar auditoría
       tags:
       - Auditoria
+  /camas/{idServicio}:
+    get:
+      description: Devuelve las camas de un servicio con su estado y el paciente hospitalizado
+        (SP usp_go_ListarCamasDisponiblesxServicio).
+      parameters:
+      - description: Id del servicio
+        in: path
+        name: idServicio
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.CamaDisponible'
+                  type: array
+              type: object
+        "400":
+          description: Id inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error interno
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista camas por servicio
+      tags:
+      - Catalogos
   /catalogos/parametros-clinicos/{idGrupo}:
     get:
       consumes:
@@ -2158,6 +2424,47 @@ paths:
                   $ref: '#/definitions/httpadapter.apiError'
               type: object
       summary: Actualiza el ValorTexto de un parámetro
+      tags:
+      - Catalogos
+  /catalogos/subclasificaciones-diagnosticos:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - default: 3
+        description: ID tipo de servicio
+        in: query
+        name: idTipoServicio
+        type: integer
+      - default: 9
+        description: ID clasificación diagnóstico
+        in: query
+        name: idClasificacionDx
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.SubclasificacionDxItem'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista subclasificaciones de diagnóstico
       tags:
       - Catalogos
   /centros-poblados/{idDistrito}:
@@ -2315,31 +2622,22 @@ paths:
       consumes:
       - application/json
       description: Retorna la cantidad de referencias/contrarreferencias agrupadas
-        por mes y estado para el dashboard de barras
+        por mes y estado para el dashboard de barras (SP usp_go_ListarReferenciasPorMesyAnio)
       parameters:
-      - description: Mes (0 = todos los meses)
+      - description: Fecha de inicio (yyyy-mm-dd)
         in: query
-        name: mes
-        type: integer
-      - description: Año de la referencia
-        in: query
-        name: anio
+        name: fechaInicio
         required: true
-        type: integer
-      - description: Estado de la referencia (3 ACEPTADO, 4 RECHAZADO, 5 PACIENTE
-          RECIBIDO, 7 PACIENTE CITADO, 8 CONTRAREFERIDO)
+        type: string
+      - description: Fecha de fin (yyyy-mm-dd)
+        in: query
+        name: fechaFin
+        required: true
+        type: string
+      - description: Estado de la referencia (0 = todos; 3 ACEPTADO, 4 RECHAZADO,
+          5 PACIENTE RECIBIDO, 7 PACIENTE CITADO, 8 CONTRAREFERIDO)
         in: query
         name: estado
-        type: integer
-      - description: Código de la UPS
-        in: query
-        name: ups
-        type: string
-      - description: Opción del reporte (1 total, 2 por estado, 3 por estado filtrado,
-          4 por estado y UPS)
-        in: query
-        name: opcion
-        required: true
         type: integer
       produces:
       - application/json
@@ -2355,9 +2653,13 @@ paths:
                     $ref: '#/definitions/domain.ReferenciaPorMes'
                   type: array
               type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/refconhttp.apiResponse'
       security:
       - BearerAuth: []
-      summary: Listar referencias por mes y año
+      summary: Listar referencias por rango de fechas
       tags:
       - DashRefCon
   /dashrefcon/ups:
@@ -3623,6 +3925,129 @@ paths:
       summary: Lista grados de instrucción
       tags:
       - Catalogos
+  /hospitalizacion/admision:
+    post:
+      consumes:
+      - application/json
+      description: Registra la admisión de un paciente en hospitalización invocando
+        el SP usp_go_AdmisionHospitalizacion y devuelve el @Resultado del SP. El idEmpleado
+        se toma del token JWT.
+      parameters:
+      - description: Datos de la admisión
+        in: body
+        name: admision
+        required: true
+        schema:
+          $ref: '#/definitions/httpadapter.createAdmisionHospitalizacionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Payload inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "401":
+          description: No autenticado
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error interno
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Admisiona un paciente en hospitalización
+      tags:
+      - Hospitalizacion
+  /hospitalizacion/reporte-ticket/{idCuenta}:
+    get:
+      consumes:
+      - application/json
+      description: Devuelve los datos para imprimir el ticket de admisión de hospitalización
+        de una cuenta de atención (SP usp_go_GenererReporteTicketHospi).
+      parameters:
+      - description: Id de la cuenta de atención
+        in: path
+        name: idCuenta
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.ReporteTicketHospitalizacion'
+              type: object
+        "400":
+          description: Id inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "401":
+          description: No autenticado
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "404":
+          description: Cuenta no encontrada
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error interno
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Datos del ticket de admisión de hospitalización
+      tags:
+      - Hospitalizacion
   /idiomas:
     get:
       description: Devuelve el catálogo de idiomas (SP ups_go_ListarIdiomas).
@@ -3934,6 +4359,30 @@ paths:
       summary: Modificar lista de espera quirurgica
       tags:
       - ListaEsperaQx
+  /lista-espera-qx/{id}/hospitalizado:
+    put:
+      consumes:
+      - application/json
+      description: Actualiza el tipo de un registro de la lista de espera quirurgica
+        a HOSPITALIZADO invocando el SP usp_go_ActualizarListaEsperaQx
+      parameters:
+      - description: ID del registro
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpadapter.apiResponse'
+      security:
+      - BearerAuth: []
+      summary: Marcar paciente de la lista de espera quirurgica como hospitalizado
+      tags:
+      - ListaEsperaQx
   /lista-espera-qx/reporte:
     get:
       consumes:
@@ -4083,6 +4532,50 @@ paths:
       summary: Buscar productos del catálogo
       tags:
       - Ordenes
+  /origenes/{idTipoServicio}:
+    get:
+      description: Devuelve los orígenes de atención de un tipo de servicio (SP usp_go_OrigenxTipoServicio).
+      parameters:
+      - description: Id del tipo de servicio
+        in: path
+        name: idTipoServicio
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.OrigenAtencion'
+                  type: array
+              type: object
+        "400":
+          description: Id inválido
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+        "500":
+          description: Error interno
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpadapter.apiResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/httpadapter.apiError'
+              type: object
+      summary: Lista orígenes de atención por tipo de servicio
+      tags:
+      - Catalogos
   /pacientes:
     get:
       description: Devuelve una página de pacientes ordenada, con datos de paginación.
@@ -5686,6 +6179,55 @@ paths:
           schema:
             type: object
       summary: Actualiza la IAFA de un triaje
+      tags:
+      - Triaje
+  /triaje/atenciones-hospitalizacion:
+    get:
+      consumes:
+      - application/json
+      description: Busca las atenciones hospitalarias invocando el SP usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio
+        (filtros por servicio, fecha, cuenta de atención, historia clínica y documento
+        del paciente)
+      parameters:
+      - description: Fecha de la atención (YYYY-MM-DD); vacío = no filtrar por fecha
+        in: query
+        name: fecha
+        type: string
+      - description: Id del servicio (0 para no filtrar)
+        in: query
+        name: idServicio
+        type: integer
+      - description: Nro de cuenta de atención (0 para no filtrar)
+        in: query
+        name: idCuenta
+        type: integer
+      - description: Nro de historia clínica (0 para no filtrar)
+        in: query
+        name: nroHistoria
+        type: integer
+      - description: Nro de documento del paciente (vacío para no filtrar)
+        in: query
+        name: nroDocumento
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Atenciones hospitalarias
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Error de validación
+          schema:
+            type: object
+        "500":
+          description: Error interno
+          schema:
+            type: object
+      summary: Lista las atenciones hospitalarias
       tags:
       - Triaje
   /triaje/causas-externas-morbilidad:

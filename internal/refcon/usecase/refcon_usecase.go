@@ -3,6 +3,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/galenos-pro/appointments-api/internal/refcon/domain"
 	"github.com/galenos-pro/appointments-api/internal/refcon/ports/output"
@@ -18,8 +19,8 @@ func NewRefConService(repo output.RefConRepository, minsa output.MinsaRefConClie
 	return &refconService{repo: repo, minsa: minsa, reports: reports}
 }
 
-func (s *refconService) ListarReferenciasPorMes(ctx context.Context, mes, anio, estado, opcion int, ups string) ([]domain.ReferenciaPorMes, error) {
-	return s.repo.ListarReferenciasPorMes(ctx, mes, anio, estado, opcion, ups)
+func (s *refconService) ListarReferenciasPorMes(ctx context.Context, fechaInicio, fechaFin time.Time, estadoReferencia int) ([]domain.ReferenciaPorMes, error) {
+	return s.repo.ListarReferenciasPorMes(ctx, fechaInicio, fechaFin, estadoReferencia)
 }
 
 func (s *refconService) ListarUps(ctx context.Context) ([]domain.Ups, error) {

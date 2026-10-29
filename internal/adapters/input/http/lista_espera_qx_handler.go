@@ -194,6 +194,30 @@ func (h *ListaEsperaQxHandler) HandleModificar(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, map[string]string{"message": "Paciente actualizado en lista de espera quirurgica correctamente"})
 }
 
+// @Summary Marcar paciente de la lista de espera quirurgica como hospitalizado
+// @Description Actualiza el tipo de un registro de la lista de espera quirurgica a HOSPITALIZADO invocando el SP usp_go_ActualizarListaEsperaQx
+// @Tags ListaEsperaQx
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID del registro"
+// @Success 200 {object} httpadapter.apiResponse
+// @Router /lista-espera-qx/{id}/hospitalizado [put]
+func (h *ListaEsperaQxHandler) HandleMarcarHospitalizado(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_ID", "ID inválido")
+		return
+	}
+
+	if err := h.service.ActualizarHospitalizado(c.Request.Context(), id); err != nil {
+		respondError(c, http.StatusInternalServerError, "LISTA_ESPERA_QX_HOSP_ERR", "Error actualizando lista de espera quirurgica")
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, map[string]string{"message": "Paciente marcado como hospitalizado en lista de espera quirurgica correctamente"})
+}
+
 // @Summary Reporte lista de espera quirurgica
 // @Description Retorna el reporte de lista de espera quirurgica filtrando por rango de fechas y especialidad
 // @Tags ListaEsperaQx

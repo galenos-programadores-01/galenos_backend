@@ -321,6 +321,86 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/camas/{idServicio}": {
+            "get": {
+                "description": "Devuelve las camas de un servicio con su estado y el paciente hospitalizado (SP usp_go_ListarCamasDisponiblesxServicio).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Lista camas por servicio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del servicio",
+                        "name": "idServicio",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.CamaDisponible"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Id inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/catalogos/parametros-clinicos/{idGrupo}": {
             "get": {
                 "description": "Devuelve el catálogo de parámetros clínicos según su grupo (SP usp_go_Cat_ParametroClinico_Listar).",
@@ -429,6 +509,77 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/catalogos/subclasificaciones-diagnosticos": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Lista subclasificaciones de diagnóstico",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 3,
+                        "description": "ID tipo de servicio",
+                        "name": "idTipoServicio",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 9,
+                        "description": "ID clasificación diagnóstico",
+                        "name": "idClasificacionDx",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.SubclasificacionDxItem"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "allOf": [
                                 {
@@ -710,7 +861,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retorna la cantidad de referencias/contrarreferencias agrupadas por mes y estado para el dashboard de barras",
+                "description": "Retorna la cantidad de referencias/contrarreferencias agrupadas por mes y estado para el dashboard de barras (SP usp_go_ListarReferenciasPorMesyAnio)",
                 "consumes": [
                     "application/json"
                 ],
@@ -720,39 +871,27 @@ const docTemplate = `{
                 "tags": [
                     "DashRefCon"
                 ],
-                "summary": "Listar referencias por mes y año",
+                "summary": "Listar referencias por rango de fechas",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Mes (0 = todos los meses)",
-                        "name": "mes",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Año de la referencia",
-                        "name": "anio",
+                        "type": "string",
+                        "description": "Fecha de inicio (yyyy-mm-dd)",
+                        "name": "fechaInicio",
                         "in": "query",
                         "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Estado de la referencia (3 ACEPTADO, 4 RECHAZADO, 5 PACIENTE RECIBIDO, 7 PACIENTE CITADO, 8 CONTRAREFERIDO)",
-                        "name": "estado",
-                        "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Código de la UPS",
-                        "name": "ups",
-                        "in": "query"
+                        "description": "Fecha de fin (yyyy-mm-dd)",
+                        "name": "fechaFin",
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Opción del reporte (1 total, 2 por estado, 3 por estado filtrado, 4 por estado y UPS)",
-                        "name": "opcion",
-                        "in": "query",
-                        "required": true
+                        "description": "Estado de la referencia (0 = todos; 3 ACEPTADO, 4 RECHAZADO, 5 PACIENTE RECIBIDO, 7 PACIENTE CITADO, 8 CONTRAREFERIDO)",
+                        "name": "estado",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -775,6 +914,12 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/refconhttp.apiResponse"
                         }
                     }
                 }
@@ -2906,6 +3051,232 @@ const docTemplate = `{
                 }
             }
         },
+        "/hospitalizacion/admision": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra la admisión de un paciente en hospitalización invocando el SP usp_go_AdmisionHospitalizacion y devuelve el @Resultado del SP. El idEmpleado se toma del token JWT.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Hospitalizacion"
+                ],
+                "summary": "Admisiona un paciente en hospitalización",
+                "parameters": [
+                    {
+                        "description": "Datos de la admisión",
+                        "name": "admision",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.createAdmisionHospitalizacionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Payload inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/hospitalizacion/reporte-ticket/{idCuenta}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve los datos para imprimir el ticket de admisión de hospitalización de una cuenta de atención (SP usp_go_GenererReporteTicketHospi).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Hospitalizacion"
+                ],
+                "summary": "Datos del ticket de admisión de hospitalización",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id de la cuenta de atención",
+                        "name": "idCuenta",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/domain.ReporteTicketHospitalizacion"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Id inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Cuenta no encontrada",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/idiomas": {
             "get": {
                 "description": "Devuelve el catálogo de idiomas (SP ups_go_ListarIdiomas).",
@@ -3476,6 +3847,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/lista-espera-qx/{id}/hospitalizado": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Actualiza el tipo de un registro de la lista de espera quirurgica a HOSPITALIZADO invocando el SP usp_go_ActualizarListaEsperaQx",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ListaEsperaQx"
+                ],
+                "summary": "Marcar paciente de la lista de espera quirurgica como hospitalizado",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del registro",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpadapter.apiResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/medicos-lista-espera": {
             "get": {
                 "description": "Retorna la lista de medicos activos para la lista de espera quirurgica",
@@ -3656,6 +4064,86 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {}
+            }
+        },
+        "/origenes/{idTipoServicio}": {
+            "get": {
+                "description": "Devuelve los orígenes de atención de un tipo de servicio (SP usp_go_OrigenxTipoServicio).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogos"
+                ],
+                "summary": "Lista orígenes de atención por tipo de servicio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Id del tipo de servicio",
+                        "name": "idTipoServicio",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.OrigenAtencion"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Id inválido",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpadapter.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/httpadapter.apiError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
             }
         },
         "/pacientes": {
@@ -6240,6 +6728,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/triaje/atenciones-hospitalizacion": {
+            "get": {
+                "description": "Busca las atenciones hospitalarias invocando el SP usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio (filtros por servicio, fecha, cuenta de atención, historia clínica y documento del paciente)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Triaje"
+                ],
+                "summary": "Lista las atenciones hospitalarias",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha de la atención (YYYY-MM-DD); vacío = no filtrar por fecha",
+                        "name": "fecha",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Id del servicio (0 para no filtrar)",
+                        "name": "idServicio",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Nro de cuenta de atención (0 para no filtrar)",
+                        "name": "idCuenta",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Nro de historia clínica (0 para no filtrar)",
+                        "name": "nroHistoria",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Nro de documento del paciente (vacío para no filtrar)",
+                        "name": "nroDocumento",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Atenciones hospitalarias",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
         "/triaje/causas-externas-morbilidad": {
             "get": {
                 "description": "Devuelve el catálogo de causas externas de morbilidad (uso_go_EmergenciaCausaExternaMorbilidadListar)",
@@ -6796,6 +7355,9 @@ const docTemplate = `{
                 "idAtencion": {
                     "type": "integer"
                 },
+                "idClasificacionDx": {
+                    "type": "integer"
+                },
                 "idDiagnostico": {
                     "type": "integer"
                 },
@@ -6899,6 +7461,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "cpt_3": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CamaDisponible": {
+            "type": "object",
+            "properties": {
+                "cama": {
+                    "type": "string"
+                },
+                "estado": {
+                    "type": "string"
+                },
+                "idcama": {
+                    "type": "integer"
+                },
+                "nroHistoriaClinica": {
+                    "type": "string"
+                },
+                "paciente": {
                     "type": "string"
                 }
             }
@@ -7626,6 +8208,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "idTipoSexo": {
+                    "type": "integer"
+                },
                 "medico": {
                     "type": "string"
                 },
@@ -7696,6 +8281,17 @@ const docTemplate = `{
                 },
                 "obsmotivoref": {
                     "type": "string"
+                }
+            }
+        },
+        "domain.OrigenAtencion": {
+            "type": "object",
+            "properties": {
+                "descripcion": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 }
             }
         },
@@ -7897,6 +8493,9 @@ const docTemplate = `{
         "domain.Patient": {
             "type": "object",
             "properties": {
+                "cellphone": {
+                    "type": "string"
+                },
                 "dateOfBirth": {
                     "type": "string"
                 },
@@ -7912,6 +8511,12 @@ const docTemplate = `{
                 "educationDegreeID": {
                     "type": "integer"
                 },
+                "email": {
+                    "type": "string"
+                },
+                "ethnicityID": {
+                    "type": "string"
+                },
                 "firstName": {
                     "type": "string"
                 },
@@ -7924,7 +8529,13 @@ const docTemplate = `{
                 "homeCenterID": {
                     "type": "integer"
                 },
+                "homeCountryID": {
+                    "type": "integer"
+                },
                 "homeDistrictID": {
+                    "type": "integer"
+                },
+                "languageID": {
                     "type": "integer"
                 },
                 "maritalStatusID": {
@@ -7932,6 +8543,27 @@ const docTemplate = `{
                 },
                 "maternalSurname": {
                     "type": "string"
+                },
+                "motherDocType": {
+                    "type": "string"
+                },
+                "motherDocument": {
+                    "type": "string"
+                },
+                "motherFirstName": {
+                    "type": "string"
+                },
+                "motherMaternalSurname": {
+                    "type": "string"
+                },
+                "motherPaternalSurname": {
+                    "type": "string"
+                },
+                "motherSecondName": {
+                    "type": "string"
+                },
+                "occupationTypeID": {
+                    "type": "integer"
                 },
                 "paternalSurname": {
                     "type": "string"
@@ -8280,6 +8912,9 @@ const docTemplate = `{
                 "cantidad": {
                     "type": "integer"
                 },
+                "conteo": {
+                    "type": "integer"
+                },
                 "estado": {
                     "type": "string"
                 },
@@ -8370,6 +9005,38 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "domain.ReporteTicketHospitalizacion": {
+            "type": "object",
+            "properties": {
+                "fecha": {
+                    "type": "string"
+                },
+                "hora": {
+                    "type": "string"
+                },
+                "iafa": {
+                    "type": "string"
+                },
+                "idCuentaAtencion": {
+                    "type": "integer"
+                },
+                "medico": {
+                    "type": "string"
+                },
+                "nroDocumento": {
+                    "type": "string"
+                },
+                "nroHistoriaClinica": {
+                    "type": "string"
+                },
+                "paciente": {
+                    "type": "string"
+                },
+                "servicio": {
+                    "type": "string"
                 }
             }
         },
@@ -8477,6 +9144,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "idEspecialidad": {
+                    "type": "integer"
+                },
                 "nombre": {
                     "type": "string"
                 }
@@ -8504,6 +9174,20 @@ const docTemplate = `{
                 },
                 "sistema": {
                     "type": "string"
+                }
+            }
+        },
+        "domain.SubclasificacionDxItem": {
+            "type": "object",
+            "properties": {
+                "descripcionCorta": {
+                    "type": "string"
+                },
+                "descripcionLarga": {
+                    "type": "string"
+                },
+                "idSubclasificacionDx": {
+                    "type": "integer"
                 }
             }
         },
@@ -8669,6 +9353,9 @@ const docTemplate = `{
                 },
                 "motivo": {
                     "type": "string"
+                },
+                "resumenHC": {
+                    "type": "string"
                 }
             }
         },
@@ -8821,6 +9508,137 @@ const docTemplate = `{
                 }
             }
         },
+        "httpadapter.createAdmisionHospitalizacionRequest": {
+            "type": "object",
+            "properties": {
+                "apellidoMaterno": {
+                    "type": "string"
+                },
+                "apellidoPaterno": {
+                    "type": "string"
+                },
+                "correo": {
+                    "type": "string"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "estadoCivil": {
+                    "type": "integer"
+                },
+                "fechaIngreso": {
+                    "type": "string"
+                },
+                "fechaNacimiento": {
+                    "type": "string"
+                },
+                "gradoInstruccion": {
+                    "type": "integer"
+                },
+                "horaIngreso": {
+                    "type": "string"
+                },
+                "idCama": {
+                    "type": "integer"
+                },
+                "idComunidadDomicilio": {
+                    "type": "integer"
+                },
+                "idDepartamento": {
+                    "type": "integer"
+                },
+                "idDistrito": {
+                    "type": "integer"
+                },
+                "idDocIdentidad": {
+                    "type": "integer"
+                },
+                "idEmpleado": {
+                    "type": "integer"
+                },
+                "idEstablecimientoReferenciaOrigen": {
+                    "type": "integer"
+                },
+                "idEstadollego": {
+                    "type": "integer"
+                },
+                "idEtnia": {
+                    "type": "integer"
+                },
+                "idFuenteFinanciamiento": {
+                    "type": "integer"
+                },
+                "idIdioma": {
+                    "type": "integer"
+                },
+                "idMedicoIngreso": {
+                    "type": "integer"
+                },
+                "idNacionalidad": {
+                    "type": "integer"
+                },
+                "idOrigen": {
+                    "type": "integer"
+                },
+                "idPaciente": {
+                    "type": "integer"
+                },
+                "idProvincia": {
+                    "type": "integer"
+                },
+                "idServicio": {
+                    "type": "integer"
+                },
+                "idTipoPrioridad": {
+                    "type": "integer"
+                },
+                "idTipoSexo": {
+                    "type": "integer"
+                },
+                "madreApeMaterno": {
+                    "type": "string"
+                },
+                "madreApePaterno": {
+                    "type": "string"
+                },
+                "madreNroDoc": {
+                    "type": "string"
+                },
+                "madrePrimerNombre": {
+                    "type": "string"
+                },
+                "madreSegundoNombre": {
+                    "type": "string"
+                },
+                "madreTipoDoc": {
+                    "type": "integer"
+                },
+                "nombrePadre": {
+                    "type": "string"
+                },
+                "nroDocumento": {
+                    "type": "string"
+                },
+                "nroReferencia": {
+                    "type": "string"
+                },
+                "ocupacion": {
+                    "type": "integer"
+                },
+                "primerNombre": {
+                    "type": "string"
+                },
+                "segundoNombre": {
+                    "type": "string"
+                },
+                "telefono": {
+                    "type": "string"
+                },
+                "tercerNombre": {
+                    "type": "string"
+                }
+            }
+        },
         "httpadapter.createAppointmentRequest": {
             "type": "object",
             "required": [
@@ -8938,10 +9756,16 @@ const docTemplate = `{
                 "idEstadoCivil": {
                     "type": "integer"
                 },
+                "idEtnia": {
+                    "type": "integer"
+                },
                 "idFuenteFinanciamiento": {
                     "type": "integer"
                 },
                 "idGradoInstruccion": {
+                    "type": "integer"
+                },
+                "idIdioma": {
                     "type": "integer"
                 },
                 "idOcupacion": {
@@ -8955,6 +9779,22 @@ const docTemplate = `{
                 },
                 "incapacidad": {
                     "type": "integer"
+                },
+                "madreApellidoMaterno": {
+                    "type": "string"
+                },
+                "madreApellidoPaterno": {
+                    "type": "string"
+                },
+                "madreNroDocumento": {
+                    "description": "Datos de la madre tutor (@Madre* de usp_go_PacienteHistoriaClinicaAgregar).",
+                    "type": "string"
+                },
+                "madrePrimerNombre": {
+                    "type": "string"
+                },
+                "madreSegundoNombre": {
+                    "type": "string"
                 },
                 "nroDocumento": {
                     "type": "string"
@@ -9349,6 +10189,9 @@ const docTemplate = `{
         "httpadapter.patientResponse": {
             "type": "object",
             "properties": {
+                "cellphone": {
+                    "type": "string"
+                },
                 "dateOfBirth": {
                     "type": "string"
                 },
@@ -9360,6 +10203,12 @@ const docTemplate = `{
                 },
                 "educationDegreeId": {
                     "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "ethnicityId": {
+                    "type": "string"
                 },
                 "firstName": {
                     "type": "string"
@@ -9373,7 +10222,13 @@ const docTemplate = `{
                 "homeCenterId": {
                     "type": "integer"
                 },
+                "homeCountryId": {
+                    "type": "integer"
+                },
                 "homeDistrictId": {
+                    "type": "integer"
+                },
+                "languageId": {
                     "type": "integer"
                 },
                 "maritalStatusId": {
@@ -9381,6 +10236,27 @@ const docTemplate = `{
                 },
                 "maternalSurname": {
                     "type": "string"
+                },
+                "motherDocType": {
+                    "type": "string"
+                },
+                "motherDocument": {
+                    "type": "string"
+                },
+                "motherFirstName": {
+                    "type": "string"
+                },
+                "motherMaternalSurname": {
+                    "type": "string"
+                },
+                "motherPaternalSurname": {
+                    "type": "string"
+                },
+                "motherSecondName": {
+                    "type": "string"
+                },
+                "occupationTypeId": {
+                    "type": "integer"
                 },
                 "paternalSurname": {
                     "type": "string"
@@ -9607,7 +10483,23 @@ const docTemplate = `{
                 "maternalSurname": {
                     "type": "string"
                 },
+                "motherDocumentNumber": {
+                    "description": "Datos de la madre tutor (@Madre* de usp_go_ModificarPaciente).",
+                    "type": "string"
+                },
+                "motherFirstName": {
+                    "type": "string"
+                },
+                "motherMaternalSurname": {
+                    "type": "string"
+                },
                 "motherName": {
+                    "type": "string"
+                },
+                "motherPaternalSurname": {
+                    "type": "string"
+                },
+                "motherSecondName": {
                     "type": "string"
                 },
                 "occupationTypeId": {

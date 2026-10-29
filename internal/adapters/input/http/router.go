@@ -41,6 +41,7 @@ type RouterParams struct {
 	MedicoListaEsperaHandler      *MedicoListaEsperaHandler
 	CausaExternaMorbilidadHandler *CausaExternaMorbilidadHandler
 	AuditoriaHandler              *AuditoriaHandler
+	HospitalizacionHandler        *HospitalizacionHandler
 	RefConHandler                 *refconhttp.RefConHandler
 	BienesInsumosHandler          *BienesInsumosHandler
 	ServiciosCatalogoHandler      *ServiciosCatalogoHandler
@@ -166,6 +167,8 @@ func NewRouter(p RouterParams) *gin.Engine {
 		v1.GET("/estados-llego-paciente", p.CatalogHandler.ListEstadosLlegoPaciente)
 		v1.GET("/fuentes-financiamiento", p.CatalogHandler.ListFuentesFinanciamiento)
 		v1.GET("/servicios/:idTipoServicio", p.CatalogHandler.ListServicios)
+		v1.GET("/origenes/:idTipoServicio", p.CatalogHandler.ListOrigenesAtencion)
+		v1.GET("/camas/:idServicio", p.CatalogHandler.ListCamasDisponiblesPorServicio)
 		v1.GET("/datos-institucion", p.CatalogHandler.GetDatosInstitucion)
 		v1.GET("/especialidades", p.CatalogHandler.ListEspecialidades)
 		v1.GET("/establecimientos", p.CatalogHandler.ListEstablecimientos)
@@ -294,6 +297,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 		{
 			triaje.GET("", p.TriageHandler.List)
 			triaje.GET("/pendientes-admision", p.TriageHandler.ListPendingAdmission)
+			triaje.GET("/atenciones-hospitalizacion", p.TriageHandler.ListAtencionesHospitalizacion)
 			triaje.GET("/reporte", p.TriageHandler.GetReporte)
 			triaje.GET("/ficha-admision", p.TriageHandler.GetFichaAdmision)
 			triaje.GET("/:id", p.TriageHandler.GetTriajePorId)
@@ -328,6 +332,12 @@ func NewRouter(p RouterParams) *gin.Engine {
 			evoluciones.POST("/:idRegAtencion/motivos", p.MotivoHandler.HandleCreateMotivo)
 			evoluciones.GET("/:idRegAtencion/sintomas", p.SintomaHandler.HandleObtenerAtencionSintomas)
 			evoluciones.POST("/:idRegAtencion/sintomas", p.SintomaHandler.HandleGuardarSintomas)
+		}
+
+		hospitalizacion := protected.Group("/hospitalizacion")
+		{
+			hospitalizacion.POST("/admision", p.HospitalizacionHandler.CreateAdmision)
+			hospitalizacion.GET("/reporte-ticket/:idCuenta", p.HospitalizacionHandler.ObtenerReporteTicket)
 		}
 
 		ordenes := protected.Group("/ordenes")
@@ -383,6 +393,7 @@ func NewRouter(p RouterParams) *gin.Engine {
 			listaEsperaQx.GET("/:id", p.ListaEsperaQxHandler.HandleObtenerPorId)
 			listaEsperaQx.POST("", p.ListaEsperaQxHandler.HandleCrear)
 			listaEsperaQx.PUT("/:id", p.ListaEsperaQxHandler.HandleModificar)
+			listaEsperaQx.PUT("/:id/hospitalizado", p.ListaEsperaQxHandler.HandleMarcarHospitalizado)
 		}
 
 		v1.GET("/medicos-lista-espera", p.MedicoListaEsperaHandler.HandleListar)

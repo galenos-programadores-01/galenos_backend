@@ -168,6 +168,59 @@ func (h *TriageHandler) ListPendingAdmission(c *gin.Context) {
 	respondSuccess(c, http.StatusOK, items)
 }
 
+// @Summary Lista las atenciones hospitalarias
+// @Description Busca las atenciones hospitalarias invocando el SP usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio (filtros por servicio, fecha, cuenta de atención, historia clínica y documento del paciente)
+// @Tags Triaje
+// @Accept json
+// @Produce json
+// @Param fecha query string false "Fecha de la atención (YYYY-MM-DD); vacío = no filtrar por fecha"
+// @Param idServicio query int false "Id del servicio (0 para no filtrar)"
+// @Param idCuenta query int false "Nro de cuenta de atención (0 para no filtrar)"
+// @Param nroHistoria query int false "Nro de historia clínica (0 para no filtrar)"
+// @Param nroDocumento query string false "Nro de documento del paciente (vacío para no filtrar)"
+// @Success 200 {array} map[string]interface{} "Atenciones hospitalarias"
+// @Failure 400 {object} object "Error de validación"
+// @Failure 500 {object} object "Error interno"
+// @Router /triaje/atenciones-hospitalizacion [get]
+func (h *TriageHandler) ListAtencionesHospitalizacion(c *gin.Context) {
+	params := shared.AtencionHospitalizacionParams{
+		Fecha:        c.Query("fecha"),
+		NroDocumento: c.Query("nroDocumento"),
+	}
+
+	// La fecha es opcional: cuando viaja vacía el repositorio envía NULL
+	// al SP (@Fecha), que lo interpreta como "no filtrar por fecha".
+
+	intFields := []struct {
+		raw   string
+		dest  *int
+		label string
+	}{
+		{c.Query("idServicio"), &params.IdServicio, "idServicio"},
+		{c.Query("idCuenta"), &params.IdCuenta, "idCuenta"},
+		{c.Query("nroHistoria"), &params.NroHistoria, "nroHistoria"},
+	}
+	for _, f := range intFields {
+		if f.raw == "" {
+			continue
+		}
+		v, err := strconv.ParseInt(f.raw, 10, 64)
+		if err != nil {
+			respondError(c, http.StatusBadRequest, "VALIDATION_ERROR", f.label+" debe ser un entero")
+			return
+		}
+		*f.dest = int(v)
+	}
+
+	items, err := h.service.ListAtencionesHospitalizacion(c.Request.Context(), params)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "ATENCIONES_HOSPITALIZACION_FAILED", err.Error())
+		return
+	}
+
+	respondSuccess(c, http.StatusOK, items)
+}
+
 func (h *TriageHandler) CreateAdmission(c *gin.Context) {
 	var req createAdmissionFromTriageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

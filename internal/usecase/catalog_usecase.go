@@ -145,6 +145,14 @@ func (uc *catalogUseCase) ListServicios(ctx context.Context, idTipoServicio int6
 	return items, nil
 }
 
+func (uc *catalogUseCase) ListOrigenesAtencion(ctx context.Context, idTipoServicio int64) ([]domain.OrigenAtencion, error) {
+	items, err := uc.repo.ListOrigenesAtencion(ctx, idTipoServicio)
+	if err != nil {
+		return nil, fmt.Errorf("listing origenes atencion: %w", err)
+	}
+	return items, nil
+}
+
 func (uc *catalogUseCase) GetDatosInstitucion(ctx context.Context) (*domain.DatosInstitucion, error) {
 	item, err := uc.repo.GetDatosInstitucion(ctx)
 	if err != nil {
@@ -415,5 +423,13 @@ func (uc *catalogUseCase) ListSubclasificacionesDiagnosticosItems(ctx context.Co
 		uc.cache.Set(ctx, cacheKey, items, 24*time.Hour)
 	}
 
+	return items, nil
+}
+
+func (uc *catalogUseCase) ListCamasDisponiblesPorServicio(ctx context.Context, idServicio int64) ([]domain.CamaDisponible, error) {
+	items, err := uc.repo.ListCamasDisponiblesPorServicio(ctx, idServicio)
+	if err != nil {
+		return nil, fmt.Errorf("listing camas disponibles por servicio: %w", err)
+	}
 	return items, nil
 }

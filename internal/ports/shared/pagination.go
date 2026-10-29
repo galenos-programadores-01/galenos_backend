@@ -89,6 +89,20 @@ type TriageAdmisionParams struct {
 	IdTipoServicio int
 }
 
+// AtencionHospitalizacionParams agrupa los filtros del SP
+// usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio, que devuelve las
+// atenciones hospitalarias que cumplen con el servicio, la fecha y los
+// identificadores de cuenta de atención, historia clínica y documento del
+// paciente. Los filtros no aplicados se envían como 0 (numéricos) o vacío
+// (documento).
+type AtencionHospitalizacionParams struct {
+	IdServicio   int
+	Fecha        string
+	IdCuenta     int
+	NroHistoria  int
+	NroDocumento string
+}
+
 // TriageReporteParams agrupa los filtros del SP WebSelectReporteTriaje.
 // Los filtros se envían como -100 para que el SP no los aplique.
 type TriageReporteParams struct {

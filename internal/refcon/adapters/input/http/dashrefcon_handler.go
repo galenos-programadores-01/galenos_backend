@@ -1,9 +1,11 @@
 package refconhttp
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/galenos-pro/appointments-api/internal/refcon/domain"
 	"github.com/galenos-pro/appointments-api/internal/refcon/ports/input"
@@ -18,40 +20,36 @@ func NewRefConHandler(service input.RefConService) *RefConHandler {
 	return &RefConHandler{service: service}
 }
 
-// @Summary Listar referencias por mes y año
-// @Description Retorna la cantidad de referencias/contrarreferencias agrupadas por mes y estado para el dashboard de barras
+// @Summary Listar referencias por rango de fechas
+// @Description Retorna la cantidad de referencias/contrarreferencias agrupadas por mes y estado para el dashboard de barras (SP usp_go_ListarReferenciasPorMesyAnio)
 // @Tags DashRefCon
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param mes query int false "Mes (0 = todos los meses)"
-// @Param anio query int true "Año de la referencia"
-// @Param estado query int false "Estado de la referencia (3 ACEPTADO, 4 RECHAZADO, 5 PACIENTE RECIBIDO, 7 PACIENTE CITADO, 8 CONTRAREFERIDO)"
-// @Param ups query string false "Código de la UPS"
-// @Param opcion query int true "Opción del reporte (1 total, 2 por estado, 3 por estado filtrado, 4 por estado y UPS)"
+// @Param fechaInicio query string true "Fecha de inicio (yyyy-mm-dd)"
+// @Param fechaFin query string true "Fecha de fin (yyyy-mm-dd)"
+// @Param estado query int false "Estado de la referencia (0 = todos; 3 ACEPTADO, 4 RECHAZADO, 5 PACIENTE RECIBIDO, 7 PACIENTE CITADO, 8 CONTRAREFERIDO)"
 // @Success 200 {object} apiResponse{data=[]domain.ReferenciaPorMes}
+// @Failure 400 {object} apiResponse
 // @Router /dashrefcon/referencias [get]
 func (h *RefConHandler) HandleListarReferencias(c *gin.Context) {
-	mes := queryIntParam(c, "mes", 0)
-	anio := queryIntParam(c, "anio", 0)
+	fechaInicio, errInicio := queryDateParam(c, "fechaInicio")
+	if errInicio != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_FECHA_INICIO", "El parámetro fechaInicio es obligatorio y debe tener formato yyyy-mm-dd")
+		return
+	}
+	fechaFin, errFin := queryDateParam(c, "fechaFin")
+	if errFin != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_FECHA_FIN", "El parámetro fechaFin es obligatorio y debe tener formato yyyy-mm-dd")
+		return
+	}
+	if fechaInicio.After(fechaFin) {
+		respondError(c, http.StatusBadRequest, "INVALID_RANGO_FECHAS", "La fecha de inicio no puede ser mayor que la fecha de fin")
+		return
+	}
 	estado := queryIntParam(c, "estado", 0)
-	opcion := queryIntParam(c, "opcion", 1)
-	ups := c.Query("ups")
 
-	if anio <= 0 {
-		respondError(c, http.StatusBadRequest, "INVALID_ANIO", "El parámetro anio es obligatorio y debe ser mayor a 0")
-		return
-	}
-	if opcion < 1 || opcion > 4 {
-		respondError(c, http.StatusBadRequest, "INVALID_OPCION", "El parámetro opcion debe estar entre 1 y 4")
-		return
-	}
-	if mes < 0 || mes > 12 {
-		respondError(c, http.StatusBadRequest, "INVALID_MES", "El parámetro mes debe estar entre 0 y 12")
-		return
-	}
-
-	resultado, err := h.service.ListarReferenciasPorMes(c.Request.Context(), mes, anio, estado, opcion, ups)
+	resultado, err := h.service.ListarReferenciasPorMes(c.Request.Context(), fechaInicio, fechaFin, estado)
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, "DASHREFCON_REF_ERR", "Error obteniendo las referencias del dashboard")
 		return
@@ -210,4 +208,19 @@ func queryIntParam(c *gin.Context, name string, fallback int) int {
 		}
 	}
 	return fallback
+}
+
+// queryDateParam lee un parámetro de fecha (yyyy-mm-dd). Devuelve error cuando
+// el parámetro está vacío o no tiene un formato válido.
+func queryDateParam(c *gin.Context, name string) (time.Time, error) {
+	v := c.Query(name)
+	if v == "" {
+		return time.Time{}, fmt.Errorf("parámetro %s vacío", name)
+	}
+	for _, layout := range []string{"2006-01-02", "2006-1-2"} {
+		if fecha, err := time.Parse(layout, v); err == nil {
+			return fecha, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("parámetro %s con formato inválido", name)
 }

@@ -59,6 +59,17 @@ func (uc *triageUseCase) ListPendingAdmission(ctx context.Context, params shared
 	return items, nil
 }
 
+// ListAtencionesHospitalizacion delega en el repositorio (SP
+// usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio) y devuelve las
+// atenciones hospitalarias crudas.
+func (uc *triageUseCase) ListAtencionesHospitalizacion(ctx context.Context, params shared.AtencionHospitalizacionParams) ([]map[string]any, error) {
+	items, err := uc.repo.ListAtencionesHospitalizacion(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("listing hospitalized attentions: %w", err)
+	}
+	return items, nil
+}
+
 // UpdateIafa delega la actualización de la IAFA (fuente de financiamiento
 // a SIS) en el repositorio (SP usp_go_Triaje_EmergeciaActualizarIAFA).
 func (uc *triageUseCase) UpdateIafa(ctx context.Context, idTriaje int) error {

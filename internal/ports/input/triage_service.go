@@ -27,6 +27,11 @@ type TriageService interface {
 	// invocando el SP webGestionAtencion_E_H_BusquedaFiltrar.
 	ListPendingAdmission(ctx context.Context, params shared.TriageAdmisionParams) ([]map[string]any, error)
 
+	// ListAtencionesHospitalizacion lista las atenciones hospitalarias
+	// invocando el SP usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio
+	// con los filtros recibidos.
+	ListAtencionesHospitalizacion(ctx context.Context, params shared.AtencionHospitalizacionParams) ([]map[string]any, error)
+
 	// UpdateIafa actualiza la IAFA de un triaje (fuente de financiamiento =
 	// SIS) invocando el SP usp_go_Triaje_EmergeciaActualizarIAFA.
 	UpdateIafa(ctx context.Context, idTriaje int) error

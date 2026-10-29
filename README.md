@@ -80,7 +80,12 @@ Edita el archivo `.env` y verifica que las variables `SQLSERVER_DSN`, `JWT_SECRE
 go mod tidy
 ```
 
----
+### En PowerShell / CMD:
+```powershell
+go run ./cmd/api
+# O bien compilar y ejecutar directamente el binario:
+
+```
 
 ### 3. Ejecutar y Compilar
 

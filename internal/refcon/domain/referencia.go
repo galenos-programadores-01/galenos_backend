@@ -2,13 +2,15 @@
 // contrarreferencias (dashboard y consultas). No depende de adaptadores.
 package domain
 
-// ReferenciaPorMes agrupa la cantidad de referencias/contrarreferencias de
-// un mes, opcionalmente discriminada por estado, para el dashboard de barras.
+// ReferenciaPorMes agrupa la cantidad de referencias/contrarreferencias de un
+// mes, discriminada por estado, para el dashboard de barras. Equivale a las
+// columnas del SP usp_go_ListarReferenciasPorMesyAnio.
 type ReferenciaPorMes struct {
-	Mes       int     `json:"mes"`
-	NombreMes string  `json:"nombreMes"`
-	Cantidad  int     `json:"cantidad"`
-	Estado    *string `json:"estado,omitempty"`
+	Estado    string `json:"estado"`
+	Conteo    int    `json:"conteo"`
+	Mes       int    `json:"mes"`
+	NombreMes string `json:"nombreMes"`
+	Cantidad  int    `json:"cantidad"`
 }
 
 // Ups identifica una Unidad Productora de Servicios de salud.

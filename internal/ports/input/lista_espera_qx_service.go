@@ -12,4 +12,5 @@ type ListaEsperaQxService interface {
 	Reporte(ctx context.Context, fecha string, fechaFin string, idEspecialidad int) ([]domain.ListaEsperaQxReporte, error)
 	Crear(ctx context.Context, item domain.ListaEsperaQxCrear, idUsuario int) error
 	Modificar(ctx context.Context, item domain.ListaEsperaQxModificar) error
+	ActualizarHospitalizado(ctx context.Context, id int) error
 }

@@ -26,6 +26,7 @@ type CatalogRepository interface {
 	ListEstadosLlegoPaciente(ctx context.Context) ([]domain.EstadoLlegoPaciente, error)
 	ListFuentesFinanciamiento(ctx context.Context) ([]domain.FuenteFinanciamiento, error)
 	ListServicios(ctx context.Context, idTipoServicio int64) ([]domain.Servicio, error)
+	ListOrigenesAtencion(ctx context.Context, idTipoServicio int64) ([]domain.OrigenAtencion, error)
 	ListEspecialidades(ctx context.Context) ([]domain.Especialidad, error)
 	ListarEspecialidadesPorDepartamento(ctx context.Context, idDepartamento int) ([]domain.EspecialidadSimple, error)
 	ListarEspecialidadesQx(ctx context.Context) ([]domain.EspecialidadSimple, error)
@@ -49,5 +50,6 @@ type CatalogRepository interface {
 	BuscarMedicamentosReceta(ctx context.Context, filtro string, idPaciente int) ([]domain.MedicamentoBusqueda, error)
 	ActualizarParametroValorTexto(ctx context.Context, idParametro int) error
 	ListEstablecimientos(ctx context.Context, filtro string, tipo string) ([]domain.EstablecimientoBusqueda, error)
-	ListSubclasificacionesDiagnosticosItems(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error)
+	ListSubclasificacionesDiagnostico(ctx context.Context, idTipoServicio, idClasificacionDx int) ([]domain.SubclasificacionDxItem, error)
+	ListCamasDisponiblesPorServicio(ctx context.Context, idServicio int64) ([]domain.CamaDisponible, error)
 }

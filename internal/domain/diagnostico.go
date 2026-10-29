@@ -42,6 +42,7 @@ type DiagnosticoAtencion struct {
 type AgregarDiagnosticoAtencionRequest struct {
 	IdClasificacionDiagnostico    int    `json:"idClasificacionDiagnostico"`
 	IdSubclasificacionDiagnostico int    `json:"idSubclasificacionDiagnostico"`
+	IdClasificacionDx             int    `json:"idClasificacionDx"`
 	IdDiagnostico                 int    `json:"idDiagnostico"`
 	IdAtencion                    int    `json:"idAtencion"`
 	CodigoCIE10                   string `json:"codigoCIE10"`

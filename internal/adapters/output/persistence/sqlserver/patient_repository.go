@@ -32,7 +32,7 @@ func (r *patientRepository) List(ctx context.Context, page shared.PageRequest) (
 	defer rows.Close()
 
 	var total int
-	if rows.Next() {
+	for rows.Next() {
 		if err := rows.Scan(&total); err != nil {
 			return nil, 0, fmt.Errorf("scanning total patients: %w", err)
 		}
@@ -131,11 +131,13 @@ func (r *patientRepository) GetByDocumentNumber(ctx context.Context, documentNum
 
 // GetByDocumentNumberAndType invoca el procedimiento almacenado
 // usp_go_ListarPacientePorNroDocyTipo, que recibe @NroDocumento y
-// @IdTipoDocIdentidad y retorna IdPaciente, NroDocumento,
-// NroHistoriaClinica, ApellidoPaterno, ApellidoMaterno, PrimerNombre y
-// SegundoNombre del paciente cuyo número de documento coincide. Los
-// parámetros van nombrados, por lo que el driver mssql los despacha como
-// una llamada RPC, sin concatenar SQL.
+// @IdTipoDocIdentidad y retorna los datos personales, de domicilio, de
+// contacto y del tutor/madre del paciente cuyo número de documento coincide.
+// Se mapea por nombre de columna (no por posición) para resistir cambios del
+// resultado del SP sin modificar el adaptador: el SP puede agregar, quitar o
+// reordenar columnas y el mapeo por nombre las resuelve. Los parámetros van
+// nombrados, por lo que el driver mssql los despacha como una llamada RPC,
+// sin concatenar SQL.
 func (r *patientRepository) GetByDocumentNumberAndType(ctx context.Context, documentNumber string, documentTypeID int64) (*domain.Patient, error) {
 	const procedure = `usp_go_ListarPacientePorNroDocyTipo`
 
@@ -148,63 +150,48 @@ func (r *patientRepository) GetByDocumentNumberAndType(ctx context.Context, docu
 	}
 	defer rows.Close()
 
-	if !rows.Next() {
-		if err := rows.Err(); err != nil {
-			return nil, fmt.Errorf("iterating usp_go_ListarPacientePorNroDocyTipo result: %w", err)
-		}
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading usp_go_ListarPacientePorNroDocyTipo result: %w", err)
+	}
+	if len(maps) == 0 {
 		return nil, domain.ErrPatientNotFound
 	}
 
-	var (
-		patient           domain.Patient
-		historyNumber     sql.NullString
-		maternalSurname   sql.NullString
-		secondName        sql.NullString
-		birthDate         sql.NullTime
-		homeDistrictID    sql.NullInt64
-		homeCenterID      sql.NullInt64
-		sexTypeID         sql.NullInt64
-		maritalStatusID   sql.NullInt64
-		educationDegreeID sql.NullInt64
-		homeAddress       sql.NullString
-		phone             sql.NullString
-	)
-	if err := rows.Scan(
-		&patient.PatientID,
-		&patient.DocumentNumber,
-		&historyNumber,
-		&patient.PaternalSurname,
-		&maternalSurname,
-		&patient.FirstName,
-		&secondName,
-		&birthDate,
-		&homeDistrictID,
-		&homeCenterID,
-		&sexTypeID,
-		&maritalStatusID,
-		&educationDegreeID,
-		&homeAddress,
-		&phone,
-	); err != nil {
-		return nil, fmt.Errorf("scanning usp_go_ListarPacientePorNroDocyTipo row: %w", err)
+	m := maps[0]
+	patient := domain.Patient{
+		PatientID:             derefInt64(rowInt64(m, "IdPaciente")),
+		DocumentNumber:        derefString(rowString(m, "NroDocumento")),
+		DocumentType:          rowString(m, "TipoDocumento"),
+		DocIdentityID:         rowInt64(m, "IdDocIdentidad", "IdTipoDocIdentidad"),
+		HistoryNumber:         derefString(rowString(m, "NroHistoriaClinica")),
+		PaternalSurname:       derefString(rowString(m, "ApellidoPaterno")),
+		MaternalSurname:       derefString(rowString(m, "ApellidoMaterno")),
+		FirstName:             derefString(rowString(m, "PrimerNombre")),
+		SecondName:            derefString(rowString(m, "SegundoNombre")),
+		ThirdName:             derefString(rowString(m, "TercerNombre")),
+		HomeDistrictID:        rowInt64(m, "IdDistritoDomicilio"),
+		HomeCenterID:          rowInt64(m, "IdCentroPobladoDomicilio"),
+		HomeCountryID:         rowInt64(m, "IdPaisDomicilio"),
+		SexTypeID:             rowInt64(m, "IdTipoSexo"),
+		MaritalStatusID:       rowInt64(m, "IdEstadoCivil"),
+		EducationDegreeID:     rowInt64(m, "IdGradoInstruccion"),
+		HomeAddress:           rowString(m, "DireccionDomicilio"),
+		Phone:                 rowString(m, "Telefono"),
+		Cellphone:             rowString(m, "celular", "Celular"),
+		Email:                 rowString(m, "Email"),
+		OccupationTypeID:      rowInt64(m, "IdTipoOcupacion"),
+		EthnicityID:           rowString(m, "IdEtnia"),
+		LanguageID:            rowInt64(m, "IdIdioma"),
+		MotherDocType:         rowString(m, "madreTipoDocumento"),
+		MotherDocument:        rowString(m, "madreDocumento"),
+		MotherPaternalSurname: rowString(m, "madreApellidoPaterno"),
+		MotherMaternalSurname: rowString(m, "madreApellidoMaterno"),
+		MotherFirstName:       rowString(m, "madrePrimerNombre"),
+		MotherSecondName:      rowString(m, "madreSegundoNombre"),
 	}
-	patient.HistoryNumber = historyNumber.String
-	patient.MaternalSurname = maternalSurname.String
-	patient.SecondName = secondName.String
-	if birthDate.Valid {
-		d := birthDate.Time
-		patient.DateOfBirth = &d
-	}
-	patient.HomeDistrictID = nullableInt64Ptr(homeDistrictID)
-	patient.HomeCenterID = nullableInt64Ptr(homeCenterID)
-	patient.SexTypeID = nullableInt64Ptr(sexTypeID)
-	patient.MaritalStatusID = nullableInt64Ptr(maritalStatusID)
-	patient.EducationDegreeID = nullableInt64Ptr(educationDegreeID)
-	if homeAddress.Valid {
-		patient.HomeAddress = &homeAddress.String
-	}
-	if phone.Valid {
-		patient.Phone = &phone.String
+	if v := rowTime(m, "FechaNacimiento"); v != nil {
+		patient.DateOfBirth = v
 	}
 
 	return &patient, nil
@@ -702,14 +689,4 @@ func (r *patientRepository) UpdateDatosAdicionales(ctx context.Context, idPacien
 	)
 
 	return nil
-}
-
-// nullableInt64Ptr devuelve nil cuando el valor SQL es NULL; de lo contrario
-// un puntero al valor.
-func nullableInt64Ptr(n sql.NullInt64) *int64 {
-	if !n.Valid {
-		return nil
-	}
-	v := n.Int64
-	return &v
 }

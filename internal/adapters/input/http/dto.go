@@ -450,6 +450,105 @@ func (r createAdmissionFromTriageRequest) toDomain() *domain.AdmisionDesdeTriaje
 	}
 }
 
+// createAdmisionHospitalizacionRequest es el cuerpo de POST
+// /api/v1/hospitalizacion/admision. Cada campo es puntero para que el
+// frontend pueda enviar solo los datos que recopiló; los que faltan se
+// persisten como NULL en el SP usp_go_AdmisionHospitalizacion. El id del
+// empleado que registra la admisión se toma del token JWT si no viene en el
+// cuerpo.
+type createAdmisionHospitalizacionRequest struct {
+	IDPaciente                        *int64     `json:"idPaciente"`
+	IDDocIdentidad                    *int64     `json:"idDocIdentidad"`
+	NroDocumento                      *string    `json:"nroDocumento"`
+	ApellidoPaterno                   *string    `json:"apellidoPaterno"`
+	ApellidoMaterno                   *string    `json:"apellidoMaterno"`
+	PrimerNombre                      *string    `json:"primerNombre"`
+	SegundoNombre                     *string    `json:"segundoNombre"`
+	TercerNombre                      *string    `json:"tercerNombre"`
+	FechaNacimiento                   *time.Time `json:"fechaNacimiento"`
+	IDTipoSexo                        *int64     `json:"idTipoSexo"`
+	EstadoCivil                       *int64     `json:"estadoCivil"`
+	GradoInstruccion                  *int64     `json:"gradoInstruccion"`
+	Ocupacion                         *int64     `json:"ocupacion"`
+	IDEtnia                           *int64     `json:"idEtnia"`
+	IDIdioma                          *int64     `json:"idIdioma"`
+	MadreTipoDoc                      *int64     `json:"madreTipoDoc"`
+	MadreNroDoc                       *string    `json:"madreNroDoc"`
+	MadreApePaterno                   *string    `json:"madreApePaterno"`
+	MadreApeMaterno                   *string    `json:"madreApeMaterno"`
+	MadrePrimerNombre                 *string    `json:"madrePrimerNombre"`
+	MadreSegundoNombre                *string    `json:"madreSegundoNombre"`
+	NombrePadre                       *string    `json:"nombrePadre"`
+	Telefono                          *string    `json:"telefono"`
+	Correo                            *string    `json:"correo"`
+	IDDepartamento                    *int64     `json:"idDepartamento"`
+	IDProvincia                       *int64     `json:"idProvincia"`
+	IDDistrito                        *int64     `json:"idDistrito"`
+	IDComunidadDomicilio              *int64     `json:"idComunidadDomicilio"`
+	Direccion                         *string    `json:"direccion"`
+	IDNacionalidad                    *int64     `json:"idNacionalidad"`
+	IDOrigen                          *int64     `json:"idOrigen"`
+	IDServicio                        *int64     `json:"idServicio"`
+	IDCama                            *int64     `json:"idCama"`
+	FechaIngreso                      *time.Time `json:"fechaIngreso"`
+	HoraIngreso                       *string    `json:"horaIngreso"`
+	IDMedicoIngreso                   *int64     `json:"idMedicoIngreso"`
+	IDTipoPrioridad                   *int64     `json:"idTipoPrioridad"`
+	IDEstadollego                     *int64     `json:"idEstadollego"`
+	IDFuenteFinanciamiento            *int64     `json:"idFuenteFinanciamiento"`
+	IDEstablecimientoReferenciaOrigen *int64     `json:"idEstablecimientoReferenciaOrigen"`
+	NroReferencia                     *string    `json:"nroReferencia"`
+	IDEmpleado                        *int64     `json:"idEmpleado"`
+}
+
+// toDomain mapea el request HTTP al objeto de dominio para el SP.
+func (r createAdmisionHospitalizacionRequest) toDomain() *domain.AdmisionHospitalizacion {
+	return &domain.AdmisionHospitalizacion{
+		IDPaciente:                        r.IDPaciente,
+		IDDocIdentidad:                    r.IDDocIdentidad,
+		NroDocumento:                      r.NroDocumento,
+		ApellidoPaterno:                   r.ApellidoPaterno,
+		ApellidoMaterno:                   r.ApellidoMaterno,
+		PrimerNombre:                      r.PrimerNombre,
+		SegundoNombre:                     r.SegundoNombre,
+		TercerNombre:                      r.TercerNombre,
+		FechaNacimiento:                   r.FechaNacimiento,
+		IDTipoSexo:                        r.IDTipoSexo,
+		EstadoCivil:                       r.EstadoCivil,
+		GradoInstruccion:                  r.GradoInstruccion,
+		Ocupacion:                         r.Ocupacion,
+		IDEtnia:                           r.IDEtnia,
+		IDIdioma:                          r.IDIdioma,
+		MadreTipoDoc:                      r.MadreTipoDoc,
+		MadreNroDoc:                       r.MadreNroDoc,
+		MadreApePaterno:                   r.MadreApePaterno,
+		MadreApeMaterno:                   r.MadreApeMaterno,
+		MadrePrimerNombre:                 r.MadrePrimerNombre,
+		MadreSegundoNombre:                r.MadreSegundoNombre,
+		NombrePadre:                       r.NombrePadre,
+		Telefono:                          r.Telefono,
+		Correo:                            r.Correo,
+		IDDepartamento:                    r.IDDepartamento,
+		IDProvincia:                       r.IDProvincia,
+		IDDistrito:                        r.IDDistrito,
+		IDComunidadDomicilio:              r.IDComunidadDomicilio,
+		Direccion:                         r.Direccion,
+		IDNacionalidad:                    r.IDNacionalidad,
+		IDOrigen:                          r.IDOrigen,
+		IDServicio:                        r.IDServicio,
+		IDCama:                            r.IDCama,
+		FechaIngreso:                      r.FechaIngreso,
+		HoraIngreso:                       r.HoraIngreso,
+		IDMedicoIngreso:                   r.IDMedicoIngreso,
+		IDTipoPrioridad:                   r.IDTipoPrioridad,
+		IDEstadollego:                     r.IDEstadollego,
+		IDFuenteFinanciamiento:            r.IDFuenteFinanciamiento,
+		IDEstablecimientoReferenciaOrigen: r.IDEstablecimientoReferenciaOrigen,
+		NroReferencia:                     r.NroReferencia,
+		IDEmpleado:                        r.IDEmpleado,
+	}
+}
+
 // toDomain mapea el request HTTP al objeto de dominio.
 func (r updatePatientRequest) toDomain() domain.PatientUpdate {
 	return domain.PatientUpdate{

@@ -31,6 +31,12 @@ type TriageRepository interface {
 	// que devuelve los pacientes con triaje que aún no han sido admisionados.
 	ListPendingAdmission(ctx context.Context, params shared.TriageAdmisionParams) ([]map[string]any, error)
 
+	// ListAtencionesHospitalizacion invoca el SP
+	// usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio, que devuelve
+	// las atenciones hospitalarias filtradas por servicio, fecha, cuenta
+	// de atención, historia clínica y documento del paciente.
+	ListAtencionesHospitalizacion(ctx context.Context, params shared.AtencionHospitalizacionParams) ([]map[string]any, error)
+
 	// UpdateIafa invoca el SP usp_go_Triaje_EmergeciaActualizarIAFA para
 	// actualizar la IAFA del triaje (fuente de financiamiento = SIS).
 	UpdateIafa(ctx context.Context, idTriaje int) error

@@ -389,9 +389,46 @@ func (r *catalogRepository) ListServicios(ctx context.Context, idTipoServicio in
 
 	items := make([]domain.Servicio, 0, len(maps))
 	for _, m := range maps {
+		id := rowInt64(m, "IdServicio", "Id")
+		if id == nil {
+			continue
+		}
 		items = append(items, domain.Servicio{
-			ID:     *rowInt64(m, "IdServicio"),
-			Nombre: rowString(m, "Nombre"),
+			ID:             *id,
+			Nombre:         rowString(m, "Nombre"),
+			IdEspecialidad: rowInt64(m, "IdEspecialidad"),
+		})
+	}
+
+	return items, nil
+}
+
+// ListOrigenesAtencion invoca el SP usp_go_OrigenxTipoServicio, que recibe
+// @IdTipoServicio y devuelve los orígenes de atención (IdOrigenAtencion,
+// Descripcion) válidos para ese tipo de servicio.
+func (r *catalogRepository) ListOrigenesAtencion(ctx context.Context, idTipoServicio int64) ([]domain.OrigenAtencion, error) {
+	const procedure = `usp_go_OrigenxTipoServicio`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdTipoServicio", idTipoServicio))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_OrigenxTipoServicio: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading origenes atencion: %w", err)
+	}
+
+	items := make([]domain.OrigenAtencion, 0, len(maps))
+	for _, m := range maps {
+		id := rowInt64(m, "IdOrigenAtencion", "IdOrigen", "Id")
+		if id == nil {
+			continue
+		}
+		items = append(items, domain.OrigenAtencion{
+			ID:          *id,
+			Descripcion: rowString(m, "Descripcion", "Descripción"),
 		})
 	}
 
@@ -1257,3 +1294,34 @@ func (r *catalogRepository) ListSubclasificacionesDiagnosticosItems(ctx context.
 	return items, nil
 }
 
+// ListCamasDisponiblesPorServicio invoca el SP
+// usp_go_ListarCamasDisponiblesxServicio, que recibe @IdServicio y devuelve
+// las camas del servicio con su estado y, cuando están ocupadas, el paciente
+// hospitalizado (nrohistoriaclinica y nombres completos).
+func (r *catalogRepository) ListCamasDisponiblesPorServicio(ctx context.Context, idServicio int64) ([]domain.CamaDisponible, error) {
+	const procedure = `usp_go_ListarCamasDisponiblesxServicio`
+
+	rows, err := r.db.QueryContext(ctx, procedure, sql.Named("IdServicio", idServicio))
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_ListarCamasDisponiblesxServicio: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading camas disponibles: %w", err)
+	}
+
+	items := make([]domain.CamaDisponible, 0, len(maps))
+	for _, m := range maps {
+		items = append(items, domain.CamaDisponible{
+			IDCama:             rowInt64(m, "IdCama", "idCama"),
+			Estado:             rowString(m, "Estado"),
+			Cama:               rowString(m, "Cama"),
+			NroHistoriaClinica: rowString(m, "nrohistoriaclinica", "NroHistoriaClinica", "NroHistoria"),
+			Paciente:           rowString(m, "Paciente"),
+		})
+	}
+
+	return items, nil
+}

@@ -31,6 +31,12 @@ func (s *listaEsperaQxService) Modificar(ctx context.Context, item domain.ListaE
 	return s.repo.Modificar(ctx, item)
 }
 
+// ActualizarHospitalizado marca el registro de la lista de espera quirurgica
+// como HOSPITALIZADO (SP usp_go_ActualizarListaEsperaQx).
+func (s *listaEsperaQxService) ActualizarHospitalizado(ctx context.Context, id int) error {
+	return s.repo.ActualizarHospitalizado(ctx, id)
+}
+
 func (s *listaEsperaQxService) Reporte(ctx context.Context, fecha string, fechaFin string, idEspecialidad int) ([]domain.ListaEsperaQxReporte, error) {
 	return s.repo.Reporte(ctx, fecha, fechaFin, idEspecialidad)
 }

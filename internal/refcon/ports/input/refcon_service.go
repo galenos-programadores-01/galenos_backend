@@ -4,12 +4,13 @@ package input
 
 import (
 	"context"
+	"time"
 
 	"github.com/galenos-pro/appointments-api/internal/refcon/domain"
 )
 
 type RefConService interface {
-	ListarReferenciasPorMes(ctx context.Context, mes, anio, estado, opcion int, ups string) ([]domain.ReferenciaPorMes, error)
+	ListarReferenciasPorMes(ctx context.Context, fechaInicio, fechaFin time.Time, estadoReferencia int) ([]domain.ReferenciaPorMes, error)
 	ListarUps(ctx context.Context) ([]domain.Ups, error)
 	ListarTodasLasUps(ctx context.Context) ([]domain.Ups, error)
 	ListarEstablecimientos(ctx context.Context) ([]domain.Establecimiento, error)

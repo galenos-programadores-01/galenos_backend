@@ -92,7 +92,7 @@ func run() error {
 	serviciosCatalogoRepo := sqlserver.NewSqlServerServiciosCatalogoRepository(db)
 	farmaciaDisponibilidadRepo := sqlserver.NewFarmaciaDisponibilidadRepository(db)
 	atencionCERepo := sqlserver.NewAtencionCERepository(db)
-	primeraAtencionRepo := sqlserver.NewPrimeraAtencionRepository(db)
+	hospitalizacionRepo := sqlserver.NewHospitalizacionRepository(db)
 
 	// --- Adaptador de salida: servicio externo RENIEC ---
 	reniecClient := reniec.New(reniec.Config{
@@ -221,6 +221,9 @@ func run() error {
 		firmaPeruStore,
 	)
 
+	hospitalizacionService := usecase.NewHospitalizacionUseCase(hospitalizacionRepo)
+	hospitalizacionHandler := httpadapter.NewHospitalizacionHandler(hospitalizacionService)
+
 	router := httpadapter.NewRouter(httpadapter.RouterParams{
 		AppointmentHandler:            appointmentHandler,
 		PatientHandler:                patientHandler,
@@ -242,6 +245,7 @@ func run() error {
 		MedicoListaEsperaHandler:      medicoListaEsperaHandler,
 		CausaExternaMorbilidadHandler: causaExternaMorbilidadHandler,
 		AuditoriaHandler:              auditoriaHandler,
+		HospitalizacionHandler:        hospitalizacionHandler,
 		RefConHandler:                 refConHandler,
 		BienesInsumosHandler:          bienesInsumosHandler,
 		ServiciosCatalogoHandler:      serviciosCatalogoHandler,

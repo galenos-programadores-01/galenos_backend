@@ -370,7 +370,65 @@ func (h *CatalogHandler) ListServicios(c *gin.Context) {
 	}
 	dtoItems := make([]any, 0, len(items))
 	for _, it := range items {
-		dtoItems = append(dtoItems, toServicioResponse(it))
+		dtoItems = append(dtoItems, toServicioDetalleResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListOrigenesAtencion maneja GET /api/v1/origenes/:idTipoServicio.
+//
+// @Summary Lista orígenes de atención por tipo de servicio
+// @Description Devuelve los orígenes de atención de un tipo de servicio (SP usp_go_OrigenxTipoServicio).
+// @Tags Catalogos
+// @Produce json
+// @Param idTipoServicio path int true "Id del tipo de servicio"
+// @Success 200 {object} apiResponse{data=[]domain.OrigenAtencion}
+// @Failure 400 {object} apiResponse{error=apiError} "Id inválido"
+// @Failure 500 {object} apiResponse{error=apiError} "Error interno"
+// @Router /origenes/{idTipoServicio} [get]
+func (h *CatalogHandler) ListOrigenesAtencion(c *gin.Context) {
+	idTipoServicio, err := strconv.ParseInt(c.Param("idTipoServicio"), 10, 64)
+	if err != nil || idTipoServicio <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_ID", "id inválido")
+		return
+	}
+	items, err := h.service.ListOrigenesAtencion(c.Request.Context(), idTipoServicio)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toOrigenAtencionResponse(it))
+	}
+	respondSuccess(c, http.StatusOK, dtoItems)
+}
+
+// ListCamasDisponiblesPorServicio maneja GET /api/v1/camas/:idServicio.
+//
+// @Summary Lista camas por servicio
+// @Description Devuelve las camas de un servicio con su estado y el paciente hospitalizado (SP usp_go_ListarCamasDisponiblesxServicio).
+// @Tags Catalogos
+// @Produce json
+// @Param idServicio path int true "Id del servicio"
+// @Success 200 {object} apiResponse{data=[]domain.CamaDisponible}
+// @Failure 400 {object} apiResponse{error=apiError} "Id inválido"
+// @Failure 500 {object} apiResponse{error=apiError} "Error interno"
+// @Router /camas/{idServicio} [get]
+func (h *CatalogHandler) ListCamasDisponiblesPorServicio(c *gin.Context) {
+	idServicio, err := strconv.ParseInt(c.Param("idServicio"), 10, 64)
+	if err != nil || idServicio <= 0 {
+		respondError(c, http.StatusBadRequest, "INVALID_ID", "id inválido")
+		return
+	}
+	items, err := h.service.ListCamasDisponiblesPorServicio(c.Request.Context(), idServicio)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
+		return
+	}
+	dtoItems := make([]any, 0, len(items))
+	for _, it := range items {
+		dtoItems = append(dtoItems, toCamaDisponibleResponse(it))
 	}
 	respondSuccess(c, http.StatusOK, dtoItems)
 }
@@ -1003,7 +1061,7 @@ func (h *CatalogHandler) ActualizarParametroValorTexto(c *gin.Context) {
 // @Router /establecimientos [get]
 func (h *CatalogHandler) ListEstablecimientos(c *gin.Context) {
 	filtro := c.DefaultQuery("q", "")
-	tipo := c.Query("tipo")
+	tipo := c.DefaultQuery("tipo", "0")
 
 	items, err := h.service.ListEstablecimientos(c.Request.Context(), filtro, tipo)
 	if err != nil {

@@ -299,40 +299,46 @@ func (r *sqlServerDiagnosticoRepository) AgregarDiagnosticoAtencion(ctx context.
 		identificadorSubclasificacion = 103
 	}
 
+	// La clasificación del diagnóstico (CIE-10) va fija en 9 por defecto.
+	idClasificacionDx := req.IdClasificacionDx
+	if idClasificacionDx <= 0 {
+		idClasificacionDx = 9
+	}
+
 	var resultado sql.NullString
 	query := `EXEC dbo.usp_go_AtencionesDiagnosticosAgregar
 		@IdAtencionDiagnostico = @p1 OUTPUT,
-		@IdClasificacionDx = @p2,
-		@IdSubclasificacionDiagnostico = @p3,
-		@IdDiagnostico = @p4,
-		@IdAtencion = @p5,
-		@LabConfHIS = @p6,
-		@LabConfHIS_1 = @p7,
-		@LabConfHIS_2 = @p8,
-		@LabConfHIS_3 = @p9,
-		@GrupoHIS = @p10,
-		@SubGrupoHIS = @p11,
-		@IdEpisodio = @p12,
-		@IdEvolucion = @p13,
-		@IdPrimeraAtencion = @p14,
-		@IdPaciente = @p15`
+		@IdSubclasificacionDiagnostico = @p2,
+		@IdDiagnostico = @p3,
+		@IdAtencion = @p4,
+		@LabConfHIS = @p5,
+		@LabConfHIS_1 = @p6,
+		@LabConfHIS_2 = @p7,
+		@LabConfHIS_3 = @p8,
+		@GrupoHIS = @p9,
+		@SubGrupoHIS = @p10,
+		@IdEpisodio = @p11,
+		@IdEvolucion = @p12,
+		@IdPrimeraAtencion = @p13,
+		@IdPaciente = @p14,
+		@IdClasificacionDx = @p15`
 
 	_, err := r.db.ExecContext(ctx, query,
 		sql.Named("p1", sql.Out{Dest: &resultado}),
-		sql.Named("p2", identificadorClasificacion),
-		sql.Named("p3", identificadorSubclasificacion),
-		sql.Named("p4", identificadorDiagnostico),
-		sql.Named("p5", req.IdAtencion),
-		sql.Named("p6", req.LabConfHIS),
-		sql.Named("p7", req.LabConfHIS1),
-		sql.Named("p8", req.LabConfHIS2),
-		sql.Named("p9", req.LabConfHIS3),
-		sql.Named("p10", req.GrupoHIS),
-		sql.Named("p11", req.SubGrupoHIS),
-		sql.Named("p12", req.IdEpisodio),
-		sql.Named("p13", req.IdEvolucion),
-		sql.Named("p14", req.IdPrimeraAtencion),
-		sql.Named("p15", identificadorPaciente),
+		sql.Named("p2", idSubclasificacion),
+		sql.Named("p3", idDx),
+		sql.Named("p4", req.IdAtencion),
+		sql.Named("p5", nullIfEmpty(req.LabConfHIS)),
+		sql.Named("p6", nullIfEmpty(req.LabConfHIS1)),
+		sql.Named("p7", nullIfEmpty(req.LabConfHIS2)),
+		sql.Named("p8", nullIfEmpty(req.LabConfHIS3)),
+		sql.Named("p9", nullIfZero(req.GrupoHIS)),
+		sql.Named("p10", nullIfZero(req.SubGrupoHIS)),
+		sql.Named("p11", nullIfZero(req.IdEpisodio)),
+		sql.Named("p12", nullIfZero(req.IdEvolucion)),
+		sql.Named("p13", nullIfZero(req.IdPrimeraAtencion)),
+		sql.Named("p14", idPac),
+		sql.Named("p15", idClasificacionDx),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error ejecutando usp_go_AtencionesDiagnosticosAgregar: %w", err)
@@ -357,4 +363,22 @@ func (r *sqlServerDiagnosticoRepository) AgregarDiagnosticoAtencion(ctx context.
 		IdAtencionDiagnostico:       idGen,
 		DescripcionSubclasificacion: descSub,
 	}, nil
+}
+
+// nullIfEmpty devuelve NULL cuando el texto viene vacío (o solo espacios),
+// de lo contrario el texto recortado.
+func nullIfEmpty(valor string) any {
+	recortado := strings.TrimSpace(valor)
+	if recortado == "" {
+		return nil
+	}
+	return recortado
+}
+
+// nullIfZero devuelve NULL cuando el entero es 0, de lo contrario el valor.
+func nullIfZero(valor int) any {
+	if valor == 0 {
+		return nil
+	}
+	return valor
 }

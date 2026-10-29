@@ -246,6 +246,44 @@ func (r *triageRepository) ListPendingAdmission(ctx context.Context, params shar
 	return maps, nil
 }
 
+// ListAtencionesHospitalizacion invoca el procedimiento almacenado
+// usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio con el servicio, la
+// fecha y los filtros opcionales (cuenta de atención, historia clínica y
+// documento del paciente). Los filtros no aplicados se envían como 0
+// (numéricos), NULL (@Fecha) o vacío (@NroDocuemtno): el SP usa '' como
+// centinela de "no filtrar por documento", por lo que el documento vacío
+// viaja como '' (nunca NULL). Los nombres de parámetro conservan
+// exactamente los declarados en el SP (Idcuenta, NroHistoia, NroDocuemtno).
+// Las columnas se mapean a map[string]any porque el SP las resuelve en
+// runtime.
+func (r *triageRepository) ListAtencionesHospitalizacion(ctx context.Context, params shared.AtencionHospitalizacionParams) ([]map[string]any, error) {
+	const procedure = `usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio`
+
+	var fechaParam any = params.Fecha
+	if params.Fecha == "" {
+		fechaParam = nil
+	}
+
+	rows, err := r.db.QueryContext(ctx, procedure,
+		sql.Named("IdServicio", params.IdServicio),
+		sql.Named("Fecha", fechaParam),
+		sql.Named("Idcuenta", params.IdCuenta),
+		sql.Named("NroHistoia", params.NroHistoria),
+		sql.Named("NroDocuemtno", params.NroDocumento),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("calling usp_go_AtencionesHospPorCuentaPorHistoriaPorServicio: %w", err)
+	}
+	defer rows.Close()
+
+	maps, err := rowsToMaps(rows)
+	if err != nil {
+		return nil, fmt.Errorf("reading hospitalized attentions list: %w", err)
+	}
+
+	return maps, nil
+}
+
 // UpdateIafa invoca el procedimiento almacenado
 // usp_go_Triaje_EmergeciaActualizarIAFA, que actualiza la IAFA del triaje
 // (fuente de financiamiento = SIS) para el id indicado.
