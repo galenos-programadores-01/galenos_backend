@@ -16,6 +16,7 @@ type PrimeraAtencionService interface {
 	ListarDocumentosFirmados(ctx context.Context, idAtencion int) (nroVigente int, docs []domain.DocumentoFirmadoPA, err error)
 	RegistrarDocumentosFirmados(ctx context.Context, idPrimeraAtencion, nroEdicion int, docs []domain.DocumentoFirmadoPA) error
 	CerrarFirma(ctx context.Context, in domain.PrimeraAtencionCerrarFirma) (domain.PrimeraAtencionCerrarFirmaResult, error)
+	ValidarTopeRectificacion(ctx context.Context, idAtencion int) error
 	RegistrarDiagnosticos(ctx context.Context, idAtencion, idPaciente, idPrimeraAtencion, idEpisodio, idClasificacionDx int, items []domain.DiagnosticoRegistrarItem) ([]domain.DiagnosticoAgregarResult, error)
 	ListarDiagnosticos(ctx context.Context, idAtencion, idPrimeraAtencion int) ([]domain.DiagnosticoAtencion, error)
 	EliminarDiagnostico(ctx context.Context, idAtencion, idPrimeraAtencion, idAtencionDiagnostico int) error

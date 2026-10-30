@@ -22,6 +22,7 @@ type PrimeraAtencionRepository interface {
 	ActualizarEdicionVigente(ctx context.Context, idPrimeraAtencion, nroEdicion int, ubicacion string) error
 	EliminarDetalleRectificacion(ctx context.Context, idReceta, idProducto int) error
 	CabeceraRecetaAnulada(ctx context.Context, idReceta int) (bool, error)
+	ValorConfiguracionEntero(ctx context.Context, idListItem int, clave string) (int, error)
 	AgregarDiagnostico(ctx context.Context, in domain.DiagnosticoAgregar) (domain.DiagnosticoAgregarResult, error)
 	ListarDiagnosticos(ctx context.Context, idAtencion, idPrimeraAtencion int) ([]domain.DiagnosticoAtencion, error)
 	EliminarDiagnostico(ctx context.Context, idAtencion, idPrimeraAtencion, idAtencionDiagnostico int) error

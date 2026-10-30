@@ -26,6 +26,7 @@ var (
 	ErrInvalidToken                      = errors.New("invalid token")
 	ErrMissingEmployeeID                 = errors.New("the authenticated employee id is required")
 	ErrPrimeraAtencionYaFirmada          = errors.New("la primera atención ya fue firmada y no puede modificarse")
+	ErrMaxRectificacionesPA             = errors.New("esta primera atención ya alcanzó el máximo de rectificaciones")
 	ErrPrimeraAtencionSinBorrador        = errors.New("no existe primera atención para firmar")
 	ErrFechaBandejaInvalida              = errors.New("fechaInicio y fechaFin deben usar el formato aaaa-mm-ddTHH:mm:ss")
 	ErrFechaBandejaOrden                 = errors.New("la fecha inicio no puede ser posterior a la fecha fin")

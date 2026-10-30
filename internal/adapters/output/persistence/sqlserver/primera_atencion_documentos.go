@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/galenos-pro/appointments-api/internal/domain"
 )
@@ -70,9 +71,9 @@ func (r *primeraAtencionRepository) RegistrarDocumentosFirmados(
 	for _, doc := range docs {
 		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO dbo.Tab_PA_DocumentoFirmado
-				(IdPrimeraAtencion, NroEdicion, TipoDocumento, IdPuntoCarga, IdReceta, NombreArchivo, UbicacionArchivo, EstadoFirma, FechaRegistro)
+				(IdPrimeraAtencion, NroEdicion, TipoDocumento, IdPuntoCarga, IdReceta, NombreArchivo, UbicacionArchivo, EstadoFirma, FechaRegistro, Motivo)
 			VALUES
-				(@idPA, @nro, @tipo, @punto, @receta, @nombre, @ubi, @estado, GETDATE())`,
+				(@idPA, @nro, @tipo, @punto, @receta, @nombre, @ubi, @estado, GETDATE(), @motivo)`,
 			sql.Named("idPA", idPrimeraAtencion),
 			sql.Named("nro", nroEdicion),
 			sql.Named("tipo", doc.TipoDocumento),
@@ -81,6 +82,7 @@ func (r *primeraAtencionRepository) RegistrarDocumentosFirmados(
 			sql.Named("nombre", doc.NombreArchivo),
 			sql.Named("ubi", doc.UbicacionArchivo),
 			sql.Named("estado", domain.EstadoFirmaCerrada),
+			sql.Named("motivo", nullableTexto(doc.Motivo)),
 		); err != nil {
 			return fmt.Errorf("insertar documento firmado PA: %w", err)
 		}
@@ -95,6 +97,36 @@ func (r *primeraAtencionRepository) RegistrarDocumentosFirmados(
 		return fmt.Errorf("actualizar NroEdicionVigente: %w", err)
 	}
 	return tx.Commit()
+}
+
+func (r *primeraAtencionRepository) ValorConfiguracionEntero(ctx context.Context, idListItem int, clave string) (int, error) {
+	var valor sql.NullInt64
+	err := r.db.QueryRowContext(ctx, `
+		SELECT TOP 1 ValorEntero
+		FROM dbo.Tab_Configuracion
+		WHERE IdListItem = @item AND Clave = @clave AND Activo = 1
+		ORDER BY IdConfiguracion DESC`,
+		sql.Named("item", idListItem),
+		sql.Named("clave", clave),
+	).Scan(&valor)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, fmt.Errorf("leer configuración %s: %w", clave, err)
+	}
+	if !valor.Valid {
+		return 0, nil
+	}
+	return int(valor.Int64), nil
+}
+
+func nullableTexto(v string) any {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return nil
+	}
+	return v
 }
 
 func nullableInt(v *int) any {

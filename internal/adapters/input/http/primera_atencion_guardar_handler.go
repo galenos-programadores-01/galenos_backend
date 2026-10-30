@@ -161,8 +161,9 @@ type documentoFirmadoCierreRequest struct {
 
 type primeraAtencionCerrarFirmaRequest struct {
 	UuidFirma        string                         `json:"uuidFirma"`
-	UbicacionArchivo string                         `json:"ubicacionArchivo"`
-	Documentos       []documentoFirmadoCierreRequest `json:"documentos"`
+	UbicacionArchivo     string                          `json:"ubicacionArchivo"`
+	MotivoRectificacion  string                          `json:"motivoRectificacion"`
+	Documentos           []documentoFirmadoCierreRequest `json:"documentos"`
 }
 
 type primeraAtencionCerrarFirmaResponse struct {
@@ -205,6 +206,11 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 	idPrimeraAtencion := idPrimeraAtencionDesdeDetalle(detalle)
 	if idPrimeraAtencion <= 0 {
 		respondError(c, http.StatusConflict, "VALIDATION_ERROR", "idPrimeraAtencion no disponible para cerrar firma")
+		return
+	}
+
+	if errTope := h.service.ValidarTopeRectificacion(c.Request.Context(), idAtencion); errTope != nil {
+		respondPrimeraAtencionWriteError(c, "PRIMERA_ATENCION_CERRAR_FIRMA_FAILED", errTope)
 		return
 	}
 
@@ -265,7 +271,7 @@ func (h *PrimeraAtencionHandler) CerrarFirma(c *gin.Context) {
 		c.Request.Context(),
 		idPrimeraAtencion,
 		nro,
-		h.documentosFirmadosDelCierre(idPrimeraAtencion, ubicacion, req.Documentos),
+		h.documentosFirmadosDelCierre(idPrimeraAtencion, ubicacion, strings.TrimSpace(req.MotivoRectificacion), req.Documentos),
 	); errDoc != nil {
 		log.Printf("documentos firmados PA no persistidos idPA=%d: %v", idPrimeraAtencion, errDoc)
 	}
@@ -386,6 +392,7 @@ func (h *PrimeraAtencionHandler) ListarDocumentosFirmados(c *gin.Context) {
 func (h *PrimeraAtencionHandler) documentosFirmadosDelCierre(
 	idPrimeraAtencion int,
 	ubicacionPA string,
+	motivo string,
 	entrada []documentoFirmadoCierreRequest,
 ) []domain.DocumentoFirmadoPA {
 	if len(entrada) == 0 {
@@ -394,6 +401,7 @@ func (h *PrimeraAtencionHandler) documentosFirmadosDelCierre(
 			TipoDocumento:     domain.TipoDocumentoFirmadoPA,
 			NombreArchivo:     domain.NombreArchivoLotePA(idPrimeraAtencion),
 			UbicacionArchivo:  ubicacionPA,
+			Motivo:            motivo,
 		}}
 	}
 	out := make([]domain.DocumentoFirmadoPA, 0, len(entrada))
@@ -418,6 +426,10 @@ func (h *PrimeraAtencionHandler) documentosFirmadosDelCierre(
 		if nombre == "" {
 			nombre = domain.NombreArchivoLotePA(idPrimeraAtencion)
 		}
+		motivoDoc := ""
+		if tipo == domain.TipoDocumentoFirmadoPA {
+			motivoDoc = motivo
+		}
 		out = append(out, domain.DocumentoFirmadoPA{
 			IdPrimeraAtencion: idPrimeraAtencion,
 			TipoDocumento:     tipo,
@@ -425,6 +437,7 @@ func (h *PrimeraAtencionHandler) documentosFirmadosDelCierre(
 			IdReceta:          doc.IdReceta,
 			NombreArchivo:     nombre,
 			UbicacionArchivo:  ubi,
+			Motivo:            motivoDoc,
 		})
 	}
 	return out
@@ -559,6 +572,8 @@ func respondPrimeraAtencionWriteError(c *gin.Context, code string, err error) {
 	switch {
 	case errors.Is(err, domain.ErrPrimeraAtencionYaFirmada):
 		respondError(c, http.StatusConflict, "PRIMERA_ATENCION_FIRMADA", err.Error())
+	case errors.Is(err, domain.ErrMaxRectificacionesPA):
+		respondError(c, http.StatusConflict, "MAX_RECTIFICACIONES", err.Error())
 	case errors.Is(err, domain.ErrPrimeraAtencionSinBorrador):
 		respondError(c, http.StatusNotFound, "NOT_FOUND", err.Error())
 	default:

@@ -17,7 +17,13 @@ type DocumentoFirmadoPA struct {
 	NombreArchivo     string
 	UbicacionArchivo  string
 	EstadoFirma       int
+	Motivo            string
 }
+
+const (
+	IdListItemPrimeraAtencion = 1483
+	ClaveMaxRectificaciones   = "MAX_RECTIFICACIONES"
+)
 
 // DocumentoFirmadoRegistro es lo que el cierre de firma envía para persistir.
 type DocumentoFirmadoRegistro struct {

@@ -107,6 +107,9 @@ func (uc *primeraAtencionUseCase) CerrarFirma(ctx context.Context, in domain.Pri
 			idPA = enteroDesdeValor(row["idPrimeraAtencion"])
 		}
 		nro := enteroDesdeValor(row["NroEdicionVigente"]) + 1
+		if err := uc.validarTopeRectificacion(ctx, in.IdAtencion); err != nil {
+			return domain.PrimeraAtencionCerrarFirmaResult{}, err
+		}
 		if err := uc.repo.ActualizarEdicionVigente(ctx, idPA, nro, in.UbicacionArchivo); err != nil {
 			return domain.PrimeraAtencionCerrarFirmaResult{}, fmt.Errorf("actualizar edición vigente: %w", err)
 		}
@@ -164,6 +167,28 @@ func (uc *primeraAtencionUseCase) ListarDocumentosFirmados(
 		return nro, nil, err
 	}
 	return nro, docs, nil
+}
+
+func (uc *primeraAtencionUseCase) ValidarTopeRectificacion(ctx context.Context, idAtencion int) error {
+	return uc.validarTopeRectificacion(ctx, idAtencion)
+}
+
+func (uc *primeraAtencionUseCase) validarTopeRectificacion(ctx context.Context, idAtencion int) error {
+	row, err := uc.repo.ObtenerPorIdAtencion(ctx, idAtencion)
+	if err != nil || row == nil || !primeraAtencionEstaFirmada(row) {
+		return err
+	}
+	max, err := uc.repo.ValorConfiguracionEntero(ctx, domain.IdListItemPrimeraAtencion, domain.ClaveMaxRectificaciones)
+	if err != nil {
+		return err
+	}
+	if max <= 0 {
+		return nil
+	}
+	if enteroDesdeValor(row["NroEdicionVigente"]) >= max {
+		return domain.ErrMaxRectificacionesPA
+	}
+	return nil
 }
 
 func (uc *primeraAtencionUseCase) RegistrarDocumentosFirmados(
