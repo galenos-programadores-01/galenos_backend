@@ -8,7 +8,7 @@ type PrimeraAtencionUpsert struct {
 	IdAtencion                      int
 	FechaAtencion                   *time.Time
 	TipoAnamnesis                   *string
-	TiempoEnfermedad                *int
+	TiempoEnfermedad                *string
 	IdTiempoEnfermedad              *int
 	SignosSintomas                  *string
 	RelatoCronologico               *string

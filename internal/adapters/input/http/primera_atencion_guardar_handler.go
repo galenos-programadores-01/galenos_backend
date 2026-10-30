@@ -25,7 +25,7 @@ type primeraAtencionIniciarRequest struct {
 type primeraAtencionGuardarRequest struct {
 	FechaAtencion                   *string `json:"fechaAtencion"`
 	TipoAnamnesis                   *string `json:"tipoAnamnesis"`
-	TiempoEnfermedad                *int    `json:"tiempoEnfermedad"`
+	TiempoEnfermedad                *string `json:"tiempoEnfermedad"`
 	IdTiempoEnfermedad              *int    `json:"idTiempoEnfermedad"`
 	SignosSintomas                  *string `json:"signosSintomas"`
 	RelatoCronologico               *string `json:"relatoCronologico"`
